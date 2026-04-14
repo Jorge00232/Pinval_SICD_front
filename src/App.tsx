@@ -8,16 +8,13 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Ruta raíz redirige a Home */}
         <Route path="/" element={<Navigate to="/home" replace />} />
 
-        {/* Páginas principales */}
         <Route path="/home" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/products" element={<Products />} />
 
-        {/* Ruta 404 */}
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
     </BrowserRouter>

@@ -58,14 +58,14 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
       addProduct(product) {
         setState((current) => {
           const exists = current.products.some(
-            (item) => item.sku.toLowerCase() === product.sku.toLowerCase(),
+            (item) => item.codigo.toLowerCase() === product.codigo.toLowerCase(),
           );
 
           if (exists) {
             return {
               ...current,
               products: current.products.map((item) =>
-                item.sku.toLowerCase() === product.sku.toLowerCase()
+                item.codigo.toLowerCase() === product.codigo.toLowerCase()
                   ? product
                   : item,
               ),
@@ -107,7 +107,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
       recordPurchase(purchase) {
         setState((current) => {
           const product = current.products.find(
-            (item) => item.sku === purchase.sku,
+            (item) => item.codigo === purchase.codigo,
           );
 
           if (!product) {
@@ -117,7 +117,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
           const movement: InventoryMovement = {
             id: getMovementId(),
             type: 'Entrada',
-            product: product.name,
+            product: product.descrip,
             quantity: purchase.quantity,
             user: 'Usuario local',
             date: getDateTimeLabel(),
@@ -127,7 +127,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
           return {
             ...current,
             products: current.products.map((item) =>
-              item.sku === purchase.sku
+              item.codigo === purchase.codigo
                 ? { ...item, stock: item.stock + purchase.quantity }
                 : item,
             ),
@@ -146,7 +146,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
       },
       recordSale(sale) {
         setState((current) => {
-          const product = current.products.find((item) => item.sku === sale.sku);
+          const product = current.products.find((item) => item.codigo === sale.codigo);
 
           if (!product || product.stock < sale.quantity) {
             return current;
@@ -155,7 +155,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
           const movement: InventoryMovement = {
             id: getMovementId(),
             type: 'Salida',
-            product: product.name,
+            product: product.descrip,
             quantity: sale.quantity,
             user: 'Usuario local',
             date: getDateTimeLabel(),
@@ -165,7 +165,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
           return {
             ...current,
             products: current.products.map((item) =>
-              item.sku === sale.sku
+              item.codigo === sale.codigo
                 ? { ...item, stock: item.stock - sale.quantity }
                 : item,
             ),

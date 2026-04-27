@@ -1,13 +1,15 @@
 import AppLayout from '../components/AppLayout';
+import { currencyFormatter, FAMILY_LABELS } from '../data/mockData';
 import { useInventory } from '../state/useInventory';
 
 function Inventory() {
   const { products } = useInventory();
   const hasProducts = products.length > 0;
-  const totalStock = products.reduce((sum, product) => sum + product.stock, 0);
-  const lowStock = products.filter(
-    (product) => product.stock <= product.minStock,
-  );
+
+  const totalStock = products.reduce((sum, p) => sum + p.stock, 0);
+  const totalValCosto = products.reduce((sum, p) => sum + p.stock * p.prcosto, 0);
+  const totalValVenta = products.reduce((sum, p) => sum + p.stock * p.prventa, 0);
+  const lowStock = products.filter((p) => p.stock <= p.minStock);
 
   return (
     <AppLayout
@@ -17,13 +19,23 @@ function Inventory() {
       <section className="metric-grid compact">
         <article className="metric-card">
           <span>Unidades disponibles</span>
-          <strong>{hasProducts ? totalStock : 'Sin datos'}</strong>
+          <strong>{hasProducts ? totalStock.toLocaleString('es-CL') : 'Sin datos'}</strong>
           <p>Stock actual consolidado</p>
         </article>
         <article className="metric-card warning">
           <span>Quiebres posibles</span>
           <strong>{hasProducts ? lowStock.length : 'Sin datos'}</strong>
-          <p>Productos bajo minimo</p>
+          <p>Productos bajo mínimo</p>
+        </article>
+        <article className="metric-card">
+          <span>Val. stock a costo</span>
+          <strong>{hasProducts ? currencyFormatter.format(totalValCosto) : 'Sin datos'}</strong>
+          <p>Subtotal a precio costo</p>
+        </article>
+        <article className="metric-card">
+          <span>Val. stock a venta</span>
+          <strong>{hasProducts ? currencyFormatter.format(totalValVenta) : 'Sin datos'}</strong>
+          <p>Subtotal a precio venta</p>
         </article>
       </section>
 
@@ -36,11 +48,13 @@ function Inventory() {
           <table>
             <thead>
               <tr>
-                <th>SKU</th>
-                <th>Producto</th>
-                <th>Categoria</th>
+                <th>Código</th>
+                <th>Descripción</th>
+                <th>Familia</th>
                 <th>Stock</th>
-                <th>Minimo</th>
+                <th>Mínimo</th>
+                <th>Pr. Costo</th>
+                <th>Val. Costo</th>
                 <th>Estado</th>
               </tr>
             </thead>
@@ -48,14 +62,17 @@ function Inventory() {
               {products.length > 0 ? (
                 products.map((product) => {
                   const needsRestock = product.stock <= product.minStock;
+                  const sbtot = product.stock * product.prcosto;
 
                   return (
-                    <tr key={product.sku}>
-                      <td>{product.sku}</td>
-                      <td>{product.name}</td>
-                      <td>{product.category}</td>
+                    <tr key={product.codigo}>
+                      <td>{product.codigo}</td>
+                      <td>{product.descrip}</td>
+                      <td>{FAMILY_LABELS[product.familia] ?? product.familia}</td>
                       <td>{product.stock}</td>
                       <td>{product.minStock}</td>
+                      <td>{currencyFormatter.format(product.prcosto)}</td>
+                      <td>{currencyFormatter.format(sbtot)}</td>
                       <td>
                         <span
                           className={`status ${needsRestock ? 'danger' : 'ok'}`}
@@ -68,7 +85,7 @@ function Inventory() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={6}>No hay productos registrados.</td>
+                  <td colSpan={8}>No hay productos registrados.</td>
                 </tr>
               )}
             </tbody>
@@ -80,3 +97,4 @@ function Inventory() {
 }
 
 export default Inventory;
+

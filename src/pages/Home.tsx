@@ -46,11 +46,11 @@ function Home() {
           <div className="alert-list">
             {lowStock.length > 0 ? (
               lowStock.map((product) => (
-                <div className="alert-row" key={product.sku}>
+                <div className="alert-row" key={product.codigo}>
                   <div>
-                    <strong>{product.name}</strong>
+                    <strong>{product.descrip}</strong>
                     <p>
-                      Stock actual: {product.stock} / minimo:{' '}
+                      Stock actual: {product.stock} / mínimo:{' '}
                       {product.minStock}
                     </p>
                   </div>

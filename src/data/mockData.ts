@@ -1,11 +1,75 @@
+/**
+ * Categorías de producto tal como aparecen en ventas.csv (columna "familia").
+ * Mantener sincronizado con los valores reales de la base de datos.
+ */
+export type ProductFamily =
+  | 'SHAMPOO'
+  | 'LAV_.ROPA'
+  | 'CLORO'
+  | 'LAVALOZA'
+  | 'P.HIG'
+  | 'DENTAL'
+  | 'T._HUMEDAS'
+  | 'T._HIGIENICAS'
+  | 'VELAS'
+  | 'AEROSOL'
+  | 'PAÑAL'
+  | 'LIMPIA_PISOS'
+  | 'NO TIENE';
+
+/** Etiquetas legibles para mostrar en la UI */
+export const FAMILY_LABELS: Record<ProductFamily, string> = {
+  'SHAMPOO': 'Shampoo / Acond.',
+  'LAV_.ROPA': 'Lavado ropa',
+  'CLORO': 'Cloro',
+  'LAVALOZA': 'Lavaloza',
+  'P.HIG': 'Papel higiénico',
+  'DENTAL': 'Dental',
+  'T._HUMEDAS': 'Toallas húmedas',
+  'T._HIGIENICAS': 'Toallas higiénicas',
+  'VELAS': 'Velas',
+  'AEROSOL': 'Aerosol',
+  'PAÑAL': 'Pañal',
+  'LIMPIA_PISOS': 'Limpia pisos',
+  'NO TIENE': 'Sin categoría',
+};
+
+/**
+ * Producto del catálogo.
+ * Campos alineados con stockvalorizado.csv y ventas.csv.
+ *
+ * CSV → Frontend:
+ *   codigo   → codigo
+ *   descrip  → descrip
+ *   prcosto  → prcosto
+ *   prventa  → prventa
+ *   stock    → stock
+ *   familia  → familia
+ */
 export type Product = {
-  sku: string;
-  name: string;
-  category: string;
-  purchasePrice: number;
-  salePrice: number;
+  /** Código interno del producto (= columna "codigo" en stockvalorizado.csv) */
+  codigo: string;
+  /** Descripción / nombre del producto (= columna "descrip") */
+  descrip: string;
+  /** Familia / categoría (= columna "familia" en ventas.csv) */
+  familia: ProductFamily;
+  /** Precio de costo unitario en CLP (= columna "prcosto") */
+  prcosto: number;
+  /** Precio de venta unitario en CLP (= columna "prventa") */
+  prventa: number;
+  /** Stock actual en unidades (= columna "stock") */
   stock: number;
+  /**
+   * Stock mínimo antes de alertar quiebre.
+   * Campo de gestión interna — no tiene equivalente en los CSV,
+   * pero se guardará en la BD propia del sistema.
+   */
   minStock: number;
+  /**
+   * Historial de ventas por período (= columnas ventas01..ventas13).
+   * Opcional hasta que el backend esté disponible.
+   */
+  salesHistory?: number[];
 };
 
 export type Supplier = {

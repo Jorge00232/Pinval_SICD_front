@@ -26,7 +26,7 @@ function Sales() {
               recordSale({
                 customerName: String(formData.get('customer')),
                 documentType: String(formData.get('documentType')),
-                sku: String(formData.get('product')),
+                codigo: String(formData.get('product')),
                 quantity: Number(formData.get('quantity')),
               });
 
@@ -60,8 +60,8 @@ function Sales() {
               <select name="product">
                 {products.length > 0 ? (
                   products.map((product) => (
-                    <option key={product.sku} value={product.sku}>
-                      {product.name}
+                    <option key={product.codigo} value={product.codigo}>
+                      {product.descrip}
                     </option>
                   ))
                 ) : (

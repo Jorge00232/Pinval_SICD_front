@@ -16,14 +16,16 @@ export type InventoryState = {
 export type PurchaseInput = {
   date: string;
   supplierName: string;
-  sku: string;
+  /** Código del producto (= campo "codigo" en Product) */
+  codigo: string;
   quantity: number;
 };
 
 export type SaleInput = {
   customerName: string;
   documentType: string;
-  sku: string;
+  /** Código del producto (= campo "codigo" en Product) */
+  codigo: string;
   quantity: number;
 };
 

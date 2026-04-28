@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import '../App.css';
+import { useTheme } from '../state/useTheme';
 
 type AppLayoutProps = {
   title: string;
@@ -22,6 +23,8 @@ const navItems = [
 ];
 
 function AppLayout({ title, description, children }: AppLayoutProps) {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <div className="app-shell">
       <aside className="sidebar" aria-label="Navegacion principal">
@@ -70,11 +73,23 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
             <p>{description}</p>
           </div>
           <div className="page-header-actions">
-            <div className="page-context-card" aria-label="Contexto de Pinval">
+          <div className="page-context-card" aria-label="Contexto de Pinval">
               <span className="page-context-tag">Pinval</span>
               <strong>SICD interno</strong>
               <p>Operacion centralizada</p>
             </div>
+            <button
+              type="button"
+              className="theme-toggle-button"
+              onClick={toggleTheme}
+              aria-label={
+                theme === 'dark'
+                  ? 'Cambiar a tema claro'
+                  : 'Cambiar a tema oscuro'
+              }
+            >
+              {theme === 'dark' ? 'Tema claro' : 'Tema oscuro'}
+            </button>
             <NavLink to="/login" className="secondary-action">
               Cambiar usuario
             </NavLink>

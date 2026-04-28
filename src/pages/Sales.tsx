@@ -149,7 +149,9 @@ function Sales() {
                   value={customerIdentifier}
                   onChange={(event) => setCustomerIdentifier(event.target.value)}
                   placeholder={
-                    selectedRegisteredCustomer?.contact || 'Ej: 76.123.456-7'
+                    selectedRegisteredCustomer?.identifier ||
+                    selectedRegisteredCustomer?.contact ||
+                    'Ej: 76.123.456-7'
                   }
                   maxLength={60}
                 />

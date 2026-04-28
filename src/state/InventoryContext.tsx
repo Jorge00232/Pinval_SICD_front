@@ -45,6 +45,7 @@ type LegacyProduct = Partial<{
 type LegacyCustomer = Partial<{
   name: string;
   contact: string;
+  identifier: string;
   customerType: 'B2B' | 'B2C';
   lastPurchase: string;
   purchases: number;
@@ -108,6 +109,8 @@ function normalizeCustomer(customer: LegacyCustomer): Customer | null {
   return {
     name,
     contact,
+    identifier:
+      typeof customer.identifier === 'string' ? customer.identifier.trim() : '',
     customerType: customer.customerType === 'B2C' ? 'B2C' : 'B2B',
     lastPurchase:
       typeof customer.lastPurchase === 'string'

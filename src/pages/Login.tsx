@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom';
 import '../App.css';
+import { useTheme } from '../state/useTheme';
 
 function Login() {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <div className="login-page">
       <section className="login-panel" aria-labelledby="login-title">
@@ -13,6 +16,14 @@ function Login() {
             mantener trazabilidad de los datos.
           </p>
         </div>
+
+        <button
+          type="button"
+          className="ghost-button theme-toggle-button login-theme-toggle"
+          onClick={toggleTheme}
+        >
+          {theme === 'dark' ? 'Tema claro' : 'Tema oscuro'}
+        </button>
 
         <form className="form" onSubmit={(event) => event.preventDefault()}>
           <label htmlFor="email">Usuario</label>

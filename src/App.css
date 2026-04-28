@@ -273,6 +273,20 @@
   font-weight: 520;
 }
 
+.theme-toggle-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 112px;
+  padding: 10px 13px;
+  border: 1px solid #dce3df;
+  border-radius: 8px;
+  background: #f8fbf9;
+  color: #315851;
+  font-size: 13px;
+  font-weight: 540;
+}
+
 button {
   border: 0;
   border-radius: 8px;
@@ -480,6 +494,24 @@ button:disabled:hover {
   color: #a24c43;
 }
 
+.customer-type-badge {
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 620;
+}
+
+.customer-type-badge.b2b {
+  background: #e7f0ec;
+  color: #2f6658;
+}
+
+.customer-type-badge.b2c {
+  background: #fff1df;
+  color: #9a6a2d;
+}
+
 .bar-list > div {
   display: grid;
   gap: 8px;
@@ -636,6 +668,10 @@ select {
 .login-links a {
   color: #3b746a;
   font-weight: 600;
+}
+
+.login-theme-toggle {
+  justify-self: start;
 }
 
 .products-layout {
@@ -944,4 +980,214 @@ select {
   .inventory-description-cell {
     width: auto;
   }
+}
+
+body.theme-dark {
+  background-color: #111716;
+  color: #e3ece8;
+}
+
+body.theme-dark .app-shell {
+  background:
+    radial-gradient(circle at top left, rgba(72, 109, 99, 0.32), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(143, 118, 63, 0.2), transparent 24%),
+    #111716;
+}
+
+body.theme-dark .sidebar {
+  border-color: #22302d;
+  background: linear-gradient(180deg, #16211f 0%, #121a19 100%);
+  color: #dce8e3;
+}
+
+body.theme-dark .sidebar::before {
+  background: linear-gradient(180deg, #7fa69d 0%, #d8bf7c 100%);
+}
+
+body.theme-dark .brand strong,
+body.theme-dark .panel-heading h2,
+body.theme-dark .page-header h1,
+body.theme-dark .metric-card strong,
+body.theme-dark .description-cell,
+body.theme-dark .inventory-description-cell,
+body.theme-dark .sidebar-footer strong,
+body.theme-dark .page-context-card strong {
+  color: #eef5f2;
+}
+
+body.theme-dark .brand span,
+body.theme-dark .brand-tag,
+body.theme-dark .sidebar-caption,
+body.theme-dark .sidebar-footer span,
+body.theme-dark .page-context-card p,
+body.theme-dark .page-context-tag,
+body.theme-dark .metric-card span,
+body.theme-dark .panel-heading span,
+body.theme-dark .page-header p,
+body.theme-dark .metric-card p,
+body.theme-dark .alert-row p,
+body.theme-dark .timeline p,
+body.theme-dark .empty-state,
+body.theme-dark .check-list,
+body.theme-dark th {
+  color: #9dafaa;
+}
+
+body.theme-dark .role-list span {
+  border-color: #2a3734;
+  background: #182120;
+  color: #b6c4bf;
+}
+
+body.theme-dark .side-nav a {
+  color: #b3c3be;
+}
+
+body.theme-dark .side-nav a:hover,
+body.theme-dark .side-nav a:focus-visible,
+body.theme-dark .side-nav a.active {
+  background: #1d2b28;
+  color: #eef5f2;
+}
+
+body.theme-dark .side-nav a.active {
+  border-color: #2d403b;
+  box-shadow: inset 3px 0 0 #84aa9f;
+}
+
+body.theme-dark .sidebar-footer,
+body.theme-dark .page-context-card,
+body.theme-dark .secondary-action,
+body.theme-dark .theme-toggle-button,
+body.theme-dark .ghost-button,
+body.theme-dark .table-wrap,
+body.theme-dark .panel,
+body.theme-dark .metric-card,
+body.theme-dark .login-panel,
+body.theme-dark .purchase-item-row,
+body.theme-dark .empty-state,
+body.theme-dark .alert-row,
+body.theme-dark .modal-panel {
+  border-color: #24312f;
+}
+
+body.theme-dark .panel,
+body.theme-dark .login-panel,
+body.theme-dark .table-wrap,
+body.theme-dark .modal-panel,
+body.theme-dark .empty-state,
+body.theme-dark .alert-row,
+body.theme-dark .login-page {
+  background: #161f1e;
+}
+
+body.theme-dark .metric-card {
+  background: #162120;
+}
+
+body.theme-dark .metric-card.warning {
+  background: #241d15;
+}
+
+body.theme-dark .metric-card.success {
+  background: #17211b;
+}
+
+body.theme-dark .metric-card.accent {
+  background: #231918;
+}
+
+body.theme-dark .page-header,
+body.theme-dark .sidebar-footer,
+body.theme-dark th,
+body.theme-dark td,
+body.theme-dark .table-wrap,
+body.theme-dark .purchase-item-row,
+body.theme-dark .empty-state,
+body.theme-dark .alert-row {
+  border-color: #24312f;
+}
+
+body.theme-dark td,
+body.theme-dark .check-list,
+body.theme-dark .grid-form label,
+body.theme-dark .form label,
+body.theme-dark .sidebar,
+body.theme-dark .secondary-action,
+body.theme-dark .theme-toggle-button,
+body.theme-dark .ghost-button {
+  color: #dbe6e2;
+}
+
+body.theme-dark .secondary-action,
+body.theme-dark .theme-toggle-button,
+body.theme-dark .ghost-button,
+body.theme-dark input,
+body.theme-dark select {
+  background: #1a2523;
+}
+
+body.theme-dark input,
+body.theme-dark select {
+  border-color: #2a3835;
+  color: #ebf3f0;
+}
+
+body.theme-dark input::placeholder {
+  color: #7e918b;
+}
+
+body.theme-dark input:focus,
+body.theme-dark select:focus {
+  border-color: #84aa9f;
+  outline: 3px solid rgba(132, 170, 159, 0.14);
+}
+
+body.theme-dark button {
+  background: #5d8a7f;
+  color: #0f1716;
+}
+
+body.theme-dark button:hover,
+body.theme-dark button:focus-visible {
+  background: #6d9b90;
+}
+
+body.theme-dark .danger-button {
+  background: #b36458;
+  color: #fff7f5;
+}
+
+body.theme-dark .danger-button:hover,
+body.theme-dark .danger-button:focus-visible {
+  background: #c06e62;
+}
+
+body.theme-dark tbody tr:hover {
+  background: #182322;
+}
+
+body.theme-dark .status.ok {
+  background: #1f3028;
+  color: #91d0ac;
+}
+
+body.theme-dark .status.danger {
+  background: #35211f;
+  color: #efada6;
+}
+
+body.theme-dark .customer-type-badge.b2b {
+  background: #21312d;
+  color: #9fcec2;
+}
+
+body.theme-dark .customer-type-badge.b2c {
+  background: #362a1d;
+  color: #efc88b;
+}
+
+body.theme-dark .code-cell,
+body.theme-dark .inventory-code-cell {
+  color: #8bc2b5;
 }

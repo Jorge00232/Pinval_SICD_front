@@ -69,6 +69,7 @@ export type Supplier = {
 export type Customer = {
   name: string;
   contact: string;
+  identifier?: string;
   customerType: 'B2B' | 'B2C';
   lastPurchase: string;
   purchases: number;

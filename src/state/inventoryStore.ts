@@ -16,23 +16,31 @@ export type InventoryState = {
 export type PurchaseInput = {
   date: string;
   supplierName: string;
-  /** Código del producto (= campo "codigo" en Product) */
-  codigo: string;
-  quantity: number;
+  documentNumber: string;
+  items: Array<{
+    codigo: string;
+    quantity: number;
+  }>;
 };
 
 export type SaleInput = {
   customerName: string;
+  customerType: 'B2B' | 'B2C';
+  customerIdentifier?: string;
   documentType: string;
-  /** Código del producto (= campo "codigo" en Product) */
-  codigo: string;
-  quantity: number;
+  documentNumber: string;
+  items: Array<{
+    codigo: string;
+    quantity: number;
+  }>;
 };
 
 export type InventoryContextValue = InventoryState & {
   addProduct: (product: Product) => void;
   addSupplier: (supplier: Pick<Supplier, 'name' | 'contact'>) => void;
-  addCustomer: (customer: Pick<Customer, 'name' | 'contact'>) => void;
+  addCustomer: (
+    customer: Pick<Customer, 'name' | 'contact' | 'customerType'>,
+  ) => void;
   recordPurchase: (purchase: PurchaseInput) => void;
   recordSale: (sale: SaleInput) => void;
 };

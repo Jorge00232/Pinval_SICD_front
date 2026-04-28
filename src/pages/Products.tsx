@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import AppLayout from '../components/AppLayout';
 import {
   currencyFormatter,
@@ -6,24 +7,32 @@ import {
 } from '../data/mockData';
 import { useInventory } from '../state/useInventory';
 
-const FAMILIES = Object.keys(FAMILY_LABELS) as ProductFamily[];
+const BASE_FAMILIES = Object.keys(FAMILY_LABELS) as ProductFamily[];
 
 function Products() {
   const { addProduct, products } = useInventory();
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [newCategory, setNewCategory] = useState('');
+  const [customCategories, setCustomCategories] = useState<ProductFamily[]>([]);
+  const families = useMemo(
+    () =>
+      [...new Set([...BASE_FAMILIES, ...customCategories, ...products.map((product) => product.familia)])],
+    [customCategories, products],
+  );
 
   return (
     <AppLayout
-      title="Gestión de productos"
-      description="Registra y consulta los artículos de aseo que Pinval mantiene en inventario."
+      title="Productos"
+      description="Catálogo alineado a codigo, descrip, familia, stock, prventa y prcosto."
     >
-      <section className="two-column">
-        <article className="panel">
+      <section className="products-layout">
+        <article className="panel products-form-panel">
           <div className="panel-heading">
             <h2>Nuevo producto</h2>
-            <span>Campos alineados con BD</span>
+            <span>{products.length} registros</span>
           </div>
           <form
-            className="grid-form"
+            className="grid-form products-form"
             onSubmit={(event) => {
               event.preventDefault();
 
@@ -43,7 +52,7 @@ function Products() {
             }}
           >
             <label>
-              Código (codigo)
+              Código
               <input
                 name="codigo"
                 placeholder="Ej: 001104"
@@ -52,7 +61,7 @@ function Products() {
               />
             </label>
             <label>
-              Descripción (descrip)
+              Descripción
               <input
                 name="descrip"
                 placeholder="Nombre del producto"
@@ -60,54 +69,64 @@ function Products() {
               />
             </label>
             <label>
-              Familia (familia)
-              <select name="familia" required defaultValue="">
-                <option value="" disabled>
-                  Seleccione categoría
-                </option>
-                {FAMILIES.map((f) => (
-                  <option key={f} value={f}>
-                    {FAMILY_LABELS[f]}
+              Categoría
+              <div className="select-with-action">
+                <select name="familia" required defaultValue="">
+                  <option value="" disabled>
+                    Seleccione categoría
                   </option>
-                ))}
-              </select>
+                  {families.map((family) => (
+                    <option key={family} value={family}>
+                      {FAMILY_LABELS[family] ?? family}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="ghost-button"
+                  onClick={() => setIsCategoryModalOpen(true)}
+                >
+                  Nueva categoría
+                </button>
+              </div>
             </label>
             <label>
-              Precio costo (prcosto)
+              Precio costo
               <input
                 name="prcosto"
                 type="number"
                 min="0"
-                placeholder="Precio de costo en CLP"
+                placeholder="Costo unitario"
                 required
               />
             </label>
             <label>
-              Precio venta (prventa)
+              Precio venta
               <input
                 name="prventa"
                 type="number"
                 min="0"
-                placeholder="Precio de venta en CLP"
+                placeholder="Precio de venta"
                 required
               />
             </label>
             <label>
-              Stock actual
+              Stock
               <input
                 name="stock"
                 type="number"
-                placeholder="Unidades en bodega"
+                min="0"
+                placeholder="Unidades"
                 required
               />
             </label>
             <label>
-              Stock mínimo (alerta)
+              Stock mínimo
               <input
                 name="minStock"
                 type="number"
                 min="0"
-                placeholder="Umbral de alerta"
+                placeholder="Stock mínimo"
                 required
               />
             </label>
@@ -120,19 +139,19 @@ function Products() {
             <h2>Catálogo</h2>
             <span>{products.length} productos</span>
           </div>
-          <div className="table-wrap">
+          <div className="table-wrap products-table-wrap">
             <table>
               <thead>
                 <tr>
                   <th>Código</th>
                   <th>Descripción</th>
                   <th>Familia</th>
-                  <th>Pr. Costo</th>
-                  <th>Pr. Venta</th>
                   <th>Stock</th>
-                  <th>Val. Costo</th>
-                  <th>Val. Venta</th>
-                  <th>Acciones</th>
+                  <th>Pr. costo</th>
+                  <th>Pr. venta</th>
+                  <th>Val. costo</th>
+                  <th>Val. venta</th>
+                  <th>Stock mínimo</th>
                 </tr>
               </thead>
               <tbody>
@@ -140,24 +159,28 @@ function Products() {
                   products.map((product) => {
                     const sbtot = product.stock * product.prcosto;
                     const sbtotal = product.stock * product.prventa;
+
                     return (
                       <tr key={product.codigo}>
-                        <td>{product.codigo}</td>
-                        <td>{product.descrip}</td>
+                        <td className="code-cell">{product.codigo}</td>
+                        <td className="description-cell">{product.descrip}</td>
                         <td>{FAMILY_LABELS[product.familia] ?? product.familia}</td>
-                        <td>{currencyFormatter.format(product.prcosto)}</td>
-                        <td>{currencyFormatter.format(product.prventa)}</td>
-                        <td>{product.stock}</td>
-                        <td>{currencyFormatter.format(sbtot)}</td>
-                        <td>{currencyFormatter.format(sbtotal)}</td>
-                        <td>
-                          <div className="table-actions">
-                            <button type="button">Editar</button>
-                            <button type="button" className="danger-button">
-                              Eliminar
-                            </button>
-                          </div>
+                        <td className="numeric-cell">
+                          {product.stock.toLocaleString('es-CL')}
                         </td>
+                        <td className="numeric-cell">
+                          {currencyFormatter.format(product.prcosto)}
+                        </td>
+                        <td className="numeric-cell">
+                          {currencyFormatter.format(product.prventa)}
+                        </td>
+                        <td className="numeric-cell">
+                          {currencyFormatter.format(sbtot)}
+                        </td>
+                        <td className="numeric-cell">
+                          {currencyFormatter.format(sbtotal)}
+                        </td>
+                        <td className="numeric-cell">{product.minStock}</td>
                       </tr>
                     );
                   })
@@ -171,9 +194,73 @@ function Products() {
           </div>
         </article>
       </section>
+
+      {isCategoryModalOpen ? (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onClick={() => setIsCategoryModalOpen(false)}
+        >
+          <section
+            className="modal-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="new-category-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="panel-heading">
+              <h2 id="new-category-title">Nueva categoría</h2>
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => setIsCategoryModalOpen(false)}
+              >
+                Cerrar
+              </button>
+            </div>
+            <form
+              className="form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const normalizedCategory = newCategory.trim();
+
+                if (!normalizedCategory) {
+                  return;
+                }
+
+                setCustomCategories((current) => {
+                  const exists = current.some(
+                    (category) =>
+                      category.toLowerCase() === normalizedCategory.toLowerCase(),
+                  );
+
+                  if (exists) {
+                    return current;
+                  }
+
+                  return [...current, normalizedCategory];
+                });
+                setNewCategory('');
+                setIsCategoryModalOpen(false);
+              }}
+            >
+              <label>
+                Nombre categoría
+                <input
+                  value={newCategory}
+                  onChange={(event) => setNewCategory(event.target.value)}
+                  placeholder="Ej: Cuidado personal"
+                  maxLength={60}
+                  required
+                />
+              </label>
+              <button type="submit">Guardar categoría</button>
+            </form>
+          </section>
+        </div>
+      ) : null}
     </AppLayout>
   );
 }
 
 export default Products;
-

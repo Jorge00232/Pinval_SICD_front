@@ -8,58 +8,64 @@ function Home() {
   const lowStock = products.filter(
     (product) => product.stock <= product.minStock,
   );
+  const salesCount = movements.filter((movement) => movement.type === 'Salida').length;
+  const purchasesCount = movements.filter(
+    (movement) => movement.type === 'Entrada',
+  ).length;
+  const recentMovements = movements.slice(0, 5);
 
   return (
     <AppLayout
       title="Dashboard"
-      description="Vista inicial para centralizar el inventario que hoy se controla en Excel."
+      description="Resumen general de ventas, compras, inventario y movimientos registrados en SICD Pinval."
     >
       <section className="metric-grid" aria-label="Indicadores principales">
         <article className="metric-card">
           <span>Stock total</span>
           <strong>{hasProducts ? `${totalStock} unidades` : 'Sin datos'}</strong>
-          <p>Disponible cuando existan productos registrados</p>
+          <p>Total disponible segun los productos cargados en inventario.</p>
         </article>
+
         <article className="metric-card warning">
           <span>Bajo stock</span>
           <strong>{hasProducts ? `${lowStock.length} productos` : 'Sin datos'}</strong>
-          <p>Se calcula con stock minimo por producto</p>
+          <p>Productos que ya estan en o bajo su stock minimo.</p>
         </article>
+
         <article className="metric-card success">
-          <span>Datos por validar</span>
-          <strong>Sin datos</strong>
-          <p>Disponible al cargar archivos reales de Pinval</p>
+          <span>Compras registradas</span>
+          <strong>{purchasesCount > 0 ? purchasesCount : 'Sin datos'}</strong>
+          <p>Entradas registradas desde la vista de compras.</p>
         </article>
+
         <article className="metric-card accent">
-          <span>Movimientos auditables</span>
-          <strong>{movements.length > 0 ? movements.length : 'Sin datos'}</strong>
-          <p>Disponible cuando existan registros de entrada o salida</p>
+          <span>Ventas registradas</span>
+          <strong>{salesCount > 0 ? salesCount : 'Sin datos'}</strong>
+          <p>Salidas registradas desde la vista de ventas.</p>
         </article>
       </section>
 
       <section className="two-column">
         <article className="panel">
           <div className="panel-heading">
-            <h2>Alertas prioritarias</h2>
-            <span>{hasProducts ? `${lowStock.length} activas` : 'Sin datos'}</span>
+            <h2>Actividad reciente</h2>
+            <span>{movements.length} movimientos</span>
           </div>
-          <div className="alert-list">
-            {lowStock.length > 0 ? (
-              lowStock.map((product) => (
-                <div className="alert-row" key={product.codigo}>
-                  <div>
-                    <strong>{product.descrip}</strong>
-                    <p>
-                      Stock actual: {product.stock} / mínimo:{' '}
-                      {product.minStock}
-                    </p>
-                  </div>
-                  <span className="status danger">Reponer</span>
+
+          <div className="timeline">
+            {recentMovements.length > 0 ? (
+              recentMovements.map((movement) => (
+                <div key={movement.id}>
+                  <strong>{movement.product}</strong>
+                  <p>
+                    {movement.type} de {movement.quantity} unidades
+                  </p>
+                  <p>{movement.detail}</p>
                 </div>
               ))
             ) : (
               <div className="empty-state">
-                No hay productos registrados para calcular alertas.
+                Aun no hay movimientos registrados.
               </div>
             )}
           </div>
@@ -68,13 +74,14 @@ function Home() {
         <article className="panel">
           <div className="panel-heading">
             <h2>Estado del sistema</h2>
-            <span>Sin conexion a datos</span>
+            <span>Vista operativa</span>
           </div>
+
           <ul className="check-list">
-            <li>Inventario pendiente de carga desde archivo real.</li>
-            <li>Modelo de datos pendiente de conexion con backend.</li>
-            <li>Validaciones de calidad listas para definirse.</li>
-            <li>Auditoria disponible cuando existan usuarios y movimientos.</li>
+            <li>Ventas y compras actualizan el stock desde el frontend actual.</li>
+            <li>Inventario y productos usan la estructura real definida para SICD.</li>
+            <li>Movimientos centraliza la trazabilidad de entradas y salidas.</li>
+            <li>Clientes y proveedores quedan disponibles para el flujo operativo.</li>
           </ul>
         </article>
       </section>

@@ -16,26 +16,26 @@ function Inventory() {
       title="Inventario"
       description="Consulta el stock disponible y detecta quiebres antes de vender."
     >
-      <section className="metric-grid compact">
+      <section className="metric-grid compact inventory-metric-grid">
         <article className="metric-card">
-          <span>Unidades disponibles</span>
+          <span>Stock actual</span>
           <strong>{hasProducts ? totalStock.toLocaleString('es-CL') : 'Sin datos'}</strong>
-          <p>Stock actual consolidado</p>
+          <p>Unidades totales disponibles en inventario</p>
         </article>
         <article className="metric-card warning">
-          <span>Quiebres posibles</span>
+          <span>Productos bajo stock mínimo</span>
           <strong>{hasProducts ? lowStock.length : 'Sin datos'}</strong>
-          <p>Productos bajo mínimo</p>
+          <p>Productos que requieren revisión o reposición</p>
         </article>
         <article className="metric-card">
-          <span>Val. stock a costo</span>
+          <span>Costo total</span>
           <strong>{hasProducts ? currencyFormatter.format(totalValCosto) : 'Sin datos'}</strong>
-          <p>Subtotal a precio costo</p>
+          <p>Total calculado con precio costo</p>
         </article>
         <article className="metric-card">
-          <span>Val. stock a venta</span>
+          <span>Valor aproximado venta</span>
           <strong>{hasProducts ? currencyFormatter.format(totalValVenta) : 'Sin datos'}</strong>
-          <p>Subtotal a precio venta</p>
+          <p>Total estimado según precio de venta</p>
         </article>
       </section>
 
@@ -44,18 +44,18 @@ function Inventory() {
           <h2>Stock por producto</h2>
           <span>Actualizado hoy</span>
         </div>
-        <div className="table-wrap">
+        <div className="table-wrap inventory-table-wrap">
           <table>
             <thead>
               <tr>
                 <th>Código</th>
                 <th>Descripción</th>
                 <th>Familia</th>
-                <th>Stock</th>
-                <th>Mínimo</th>
-                <th>Pr. Costo</th>
-                <th>Val. Costo</th>
+                <th>Stock actual</th>
+                <th>Stock mínimo</th>
                 <th>Estado</th>
+                <th>Precio costo</th>
+                <th>Valor a costo</th>
               </tr>
             </thead>
             <tbody>
@@ -66,26 +66,28 @@ function Inventory() {
 
                   return (
                     <tr key={product.codigo}>
-                      <td>{product.codigo}</td>
-                      <td>{product.descrip}</td>
-                      <td>{FAMILY_LABELS[product.familia] ?? product.familia}</td>
-                      <td>{product.stock}</td>
-                      <td>{product.minStock}</td>
-                      <td>{currencyFormatter.format(product.prcosto)}</td>
-                      <td>{currencyFormatter.format(sbtot)}</td>
+                      <td className="inventory-code-cell">{product.codigo}</td>
+                      <td className="inventory-description-cell">{product.descrip}</td>
+                      <td className="inventory-family-cell">
+                        {FAMILY_LABELS[product.familia] ?? product.familia}
+                      </td>
+                      <td className="numeric-cell">{product.stock}</td>
+                      <td className="numeric-cell">{product.minStock}</td>
                       <td>
                         <span
                           className={`status ${needsRestock ? 'danger' : 'ok'}`}
                         >
-                          {needsRestock ? 'Bajo stock' : 'Disponible'}
+                          {needsRestock ? 'Bajo mínimo' : 'En rango'}
                         </span>
                       </td>
+                      <td className="numeric-cell">{currencyFormatter.format(product.prcosto)}</td>
+                      <td className="numeric-cell">{currencyFormatter.format(sbtot)}</td>
                     </tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan={8}>No hay productos registrados.</td>
+                  <td colSpan={8}>Aún no hay productos cargados en inventario.</td>
                 </tr>
               )}
             </tbody>

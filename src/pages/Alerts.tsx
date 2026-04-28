@@ -21,11 +21,11 @@ function Alerts() {
         <div className="alert-list">
           {lowStock.length > 0 ? (
             lowStock.map((product) => (
-              <div className="alert-row" key={product.sku}>
+              <div className="alert-row" key={product.codigo}>
                 <div>
-                  <strong>{product.name}</strong>
+                  <strong>{product.descrip}</strong>
                   <p>
-                    SKU {product.sku}: quedan {product.stock} unidades y el
+                    Código {product.codigo}: quedan {product.stock} unidades y el
                     minimo definido es {product.minStock}.
                   </p>
                 </div>

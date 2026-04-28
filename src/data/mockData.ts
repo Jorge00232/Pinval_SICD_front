@@ -2,23 +2,10 @@
  * Categorías de producto tal como aparecen en ventas.csv (columna "familia").
  * Mantener sincronizado con los valores reales de la base de datos.
  */
-export type ProductFamily =
-  | 'SHAMPOO'
-  | 'LAV_.ROPA'
-  | 'CLORO'
-  | 'LAVALOZA'
-  | 'P.HIG'
-  | 'DENTAL'
-  | 'T._HUMEDAS'
-  | 'T._HIGIENICAS'
-  | 'VELAS'
-  | 'AEROSOL'
-  | 'PAÑAL'
-  | 'LIMPIA_PISOS'
-  | 'NO TIENE';
+export type ProductFamily = string;
 
 /** Etiquetas legibles para mostrar en la UI */
-export const FAMILY_LABELS: Record<ProductFamily, string> = {
+export const FAMILY_LABELS: Record<string, string> = {
   'SHAMPOO': 'Shampoo / Acond.',
   'LAV_.ROPA': 'Lavado ropa',
   'CLORO': 'Cloro',
@@ -82,6 +69,7 @@ export type Supplier = {
 export type Customer = {
   name: string;
   contact: string;
+  customerType: 'B2B' | 'B2C';
   lastPurchase: string;
   purchases: number;
 };

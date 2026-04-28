@@ -10,7 +10,6 @@ import Customers from './pages/Customers';
 import Movements from './pages/Movements';
 import Alerts from './pages/Alerts';
 import Reports from './pages/Reports';
-import DataQuality from './pages/DataQuality';
 
 function App() {
   return (
@@ -20,7 +19,6 @@ function App() {
 
         <Route path="/home" element={<Home />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/data-quality" element={<DataQuality />} />
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/products" element={<Products />} />
         <Route path="/purchases" element={<Purchases />} />

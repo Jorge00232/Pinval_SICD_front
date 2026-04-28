@@ -10,15 +10,14 @@ type AppLayoutProps = {
 
 const navItems = [
   { to: '/home', label: 'Dashboard' },
-  { to: '/data-quality', label: 'Carga Excel' },
-  { to: '/products', label: 'Productos' },
+  { to: '/sales', label: 'Ventas' },
+  { to: '/purchases', label: 'Compras' },
   { to: '/inventory', label: 'Inventario' },
-  { to: '/purchases', label: 'Entradas' },
-  { to: '/sales', label: 'Ventas POS' },
+  { to: '/products', label: 'Productos' },
   { to: '/movements', label: 'Movimientos' },
-  { to: '/alerts', label: 'Alertas' },
-  { to: '/suppliers', label: 'Proveedores' },
   { to: '/customers', label: 'Clientes' },
+  { to: '/suppliers', label: 'Proveedores' },
+  { to: '/alerts', label: 'Alertas' },
   { to: '/reports', label: 'Reportes' },
 ];
 
@@ -26,18 +25,23 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
   return (
     <div className="app-shell">
       <aside className="sidebar" aria-label="Navegacion principal">
-        <div className="brand">
-          <span className="brand-mark">P</span>
-          <div>
-            <strong>SICD Pinval</strong>
-            <span>Control de inventario</span>
+        <div className="sidebar-top">
+          <div className="brand">
+            <span className="brand-mark">PV</span>
+            <div className="brand-copy">
+              <p className="brand-tag">Pinval</p>
+              <strong>SICD Pinval</strong>
+              <span>Control de inventario</span>
+            </div>
           </div>
-        </div>
 
-        <div className="role-list" aria-label="Roles del sistema">
-          <span>Administracion</span>
-          <span>Control stock</span>
-          <span>Consulta</span>
+          <p className="sidebar-caption">Operacion interna</p>
+
+          <div className="role-list" aria-label="Roles del sistema">
+            <span>Administracion</span>
+            <span>Control stock</span>
+            <span>Consulta</span>
+          </div>
         </div>
 
         <nav className="side-nav">
@@ -51,21 +55,33 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
             </NavLink>
           ))}
         </nav>
+
+        <div className="sidebar-footer">
+          <strong>Pinval</strong>
+          <span>Sistema interno para inventario, compras y trazabilidad</span>
+        </div>
       </aside>
 
       <main className="content">
         <header className="page-header">
-          <div>
+          <div className="page-title-group">
             <p className="eyebrow">Sistema de inventario</p>
             <h1>{title}</h1>
             <p>{description}</p>
           </div>
-          <NavLink to="/login" className="secondary-action">
-            Cambiar usuario
-          </NavLink>
+          <div className="page-header-actions">
+            <div className="page-context-card" aria-label="Contexto de Pinval">
+              <span className="page-context-tag">Pinval</span>
+              <strong>SICD interno</strong>
+              <p>Operacion centralizada</p>
+            </div>
+            <NavLink to="/login" className="secondary-action">
+              Cambiar usuario
+            </NavLink>
+          </div>
         </header>
 
-        {children}
+        <section className="page-body">{children}</section>
       </main>
     </div>
   );

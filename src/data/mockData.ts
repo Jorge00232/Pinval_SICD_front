@@ -61,7 +61,10 @@ export type Product = {
 
 export type Supplier = {
   name: string;
-  contact: string;
+  identifier?: string;
+  contactName: string;
+  phone?: string;
+  email?: string;
   lastPurchase: string;
   totalPurchases: number;
 };

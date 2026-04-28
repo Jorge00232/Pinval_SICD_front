@@ -37,7 +37,9 @@ export type SaleInput = {
 
 export type InventoryContextValue = InventoryState & {
   addProduct: (product: Product) => void;
-  addSupplier: (supplier: Pick<Supplier, 'name' | 'contact'>) => void;
+  addSupplier: (
+    supplier: Pick<Supplier, 'name' | 'identifier' | 'contactName' | 'phone' | 'email'>,
+  ) => void;
   addCustomer: (
     customer: Pick<Customer, 'name' | 'contact' | 'customerType' | 'identifier'>,
   ) => void;

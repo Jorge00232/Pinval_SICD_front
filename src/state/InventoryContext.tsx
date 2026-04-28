@@ -10,6 +10,7 @@ import {
   type InventoryMovement,
   type Product,
   type ProductFamily,
+  type Supplier,
 } from '../data/mockData';
 import {
   InventoryContext,
@@ -49,6 +50,17 @@ type LegacyCustomer = Partial<{
   customerType: 'B2B' | 'B2C';
   lastPurchase: string;
   purchases: number;
+}>;
+
+type LegacySupplier = Partial<{
+  name: string;
+  contact: string;
+  identifier: string;
+  contactName: string;
+  phone: string;
+  email: string;
+  lastPurchase: string;
+  totalPurchases: number;
 }>;
 
 function normalizeFamily(value: unknown): ProductFamily {
@@ -120,6 +132,34 @@ function normalizeCustomer(customer: LegacyCustomer): Customer | null {
   };
 }
 
+function normalizeSupplier(supplier: LegacySupplier): Supplier | null {
+  const name = typeof supplier.name === 'string' ? supplier.name.trim() : '';
+
+  if (!name) {
+    return null;
+  }
+
+  const legacyContact =
+    typeof supplier.contact === 'string' ? supplier.contact.trim() : '';
+
+  return {
+    name,
+    identifier:
+      typeof supplier.identifier === 'string' ? supplier.identifier.trim() : '',
+    contactName:
+      typeof supplier.contactName === 'string'
+        ? supplier.contactName.trim()
+        : legacyContact,
+    phone: typeof supplier.phone === 'string' ? supplier.phone.trim() : '',
+    email: typeof supplier.email === 'string' ? supplier.email.trim() : '',
+    lastPurchase:
+      typeof supplier.lastPurchase === 'string'
+        ? supplier.lastPurchase
+        : 'Sin compras',
+    totalPurchases: Number(supplier.totalPurchases ?? 0),
+  };
+}
+
 function normalizeState(state: unknown): InventoryState {
   if (!state || typeof state !== 'object') {
     return emptyState;
@@ -128,6 +168,7 @@ function normalizeState(state: unknown): InventoryState {
   const candidate = state as Partial<InventoryState> & {
     products?: LegacyProduct[];
     customers?: LegacyCustomer[];
+    suppliers?: LegacySupplier[];
   };
 
   return {
@@ -136,7 +177,11 @@ function normalizeState(state: unknown): InventoryState {
           .map((product) => normalizeProduct(product))
           .filter((product): product is Product => product !== null)
       : [],
-    suppliers: Array.isArray(candidate.suppliers) ? candidate.suppliers : [],
+    suppliers: Array.isArray(candidate.suppliers)
+      ? candidate.suppliers
+          .map((supplier) => normalizeSupplier(supplier))
+          .filter((supplier): supplier is Supplier => supplier !== null)
+      : [],
     customers: Array.isArray(candidate.customers)
       ? candidate.customers
           .map((customer) => normalizeCustomer(customer))

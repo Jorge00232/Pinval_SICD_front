@@ -1,0 +1,16 @@
+https://nodejs.org/
+Node.js LTS
+verificar
+node -v
+npm -v
+
+abrir la terminal en 
+cd "RUTA\Pinval_SICD_front"
+
+instalar
+npm install
+& "C:\Program Files\nodejs\npm.cmd" install
+
+ejecutar
+npm run dev
+& "C:\Program Files\nodejs\npm.cmd" run dev

@@ -1,9 +1,11 @@
 import AppLayout from '../components/AppLayout';
 import { currencyFormatter, FAMILY_LABELS } from '../data/mockData';
 import { useInventory } from '../state/useInventory';
+import { useLanguage } from '../language/useLanguage';
 
 function Inventory() {
   const { products } = useInventory();
+  const { t } = useLanguage();
   const hasProducts = products.length > 0;
 
   const totalStock = products.reduce((sum, p) => sum + p.stock, 0);
@@ -13,49 +15,49 @@ function Inventory() {
 
   return (
     <AppLayout
-      title="Inventario"
-      description="Consulta el stock disponible y detecta quiebres antes de vender."
+      title={t('page.inventory.title')}
+      description={t('page.inventory.description')}
     >
       <section className="metric-grid compact inventory-metric-grid">
         <article className="metric-card">
-          <span>Stock actual</span>
-          <strong>{hasProducts ? totalStock.toLocaleString('es-CL') : 'Sin datos'}</strong>
-          <p>Unidades totales disponibles en inventario</p>
+          <span>{t('inventory.currentStock')}</span>
+          <strong>{hasProducts ? totalStock.toLocaleString('es-CL') : t('home.noData')}</strong>
+          <p>{t('inventory.currentStockDescription')}</p>
         </article>
         <article className="metric-card warning">
-          <span>Productos bajo stock mínimo</span>
-          <strong>{hasProducts ? lowStock.length : 'Sin datos'}</strong>
-          <p>Productos que requieren revisión o reposición</p>
+          <span>{t('inventory.lowStockProducts')}</span>
+          <strong>{hasProducts ? lowStock.length : t('home.noData')}</strong>
+          <p>{t('inventory.lowStockDescription')}</p>
         </article>
         <article className="metric-card">
-          <span>Costo total</span>
-          <strong>{hasProducts ? currencyFormatter.format(totalValCosto) : 'Sin datos'}</strong>
-          <p>Total calculado con precio costo</p>
+          <span>{t('inventory.totalCost')}</span>
+          <strong>{hasProducts ? currencyFormatter.format(totalValCosto) : t('home.noData')}</strong>
+          <p>{t('inventory.totalCostDescription')}</p>
         </article>
         <article className="metric-card">
-          <span>Valor aproximado venta</span>
-          <strong>{hasProducts ? currencyFormatter.format(totalValVenta) : 'Sin datos'}</strong>
-          <p>Total estimado según precio de venta</p>
+          <span>{t('inventory.estimatedSaleValue')}</span>
+          <strong>{hasProducts ? currencyFormatter.format(totalValVenta) : t('home.noData')}</strong>
+          <p>{t('inventory.estimatedSaleDescription')}</p>
         </article>
       </section>
 
       <section className="panel">
         <div className="panel-heading">
-          <h2>Stock por producto</h2>
-          <span>Actualizado hoy</span>
+          <h2>{t('inventory.stockByProduct')}</h2>
+          <span>{t('inventory.updatedToday')}</span>
         </div>
         <div className="table-wrap inventory-table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Código</th>
-                <th>Descripción</th>
-                <th>Familia</th>
-                <th>Stock actual</th>
-                <th>Stock mínimo</th>
-                <th>Estado</th>
-                <th>Precio costo</th>
-                <th>Valor a costo</th>
+                <th>{t('inventory.code')}</th>
+                <th>{t('inventory.description')}</th>
+                <th>{t('inventory.family')}</th>
+                <th>{t('inventory.currentStock')}</th>
+                <th>{t('inventory.minimumStock')}</th>
+                <th>{t('inventory.status')}</th>
+                <th>{t('inventory.costPrice')}</th>
+                <th>{t('inventory.costValue')}</th>
               </tr>
             </thead>
             <tbody>
@@ -74,10 +76,8 @@ function Inventory() {
                       <td className="numeric-cell">{product.stock}</td>
                       <td className="numeric-cell">{product.minStock}</td>
                       <td>
-                        <span
-                          className={`status ${needsRestock ? 'danger' : 'ok'}`}
-                        >
-                          {needsRestock ? 'Bajo mínimo' : 'En rango'}
+                        <span className={`status ${needsRestock ? 'danger' : 'ok'}`}>
+                          {needsRestock ? t('inventory.belowMinimum') : t('inventory.inRange')}
                         </span>
                       </td>
                       <td className="numeric-cell">{currencyFormatter.format(product.prcosto)}</td>
@@ -87,7 +87,7 @@ function Inventory() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={8}>Aún no hay productos cargados en inventario.</td>
+                  <td colSpan={8}>{t('inventory.noProducts')}</td>
                 </tr>
               )}
             </tbody>
@@ -99,4 +99,3 @@ function Inventory() {
 }
 
 export default Inventory;
-

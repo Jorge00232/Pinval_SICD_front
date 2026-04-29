@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import AppLayout from '../components/AppLayout';
 import { useInventory } from '../state/useInventory';
+import { useLanguage } from '../language/useLanguage';
 
 type PurchaseLine = {
   id: string;
@@ -18,6 +19,7 @@ function createPurchaseLine(codigo = ''): PurchaseLine {
 
 function Purchases() {
   const { movements, products, recordPurchase, suppliers } = useInventory();
+  const { t } = useLanguage();
   const canRegisterPurchase = products.length > 0 && suppliers.length > 0;
   const purchaseMovements = movements.filter(
     (movement) => movement.type === 'Entrada',
@@ -30,15 +32,15 @@ function Purchases() {
 
   return (
     <AppLayout
-      title="Compras"
-      description="Registra compras de Pinval a proveedores y consulta el historial que aumenta el inventario."
+      title={t('page.purchases.title')}
+      description={t('page.purchases.description')}
     >
       <section className="purchase-layout">
         <article className="panel purchase-form-panel">
           <div className="panel-heading">
-            <h2>Registrar compra</h2>
+            <h2>{t('purchases.registerPurchase')}</h2>
             <span className="purchase-counter">
-              {purchaseMovements.length} lineas registradas
+              {purchaseMovements.length} {t('purchases.linesRegistered')}
             </span>
           </div>
 
@@ -67,7 +69,7 @@ function Purchases() {
           >
             <div className="grid-form purchase-header-grid">
               <label>
-                Fecha
+                {t('purchases.date')}
                 <input
                   type="date"
                   value={purchaseDate}
@@ -77,7 +79,7 @@ function Purchases() {
               </label>
 
               <label>
-                Proveedor
+                {t('purchases.supplier')}
                 <select
                   value={selectedSupplier}
                   onChange={(event) => setSupplierName(event.target.value)}
@@ -91,17 +93,17 @@ function Purchases() {
                       </option>
                     ))
                   ) : (
-                    <option value="">Sin proveedores registrados</option>
+                    <option value="">{t('purchases.noSuppliers')}</option>
                   )}
                 </select>
               </label>
 
               <label className="purchase-document-field">
-                Numero de factura
+                {t('purchases.invoiceNumber')}
                 <input
                   value={documentNumber}
                   onChange={(event) => setDocumentNumber(event.target.value)}
-                  placeholder="Ej: 10234"
+                  placeholder={t('purchases.invoicePlaceholder')}
                   maxLength={40}
                   required
                 />
@@ -112,7 +114,7 @@ function Purchases() {
               {items.map((item, index) => (
                 <div key={item.id} className="purchase-item-row">
                   <label>
-                    Producto {index + 1}
+                    {`${t('purchases.product')} ${index + 1}`}
                     <select
                       value={item.codigo || products[0]?.codigo || ''}
                       onChange={(event) => {
@@ -133,13 +135,13 @@ function Purchases() {
                           </option>
                         ))
                       ) : (
-                        <option value="">Sin productos registrados</option>
+                        <option value="">{t('purchases.noProducts')}</option>
                       )}
                     </select>
                   </label>
 
                   <label>
-                    Cantidad
+                    {t('purchases.quantity')}
                     <input
                       type="number"
                       min="1"
@@ -173,7 +175,7 @@ function Purchases() {
                     }}
                     disabled={items.length === 1}
                   >
-                    Quitar
+                    {t('purchases.remove')}
                   </button>
                 </div>
               ))}
@@ -191,7 +193,7 @@ function Purchases() {
                 }
                 disabled={products.length === 0}
               >
-                + Agregar producto
+                {t('purchases.addProduct')}
               </button>
 
               <button
@@ -199,7 +201,7 @@ function Purchases() {
                 className="purchase-primary-button"
                 disabled={!canRegisterPurchase}
               >
-                Guardar compra
+                {t('purchases.savePurchase')}
               </button>
             </div>
           </form>
@@ -207,19 +209,21 @@ function Purchases() {
 
         <article className="panel purchase-history-panel">
           <div className="panel-heading">
-            <h2>Historial de compras</h2>
-            <span className="purchase-counter">{purchaseMovements.length} registros</span>
+            <h2>{t('purchases.history')}</h2>
+            <span className="purchase-counter">
+              {purchaseMovements.length} {t('purchases.records')}
+            </span>
           </div>
 
           <div className="table-wrap purchase-history-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Fecha</th>
-                  <th>Producto</th>
-                  <th>Cantidad</th>
-                  <th>Factura</th>
-                  <th>Proveedor</th>
+                  <th>{t('purchases.date')}</th>
+                  <th>{t('purchases.product')}</th>
+                  <th>{t('purchases.quantity')}</th>
+                  <th>{t('sales.invoice')}</th>
+                  <th>{t('purchases.supplier')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -242,8 +246,8 @@ function Purchases() {
                   <tr>
                     <td colSpan={5}>
                       {canRegisterPurchase
-                        ? 'Aun no hay compras registradas.'
-                        : 'Para registrar compras primero agrega proveedores y productos.'}
+                        ? t('purchases.noPurchases')
+                        : t('purchases.addSuppliersProductsFirst')}
                     </td>
                   </tr>
                 )}

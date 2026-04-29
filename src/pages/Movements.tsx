@@ -1,29 +1,43 @@
 import AppLayout from '../components/AppLayout';
 import { useInventory } from '../state/useInventory';
+import { useLanguage } from '../language/useLanguage';
 
 function Movements() {
   const { movements } = useInventory();
+  const { t } = useLanguage();
+
+  const getMovementTypeLabel = (type: string) => {
+    if (type === 'Entrada') {
+      return t('movements.entry');
+    }
+
+    if (type === 'Salida') {
+      return t('movements.exit');
+    }
+
+    return t('movements.adjustment');
+  };
 
   return (
     <AppLayout
-      title="Movimientos de inventario"
-      description="Trazabilidad completa de entradas, salidas, ajustes, usuarios y fechas."
+      title={t('page.movements.title')}
+      description={t('page.movements.description')}
     >
       <section className="panel">
         <div className="panel-heading">
-          <h2>Historial completo</h2>
-          <span>{movements.length} movimientos</span>
+          <h2>{t('movements.fullHistory')}</h2>
+          <span>{movements.length} {t('home.movements')}</span>
         </div>
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Tipo</th>
-                <th>Producto</th>
-                <th>Cantidad</th>
-                <th>Usuario</th>
-                <th>Fecha</th>
-                <th>Detalle</th>
+                <th>{t('movements.type')}</th>
+                <th>{t('movements.product')}</th>
+                <th>{t('movements.quantity')}</th>
+                <th>{t('movements.user')}</th>
+                <th>{t('movements.date')}</th>
+                <th>{t('movements.detail')}</th>
               </tr>
             </thead>
             <tbody>
@@ -36,7 +50,7 @@ function Movements() {
                           movement.type === 'Salida' ? 'danger' : 'ok'
                         }`}
                       >
-                        {movement.type}
+                        {getMovementTypeLabel(movement.type)}
                       </span>
                     </td>
                     <td>{movement.product}</td>
@@ -48,7 +62,7 @@ function Movements() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6}>No hay movimientos registrados.</td>
+                  <td colSpan={6}>{t('movements.noMovements')}</td>
                 </tr>
               )}
             </tbody>

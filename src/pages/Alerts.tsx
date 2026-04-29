@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
 import AppLayout from '../components/AppLayout';
 import { useInventory } from '../state/useInventory';
+import { useLanguage } from '../language/useLanguage';
 
 function Alerts() {
   const { products } = useInventory();
+  const { t } = useLanguage();
   const lowStock = products
     .filter((product) => product.stock <= product.minStock)
     .sort((a, b) => {
@@ -22,35 +24,35 @@ function Alerts() {
 
   return (
     <AppLayout
-      title="Alertas"
-      description="Productos que requieren reposicion o seguimiento inmediato."
+      title={t('page.alerts.title')}
+      description={t('page.alerts.description')}
     >
-      <section className="alerts-strip" aria-label="Resumen de alertas">
+      <section className="alerts-strip" aria-label={t('alerts.summaryLabel')}>
         <div className="alerts-strip-header">
-          <strong>Alertas</strong>
-          <span>{lowStock.length} activas</span>
+          <strong>{t('alerts.title')}</strong>
+          <span>{lowStock.length} {t('alerts.active')}</span>
         </div>
 
         <div className="alerts-summary-list single-row">
           <div>
             <strong>{criticalAlerts.length}</strong>
-            <span>Sin stock</span>
+            <span>{t('alerts.noStock')}</span>
           </div>
           <div>
             <strong>{warningAlerts.length}</strong>
-            <span>Por reponer</span>
+            <span>{t('alerts.restock')}</span>
           </div>
           <div>
-            <strong>{lowStock.length > 0 ? 'Revisar' : 'Sin pendientes'}</strong>
-            <span>Estado</span>
+            <strong>{lowStock.length > 0 ? t('alerts.review') : t('alerts.noPending')}</strong>
+            <span>{t('alerts.state')}</span>
           </div>
         </div>
       </section>
 
       <section className="panel">
         <div className="panel-heading">
-          <h2>Productos a revisar</h2>
-          <span>{lowStock.length} productos</span>
+          <h2>{t('alerts.productsToReview')}</h2>
+          <span>{lowStock.length} {t('alerts.products')}</span>
         </div>
 
         <div className="table-wrap alerts-table-wrap">
@@ -58,13 +60,13 @@ function Alerts() {
             <table>
               <thead>
                 <tr>
-                  <th>Prioridad</th>
-                  <th>Producto</th>
-                  <th>Codigo</th>
-                  <th>Stock actual</th>
-                  <th>Stock minimo</th>
-                  <th>Estado</th>
-                  <th>Accion</th>
+                  <th>{t('alerts.priority')}</th>
+                  <th>{t('alerts.product')}</th>
+                  <th>{t('alerts.code')}</th>
+                  <th>{t('alerts.currentStock')}</th>
+                  <th>{t('alerts.minimumStock')}</th>
+                  <th>{t('alerts.status')}</th>
+                  <th>{t('alerts.action')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -75,21 +77,21 @@ function Alerts() {
                     <tr key={product.codigo}>
                       <td>
                         <span className={`status ${isCritical ? 'danger' : 'ok'}`}>
-                          {isCritical ? 'Alta' : 'Media'}
+                          {isCritical ? t('alerts.high') : t('alerts.medium')}
                         </span>
                       </td>
                       <td className="alerts-product-cell">{product.descrip}</td>
                       <td className="code-cell">{product.codigo}</td>
                       <td>{product.stock}</td>
                       <td>{product.minStock}</td>
-                      <td>{isCritical ? 'Sin stock' : 'Bajo minimo'}</td>
+                      <td>{isCritical ? t('alerts.noStock') : t('alerts.belowMinimum')}</td>
                       <td>
                         <div className="table-actions">
                           <Link to="/inventory" className="ghost-button alert-action-link">
-                            Inventario
+                            {t('alerts.inventoryAction')}
                           </Link>
                           <Link to="/purchases" className="secondary-action">
-                            Comprar
+                            {t('alerts.buyAction')}
                           </Link>
                         </div>
                       </td>
@@ -99,11 +101,8 @@ function Alerts() {
               </tbody>
             </table>
           ) : (
-            <div className="empty-state">
-              No hay alertas activas. Cuando un producto quede bajo su minimo,
-              aparecera aqui.
-            </div>
-          )} 
+            <div className="empty-state">{t('alerts.noActive')}</div>
+          )}
         </div>
       </section>
     </AppLayout>

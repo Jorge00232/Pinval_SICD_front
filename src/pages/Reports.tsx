@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import AppLayout from '../components/AppLayout';
 import { FAMILY_LABELS, currencyFormatter } from '../data/mockData';
 import { useInventory } from '../state/useInventory';
+import { useLanguage } from '../language/useLanguage';
 
 type ReportType = 'general' | 'sales' | 'purchases' | 'inventory' | 'customers';
 type StockFilter = 'all' | 'low' | 'out';
@@ -21,12 +22,16 @@ type ParsedPurchase = {
 };
 
 function parseSaleDetail(detail: string): ParsedSale {
-  const [documentSection = '', customerSection = '', typeSection = '', identifierSection = ''] =
-    detail.split('|').map((part) => part.trim());
+  const [
+    documentSection = '',
+    customerSection = '',
+    typeSection = '',
+    identifierSection = '',
+  ] = detail.split('|').map((part) => part.trim());
   const documentTokens = documentSection.split(' ').filter(Boolean);
-  const documentType = documentTokens[0] ?? 'Documento';
-  const documentNumber = documentTokens.slice(1).join(' ') || 'Sin numero';
-  const customerName = customerSection.split(' - ').slice(1).join(' - ') || 'Sin cliente';
+  const documentType = documentTokens[0] ?? 'Document';
+  const documentNumber = documentTokens.slice(1).join(' ') || '-';
+  const customerName = customerSection.split(' - ').slice(1).join(' - ') || '-';
   const customerTypeText = typeSection.replace('Tipo:', '').trim();
   const identifier = identifierSection.replace('Id:', '').trim();
 
@@ -41,17 +46,17 @@ function parseSaleDetail(detail: string): ParsedSale {
 
 function parsePurchaseDetail(detail: string): ParsedPurchase {
   const purchaseText = detail.replace('Factura', '').trim();
-  const [documentNumber = 'Sin numero', supplierName = 'Sin proveedor'] =
-    purchaseText.split(' - ');
+  const [documentNumber = '-', supplierName = '-'] = purchaseText.split(' - ');
 
   return {
-    documentNumber: documentNumber.trim() || 'Sin numero',
-    supplierName: supplierName.trim() || 'Sin proveedor',
+    documentNumber: documentNumber.trim() || '-',
+    supplierName: supplierName.trim() || '-',
   };
 }
 
 function Reports() {
   const { movements, products, customers, suppliers } = useInventory();
+  const { t } = useLanguage();
   const [reportType, setReportType] = useState<ReportType>('general');
   const [stockFilter, setStockFilter] = useState<StockFilter>('all');
   const [customerFilter, setCustomerFilter] = useState<CustomerFilter>('all');
@@ -117,6 +122,16 @@ function Reports() {
     return products;
   }, [products, stockFilter]);
 
+  const filteredCustomers = useMemo(
+    () =>
+      customers.filter((customer) =>
+        customerFilter === 'all'
+          ? true
+          : customer.customerType === customerFilter,
+      ),
+    [customerFilter, customers],
+  );
+
   const totalStockCost = products.reduce(
     (total, product) => total + product.stock * product.prcosto,
     0,
@@ -141,61 +156,61 @@ function Reports() {
   ).size;
   const reportLabel =
     {
-      general: 'Resumen general',
-      sales: 'Ventas',
-      purchases: 'Compras',
-      inventory: 'Inventario',
-      customers: 'Clientes',
-    }[reportType] ?? 'Resumen general';
+      general: t('reports.general'),
+      sales: t('reports.sales'),
+      purchases: t('reports.purchases'),
+      inventory: t('reports.inventory'),
+      customers: t('reports.customers'),
+    }[reportType] ?? t('reports.general');
 
   return (
     <AppLayout
-      title="Reportes"
-      description="Consulta el tipo de reporte que necesitas y revisa su detalle."
+      title={t('page.reports.title')}
+      description={t('page.reports.description')}
     >
       <section className="panel">
         <div className="panel-heading">
-          <h2>Configuracion del reporte</h2>
+          <h2>{t('reports.config')}</h2>
           <span>{reportLabel}</span>
         </div>
 
         <div className="grid-form reports-filter-grid">
           <label>
-            Tipo de reporte
+            {t('reports.reportType')}
             <select
               value={reportType}
               onChange={(event) => setReportType(event.target.value as ReportType)}
             >
-              <option value="general">Resumen general</option>
-              <option value="sales">Ventas</option>
-              <option value="purchases">Compras</option>
-              <option value="inventory">Inventario</option>
-              <option value="customers">Clientes</option>
+              <option value="general">{t('reports.general')}</option>
+              <option value="sales">{t('reports.sales')}</option>
+              <option value="purchases">{t('reports.purchases')}</option>
+              <option value="inventory">{t('reports.inventory')}</option>
+              <option value="customers">{t('reports.customers')}</option>
             </select>
           </label>
 
           {reportType === 'inventory' ? (
             <label>
-              Estado de stock
+              {t('reports.stockStatus')}
               <select
                 value={stockFilter}
                 onChange={(event) => setStockFilter(event.target.value as StockFilter)}
               >
-                <option value="all">Todo el inventario</option>
-                <option value="low">Solo por reponer</option>
-                <option value="out">Solo sin stock</option>
+                <option value="all">{t('reports.fullInventory')}</option>
+                <option value="low">{t('reports.restockOnly')}</option>
+                <option value="out">{t('reports.outOfStockOnly')}</option>
               </select>
             </label>
           ) : null}
 
           {reportType === 'sales' || reportType === 'customers' ? (
             <label>
-              Tipo de cliente
+              {t('reports.customerType')}
               <select
                 value={customerFilter}
                 onChange={(event) => setCustomerFilter(event.target.value as CustomerFilter)}
               >
-                <option value="all">Todos</option>
+                <option value="all">{t('reports.all')}</option>
                 <option value="B2B">B2B</option>
                 <option value="B2C">B2C</option>
               </select>
@@ -208,66 +223,66 @@ function Reports() {
         <>
           <section className="metric-grid compact">
             <article className="metric-card success">
-              <span>Productos registrados</span>
-              <strong>{products.length || 'Sin datos'}</strong>
-              <p>Total de productos creados en el sistema.</p>
+              <span>{t('reports.productsRegistered')}</span>
+              <strong>{products.length || t('home.noData')}</strong>
+              <p>{t('reports.totalProducts')}</p>
             </article>
             <article className="metric-card accent">
-              <span>Ventas registradas</span>
-              <strong>{saleMovements.length || 'Sin datos'}</strong>
-              <p>Total de ventas guardadas hasta ahora.</p>
+              <span>{t('reports.salesRegistered')}</span>
+              <strong>{saleMovements.length || t('home.noData')}</strong>
+              <p>{t('reports.totalSales')}</p>
             </article>
             <article className="metric-card warning">
-              <span>Compras registradas</span>
-              <strong>{purchaseMovements.length || 'Sin datos'}</strong>
-              <p>Total de compras registradas en el sistema.</p>
+              <span>{t('reports.purchasesRegistered')}</span>
+              <strong>{purchaseMovements.length || t('home.noData')}</strong>
+              <p>{t('reports.totalPurchases')}</p>
             </article>
             <article className="metric-card">
-              <span>Alertas activas</span>
-              <strong>{lowStockProducts.length || 'Sin datos'}</strong>
-              <p>Productos que requieren revision de stock.</p>
+              <span>{t('reports.activeAlerts')}</span>
+              <strong>{lowStockProducts.length || t('home.noData')}</strong>
+              <p>{t('reports.stockReview')}</p>
             </article>
           </section>
 
           <section className="two-column">
             <article className="panel">
               <div className="panel-heading">
-                <h2>Resumen del inventario</h2>
-                <span>{products.length} productos</span>
+                <h2>{t('reports.inventorySummary')}</h2>
+                <span>{products.length} {t('alerts.products')}</span>
               </div>
               <div className="reports-kpi-list">
                 <div>
                   <strong>{currencyFormatter.format(totalStockCost)}</strong>
-                  <span>Costo total del stock</span>
+                  <span>{t('reports.totalStockCost')}</span>
                 </div>
                 <div>
                   <strong>{currencyFormatter.format(totalStockSale)}</strong>
-                  <span>Valor aproximado de venta</span>
+                  <span>{t('reports.approxSaleValue')}</span>
                 </div>
                 <div>
                   <strong>{lowStockProducts.length}</strong>
-                  <span>Productos por revisar</span>
+                  <span>{t('reports.productsToReview')}</span>
                 </div>
               </div>
             </article>
 
             <article className="panel">
               <div className="panel-heading">
-                <h2>Actividad registrada</h2>
-                <span>{movements.length} movimientos</span>
+                <h2>{t('reports.activity')}</h2>
+                <span>{movements.length} {t('home.movements')}</span>
               </div>
               <div className="reports-kpi-list">
                 <div>
                   <strong>{totalUnitsPurchased}</strong>
-                  <span>Unidades ingresadas</span>
+                  <span>{t('reports.unitsEntered')}</span>
                 </div>
                 <div>
                   <strong>{totalUnitsSold}</strong>
-                  <span>Unidades vendidas</span>
+                  <span>{t('reports.unitsSold')}</span>
                 </div>
                 <div>
                   <strong>{customers.length}</strong>
-                  <span>Clientes registrados</span>
+                  <span>{t('reports.customersRegistered')}</span>
                 </div>
               </div>
             </article>
@@ -279,26 +294,26 @@ function Reports() {
         <>
           <section className="metric-grid compact">
             <article className="metric-card success">
-              <span>Ventas registradas</span>
-              <strong>{filteredSalesRows.length || 'Sin datos'}</strong>
-              <p>Ventas encontradas con el filtro aplicado.</p>
+              <span>{t('reports.salesRegistered')}</span>
+              <strong>{filteredSalesRows.length || t('home.noData')}</strong>
+              <p>{t('reports.salesFound')}</p>
             </article>
             <article className="metric-card accent">
-              <span>Unidades vendidas</span>
-              <strong>{totalUnitsSold || 'Sin datos'}</strong>
-              <p>Total de unidades vendidas en este reporte.</p>
+              <span>{t('reports.unitsSold')}</span>
+              <strong>{totalUnitsSold || t('home.noData')}</strong>
+              <p>{t('reports.unitsSoldTotal')}</p>
             </article>
             <article className="metric-card">
-              <span>Clientes atendidos</span>
-              <strong>{uniqueSaleCustomers || 'Sin datos'}</strong>
-              <p>Cantidad de clientes distintos en las ventas.</p>
+              <span>{t('reports.servedCustomers')}</span>
+              <strong>{uniqueSaleCustomers || t('home.noData')}</strong>
+              <p>{t('reports.distinctCustomers')}</p>
             </article>
           </section>
 
           <section className="panel">
             <div className="panel-heading">
-              <h2>Detalle de ventas</h2>
-              <span>{filteredSalesRows.length} registros</span>
+              <h2>{t('reports.salesDetail')}</h2>
+              <span>{filteredSalesRows.length} {t('purchases.records')}</span>
             </div>
 
             <div className="table-wrap reports-table-wrap">
@@ -306,13 +321,13 @@ function Reports() {
                 <table>
                   <thead>
                     <tr>
-                      <th>Fecha</th>
-                      <th>Producto</th>
-                      <th>Cantidad</th>
-                      <th>Cliente</th>
-                      <th>Tipo</th>
-                      <th>Documento</th>
-                      <th>RUT / Id</th>
+                      <th>{t('purchases.date')}</th>
+                      <th>{t('sales.product')}</th>
+                      <th>{t('sales.quantity')}</th>
+                      <th>{t('page.customers.title')}</th>
+                      <th>{t('customers.type')}</th>
+                      <th>{t('sales.document')}</th>
+                      <th>{t('sales.identifier')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -324,15 +339,13 @@ function Reports() {
                         <td>{movement.customerName}</td>
                         <td>{movement.customerType}</td>
                         <td>{`${movement.documentType} ${movement.documentNumber}`}</td>
-                        <td>{movement.identifier || 'Sin dato'}</td>
+                        <td>{movement.identifier || t('reports.noValue')}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               ) : (
-                <div className="empty-state">
-                  No hay ventas registradas para el filtro actual.
-                </div>
+                <div className="empty-state">{t('reports.noSalesForFilter')}</div>
               )}
             </div>
           </section>
@@ -343,26 +356,26 @@ function Reports() {
         <>
           <section className="metric-grid compact">
             <article className="metric-card warning">
-              <span>Compras registradas</span>
-              <strong>{purchaseRows.length || 'Sin datos'}</strong>
-              <p>Compras encontradas en el sistema.</p>
+              <span>{t('reports.purchasesRegistered')}</span>
+              <strong>{purchaseRows.length || t('home.noData')}</strong>
+              <p>{t('reports.purchasesFound')}</p>
             </article>
             <article className="metric-card success">
-              <span>Unidades ingresadas</span>
-              <strong>{totalUnitsPurchased || 'Sin datos'}</strong>
-              <p>Total de unidades ingresadas por compras.</p>
+              <span>{t('reports.unitsEntered')}</span>
+              <strong>{totalUnitsPurchased || t('home.noData')}</strong>
+              <p>{t('reports.totalPurchasedUnits')}</p>
             </article>
             <article className="metric-card">
-              <span>Proveedores usados</span>
-              <strong>{uniqueSuppliers || 'Sin datos'}</strong>
-              <p>Proveedores distintos usados en las compras.</p>
+              <span>{t('reports.suppliersUsed')}</span>
+              <strong>{uniqueSuppliers || t('home.noData')}</strong>
+              <p>{t('reports.distinctSuppliers')}</p>
             </article>
           </section>
 
           <section className="panel">
             <div className="panel-heading">
-              <h2>Detalle de compras</h2>
-              <span>{purchaseRows.length} registros</span>
+              <h2>{t('reports.purchasesDetail')}</h2>
+              <span>{purchaseRows.length} {t('purchases.records')}</span>
             </div>
 
             <div className="table-wrap reports-table-wrap">
@@ -370,11 +383,11 @@ function Reports() {
                 <table>
                   <thead>
                     <tr>
-                      <th>Fecha</th>
-                      <th>Producto</th>
-                      <th>Cantidad</th>
-                      <th>Proveedor</th>
-                      <th>Factura</th>
+                      <th>{t('purchases.date')}</th>
+                      <th>{t('purchases.product')}</th>
+                      <th>{t('purchases.quantity')}</th>
+                      <th>{t('purchases.supplier')}</th>
+                      <th>{t('sales.invoice')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -390,9 +403,7 @@ function Reports() {
                   </tbody>
                 </table>
               ) : (
-                <div className="empty-state">
-                  No hay compras registradas todavia.
-                </div>
+                <div className="empty-state">{t('reports.noPurchasesYet')}</div>
               )}
             </div>
           </section>
@@ -403,26 +414,30 @@ function Reports() {
         <>
           <section className="metric-grid compact">
             <article className="metric-card">
-              <span>Productos mostrados</span>
-              <strong>{filteredInventoryRows.length || 'Sin datos'}</strong>
-              <p>Productos que coinciden con el filtro actual.</p>
+              <span>{t('reports.productsShown')}</span>
+              <strong>{filteredInventoryRows.length || t('home.noData')}</strong>
+              <p>{t('reports.matchesFilter')}</p>
             </article>
             <article className="metric-card warning">
-              <span>Por reponer</span>
-              <strong>{lowStockProducts.filter((product) => product.stock > 0).length || 'Sin datos'}</strong>
-              <p>Productos con poco stock, pero aun disponibles.</p>
+              <span>{t('alerts.restock')}</span>
+              <strong>
+                {lowStockProducts.filter((product) => product.stock > 0).length || t('home.noData')}
+              </strong>
+              <p>{t('reports.lowButAvailable')}</p>
             </article>
             <article className="metric-card accent">
-              <span>Sin stock</span>
-              <strong>{lowStockProducts.filter((product) => product.stock === 0).length || 'Sin datos'}</strong>
-              <p>Productos que ya no tienen unidades disponibles.</p>
+              <span>{t('reports.outOfStock')}</span>
+              <strong>
+                {lowStockProducts.filter((product) => product.stock === 0).length || t('home.noData')}
+              </strong>
+              <p>{t('reports.noUnitsAvailable')}</p>
             </article>
           </section>
 
           <section className="panel">
             <div className="panel-heading">
-              <h2>Detalle de inventario</h2>
-              <span>{filteredInventoryRows.length} productos</span>
+              <h2>{t('reports.inventoryDetail')}</h2>
+              <span>{filteredInventoryRows.length} {t('alerts.products')}</span>
             </div>
 
             <div className="table-wrap reports-table-wrap">
@@ -430,13 +445,13 @@ function Reports() {
                 <table>
                   <thead>
                     <tr>
-                      <th>Codigo</th>
-                      <th>Descripcion</th>
-                      <th>Familia</th>
-                      <th>Stock</th>
-                      <th>Minimo</th>
-                      <th>Precio costo</th>
-                      <th>Precio venta</th>
+                      <th>{t('inventory.code')}</th>
+                      <th>{t('inventory.description')}</th>
+                      <th>{t('inventory.family')}</th>
+                      <th>{t('products.stock')}</th>
+                      <th>{t('products.minimumStock')}</th>
+                      <th>{t('inventory.costPrice')}</th>
+                      <th>{t('products.salePrice')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -454,9 +469,7 @@ function Reports() {
                   </tbody>
                 </table>
               ) : (
-                <div className="empty-state">
-                  No hay productos que coincidan con el filtro seleccionado.
-                </div>
+                <div className="empty-state">{t('reports.noProductsForFilter')}</div>
               )}
             </div>
           </section>
@@ -467,68 +480,60 @@ function Reports() {
         <>
           <section className="metric-grid compact">
             <article className="metric-card success">
-              <span>Clientes registrados</span>
-              <strong>{customers.length || 'Sin datos'}</strong>
-              <p>Total de clientes guardados en el sistema.</p>
+              <span>{t('reports.customersRegistered')}</span>
+              <strong>{customers.length || t('home.noData')}</strong>
+              <p>{t('reports.customersStored')}</p>
             </article>
             <article className="metric-card">
-              <span>Clientes B2B</span>
-              <strong>{customers.filter((customer) => customer.customerType === 'B2B').length || 'Sin datos'}</strong>
-              <p>Clientes empresa registrados actualmente.</p>
+              <span>{t('reports.businessCustomers')}</span>
+              <strong>
+                {customers.filter((customer) => customer.customerType === 'B2B').length || t('home.noData')}
+              </strong>
+              <p>{t('reports.currentBusinessCustomers')}</p>
             </article>
             <article className="metric-card accent">
-              <span>Clientes B2C</span>
-              <strong>{customers.filter((customer) => customer.customerType === 'B2C').length || 'Sin datos'}</strong>
-              <p>Clientes finales registrados actualmente.</p>
+              <span>{t('reports.endCustomers')}</span>
+              <strong>
+                {customers.filter((customer) => customer.customerType === 'B2C').length || t('home.noData')}
+              </strong>
+              <p>{t('reports.currentEndCustomers')}</p>
             </article>
           </section>
 
           <section className="panel">
             <div className="panel-heading">
-              <h2>Detalle de clientes</h2>
-              <span>{customers.length} clientes</span>
+              <h2>{t('reports.customersDetail')}</h2>
+              <span>{customers.length} {t('page.customers.title').toLowerCase()}</span>
             </div>
 
             <div className="table-wrap reports-table-wrap">
-              {customers.filter((customer) =>
-                customerFilter === 'all'
-                  ? true
-                  : customer.customerType === customerFilter,
-              ).length > 0 ? (
+              {filteredCustomers.length > 0 ? (
                 <table>
                   <thead>
                     <tr>
-                      <th>Cliente</th>
-                      <th>Tipo</th>
-                      <th>RUT / Id</th>
-                      <th>Contacto</th>
-                      <th>Ultima compra</th>
-                      <th>Compras</th>
+                      <th>{t('page.customers.title')}</th>
+                      <th>{t('customers.type')}</th>
+                      <th>{t('customers.identifier')}</th>
+                      <th>{t('customers.contact')}</th>
+                      <th>{t('customers.lastPurchase')}</th>
+                      <th>{t('customers.purchases')}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {customers
-                      .filter((customer) =>
-                        customerFilter === 'all'
-                          ? true
-                          : customer.customerType === customerFilter,
-                      )
-                      .map((customer) => (
-                        <tr key={customer.name}>
-                          <td className="reports-primary-cell">{customer.name}</td>
-                          <td>{customer.customerType}</td>
-                          <td>{customer.identifier || 'Sin dato'}</td>
-                          <td>{customer.contact || 'Sin dato'}</td>
-                          <td>{customer.lastPurchase}</td>
-                          <td>{customer.purchases}</td>
-                        </tr>
-                      ))}
+                    {filteredCustomers.map((customer) => (
+                      <tr key={customer.name}>
+                        <td className="reports-primary-cell">{customer.name}</td>
+                        <td>{customer.customerType}</td>
+                        <td>{customer.identifier || t('reports.noValue')}</td>
+                        <td>{customer.contact || t('reports.noValue')}</td>
+                        <td>{customer.lastPurchase}</td>
+                        <td>{customer.purchases}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               ) : (
-                <div className="empty-state">
-                  No hay clientes para el filtro seleccionado.
-                </div>
+                <div className="empty-state">{t('reports.noCustomersForFilter')}</div>
               )}
             </div>
           </section>
@@ -537,14 +542,14 @@ function Reports() {
 
       <section className="panel">
         <div className="panel-heading">
-          <h2>Estado de base actual</h2>
-          <span>Datos disponibles</span>
+          <h2>{t('reports.currentDatabaseState')}</h2>
+          <span>{t('reports.availableData')}</span>
         </div>
         <ul className="check-list">
-          <li>Productos: {products.length}</li>
-          <li>Proveedores: {suppliers.length}</li>
-          <li>Clientes: {customers.length}</li>
-          <li>Movimientos: {movements.length}</li>
+          <li>{t('reports.productsRegistered')}: {products.length}</li>
+          <li>{t('page.suppliers.title')}: {suppliers.length}</li>
+          <li>{t('page.customers.title')}: {customers.length}</li>
+          <li>{t('nav.movements')}: {movements.length}</li>
         </ul>
       </section>
     </AppLayout>

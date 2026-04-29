@@ -1,10 +1,13 @@
 import AppLayout from '../components/AppLayout';
+import { useLanguage } from '../language/useLanguage';
 
 function DataQuality() {
+  const { t } = useLanguage();
+
   return (
     <AppLayout
-      title="Carga y calidad de datos"
-      description="Prepara la migracion desde Excel hacia una base de datos centralizada."
+      title={t('page.dataQuality.title')}
+      description={t('page.dataQuality.description')}
     >
       <section className="two-column">
         <article className="panel">

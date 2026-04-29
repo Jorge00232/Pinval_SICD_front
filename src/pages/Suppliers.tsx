@@ -1,19 +1,21 @@
 import AppLayout from '../components/AppLayout';
 import { useInventory } from '../state/useInventory';
+import { useLanguage } from '../language/useLanguage';
 
 function Suppliers() {
   const { addSupplier, suppliers } = useInventory();
+  const { t } = useLanguage();
 
   return (
     <AppLayout
-      title="Proveedores"
-      description="Registro de proveedores para compras, contacto comercial y seguimiento de abastecimiento."
+      title={t('page.suppliers.title')}
+      description={t('page.suppliers.description')}
     >
       <section className="products-layout">
         <article className="panel products-form-panel">
           <div className="panel-heading">
-            <h2>Nuevo proveedor</h2>
-            <span>{suppliers.length} registros</span>
+            <h2>{t('suppliers.newSupplier')}</h2>
+            <span>{suppliers.length} {t('suppliers.records')}</span>
           </div>
 
           <form
@@ -35,74 +37,74 @@ function Suppliers() {
             }}
           >
             <label>
-              Nombre proveedor
+              {t('suppliers.name')}
               <input
                 name="name"
-                placeholder="Ej: Distribuidora Central"
+                placeholder={t('suppliers.namePlaceholder')}
                 maxLength={120}
                 required
               />
             </label>
 
             <label>
-              RUT o identificador
+              {t('suppliers.identifier')}
               <input
                 name="identifier"
-                placeholder="Ej: 76.123.456-7"
+                placeholder={t('suppliers.identifierPlaceholder')}
                 maxLength={60}
               />
             </label>
 
             <label>
-              Persona de contacto
+              {t('suppliers.contactPerson')}
               <input
                 name="contactName"
-                placeholder="Ej: Marcela Soto"
+                placeholder={t('suppliers.contactPersonPlaceholder')}
                 maxLength={120}
                 required
               />
             </label>
 
             <label>
-              Telefono
+              {t('suppliers.phone')}
               <input
                 name="phone"
-                placeholder="Ej: +56 9 8765 4321"
+                placeholder={t('suppliers.phonePlaceholder')}
                 maxLength={40}
               />
             </label>
 
             <label>
-              Correo
+              {t('suppliers.email')}
               <input
                 name="email"
                 type="email"
-                placeholder="Ej: contacto@proveedor.cl"
+                placeholder={t('suppliers.emailPlaceholder')}
                 maxLength={120}
               />
             </label>
 
-            <button type="submit">Agregar proveedor</button>
+            <button type="submit">{t('suppliers.addSupplier')}</button>
           </form>
         </article>
 
         <article className="panel">
           <div className="panel-heading">
-            <h2>Lista de proveedores</h2>
-            <span>{suppliers.length} activos</span>
+            <h2>{t('suppliers.list')}</h2>
+            <span>{suppliers.length} {t('suppliers.active')}</span>
           </div>
 
           <div className="table-wrap products-table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Proveedor</th>
-                  <th>RUT / Id</th>
-                  <th>Contacto</th>
-                  <th>Telefono</th>
-                  <th>Correo</th>
-                  <th>Ultima compra</th>
-                  <th>Compras</th>
+                  <th>{t('page.suppliers.title')}</th>
+                  <th>{t('suppliers.identifier')}</th>
+                  <th>{t('suppliers.contactPerson')}</th>
+                  <th>{t('suppliers.phone')}</th>
+                  <th>{t('suppliers.email')}</th>
+                  <th>{t('suppliers.lastPurchase')}</th>
+                  <th>{t('suppliers.purchases')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -120,7 +122,7 @@ function Suppliers() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7}>Aun no hay proveedores registrados.</td>
+                    <td colSpan={7}>{t('suppliers.noSuppliers')}</td>
                   </tr>
                 )}
               </tbody>

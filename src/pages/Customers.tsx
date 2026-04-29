@@ -1,8 +1,10 @@
 import AppLayout from '../components/AppLayout';
 import { useInventory } from '../state/useInventory';
+import { useLanguage } from '../language/useLanguage';
 
 function Customers() {
   const { addCustomer, customers } = useInventory();
+  const { t } = useLanguage();
   const totalB2B = customers.filter(
     (customer) => customer.customerType === 'B2B',
   ).length;
@@ -12,14 +14,14 @@ function Customers() {
 
   return (
     <AppLayout
-      title="Clientes"
-      description="Registro de clientes para ventas y seguimiento comercial, con foco principal en clientes B2B."
+      title={t('page.customers.title')}
+      description={t('page.customers.description')}
     >
       <section className="products-layout">
         <article className="panel products-form-panel">
           <div className="panel-heading">
-            <h2>Nuevo cliente</h2>
-            <span>{customers.length} registros</span>
+            <h2>{t('customers.newCustomer')}</h2>
+            <span>{customers.length} {t('customers.records')}</span>
           </div>
 
           <form
@@ -40,17 +42,17 @@ function Customers() {
             }}
           >
             <label>
-              Nombre o razon social
+              {t('customers.name')}
               <input
                 name="name"
-                placeholder="Ej: Empresa B"
+                placeholder={t('customers.namePlaceholder')}
                 maxLength={120}
                 required
               />
             </label>
 
             <label>
-              Tipo de cliente
+              {t('customers.type')}
               <select name="customerType" defaultValue="B2B" required>
                 <option value="B2B">B2B</option>
                 <option value="B2C">B2C</option>
@@ -58,31 +60,31 @@ function Customers() {
             </label>
 
             <label>
-              RUT o identificador
+              {t('customers.identifier')}
               <input
                 name="identifier"
-                placeholder="Ej: 76.123.456-7"
+                placeholder={t('customers.identifierPlaceholder')}
                 maxLength={60}
               />
             </label>
 
             <label>
-              Contacto
+              {t('customers.contact')}
               <input
                 name="contact"
-                placeholder="Telefono, correo o referencia comercial"
+                placeholder={t('customers.contactPlaceholder')}
                 maxLength={120}
                 required
               />
             </label>
 
-            <button type="submit">Agregar cliente</button>
+            <button type="submit">{t('customers.addCustomer')}</button>
           </form>
         </article>
 
         <article className="panel">
           <div className="panel-heading">
-            <h2>Registro de clientes</h2>
+            <h2>{t('customers.registry')}</h2>
             <span>
               {totalB2B} B2B / {totalB2C} B2C
             </span>
@@ -92,12 +94,12 @@ function Customers() {
             <table>
               <thead>
                 <tr>
-                  <th>Cliente</th>
-                  <th>Tipo</th>
-                  <th>RUT / Id</th>
-                  <th>Contacto</th>
-                  <th>Ultima compra</th>
-                  <th>Compras</th>
+                  <th>{t('page.customers.title')}</th>
+                  <th>{t('customers.type')}</th>
+                  <th>{t('customers.identifier')}</th>
+                  <th>{t('customers.contact')}</th>
+                  <th>{t('customers.lastPurchase')}</th>
+                  <th>{t('customers.purchases')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -122,7 +124,7 @@ function Customers() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6}>Aun no hay clientes registrados.</td>
+                    <td colSpan={6}>{t('customers.noCustomers')}</td>
                   </tr>
                 )}
               </tbody>

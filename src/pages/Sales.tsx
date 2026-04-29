@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import AppLayout from '../components/AppLayout';
 import { useInventory } from '../state/useInventory';
+import { useLanguage } from '../language/useLanguage';
 
 type SaleLine = {
   id: string;
@@ -19,7 +20,7 @@ function createSaleLine(codigo = ''): SaleLine {
 function parseSaleDetail(detail: string) {
   const [documentPart, metadataPart = ''] = detail.split(' - ');
   const metadataSections = metadataPart.split(' | ');
-  const customer = metadataSections[0] || 'Sin cliente';
+  const customer = metadataSections[0] || '-';
   const typeSection = metadataSections.find((section) =>
     section.startsWith('Tipo: '),
   );
@@ -30,13 +31,14 @@ function parseSaleDetail(detail: string) {
   return {
     document: documentPart,
     customer,
-    customerType: typeSection?.replace('Tipo: ', '') ?? 'Sin tipo',
+    customerType: typeSection?.replace('Tipo: ', '') ?? '-',
     identifier: identifierSection?.replace('Id: ', '') ?? '-',
   };
 }
 
 function Sales() {
   const { customers, movements, products, recordSale } = useInventory();
+  const { t } = useLanguage();
   const canRegisterSale = products.length > 0;
   const saleMovements = movements.filter((movement) => movement.type === 'Salida');
   const [customerName, setCustomerName] = useState('B2C');
@@ -45,10 +47,7 @@ function Sales() {
   const [documentNumber, setDocumentNumber] = useState('');
   const [items, setItems] = useState<SaleLine[]>([createSaleLine()]);
 
-  const genericCustomerOptions = useMemo(
-    () => ['B2C', 'B2B'],
-    [],
-  );
+  const genericCustomerOptions = useMemo(() => ['B2C', 'B2B'], []);
   const registeredCustomerOptions = useMemo(
     () => customers.map((customer) => customer.name),
     [customers],
@@ -68,15 +67,15 @@ function Sales() {
 
   return (
     <AppLayout
-      title="Ventas"
-      description="Registra boletas o facturas del sistema actual para reflejar la salida de productos en inventario."
+      title={t('page.sales.title')}
+      description={t('page.sales.description')}
     >
       <section className="purchase-layout">
         <article className="panel purchase-form-panel">
           <div className="panel-heading">
-            <h2>Registrar venta</h2>
+            <h2>{t('sales.registerSale')}</h2>
             <span className="purchase-counter">
-              {saleMovements.length} lineas registradas
+              {saleMovements.length} {t('sales.linesRegistered')}
             </span>
           </div>
 
@@ -108,12 +107,12 @@ function Sales() {
           >
             <div className="grid-form purchase-header-grid">
               <label>
-                Cliente o tipo de cliente
+                {t('sales.customerOrType')}
                 <select
                   value={selectedCustomer}
                   onChange={(event) => setCustomerName(event.target.value)}
                 >
-                  <optgroup label="Tipo de cliente">
+                  <optgroup label={t('sales.customerTypeGroup')}>
                     {genericCustomerOptions.map((option) => (
                       <option key={option} value={option}>
                         {option}
@@ -121,7 +120,7 @@ function Sales() {
                     ))}
                   </optgroup>
                   {registeredCustomerOptions.length > 0 ? (
-                    <optgroup label="Clientes registrados">
+                    <optgroup label={t('sales.registeredCustomersGroup')}>
                       {registeredCustomerOptions.map((option) => (
                         <option key={option} value={option}>
                           {option}
@@ -133,36 +132,36 @@ function Sales() {
               </label>
 
               <label>
-                Documento
+                {t('sales.document')}
                 <select
                   value={documentType}
                   onChange={(event) => setDocumentType(event.target.value)}
                 >
-                  <option value="Boleta">Boleta</option>
-                  <option value="Factura">Factura</option>
+                  <option value="Boleta">{t('sales.receipt')}</option>
+                  <option value="Factura">{t('sales.invoice')}</option>
                 </select>
               </label>
 
               <label className="purchase-document-field">
-                RUT o identificador
+                {t('sales.identifier')}
                 <input
                   value={customerIdentifier}
                   onChange={(event) => setCustomerIdentifier(event.target.value)}
                   placeholder={
                     selectedRegisteredCustomer?.identifier ||
                     selectedRegisteredCustomer?.contact ||
-                    'Ej: 76.123.456-7'
+                    t('sales.identifierPlaceholder')
                   }
                   maxLength={60}
                 />
               </label>
 
               <label className="purchase-document-field">
-                Numero de documento
+                {t('sales.documentNumber')}
                 <input
                   value={documentNumber}
                   onChange={(event) => setDocumentNumber(event.target.value)}
-                  placeholder="Ej: 30518"
+                  placeholder={t('sales.documentPlaceholder')}
                   maxLength={40}
                   required
                 />
@@ -173,7 +172,7 @@ function Sales() {
               {items.map((item, index) => (
                 <div key={item.id} className="purchase-item-row">
                   <label>
-                    Producto {index + 1}
+                    {`${t('sales.product')} ${index + 1}`}
                     <select
                       value={item.codigo || products[0]?.codigo || ''}
                       onChange={(event) => {
@@ -194,13 +193,13 @@ function Sales() {
                           </option>
                         ))
                       ) : (
-                        <option value="">Sin productos registrados</option>
+                        <option value="">{t('sales.noProducts')}</option>
                       )}
                     </select>
                   </label>
 
                   <label>
-                    Cantidad
+                    {t('sales.quantity')}
                     <input
                       type="number"
                       min="1"
@@ -234,7 +233,7 @@ function Sales() {
                     }}
                     disabled={items.length === 1}
                   >
-                    Quitar
+                    {t('sales.remove')}
                   </button>
                 </div>
               ))}
@@ -252,7 +251,7 @@ function Sales() {
                 }
                 disabled={products.length === 0}
               >
-                + Agregar producto
+                {t('sales.addProduct')}
               </button>
 
               <button
@@ -260,7 +259,7 @@ function Sales() {
                 className="purchase-primary-button"
                 disabled={!canRegisterSale}
               >
-                Registrar venta
+                {t('sales.saveSale')}
               </button>
             </div>
           </form>
@@ -268,21 +267,23 @@ function Sales() {
 
         <article className="panel purchase-history-panel">
           <div className="panel-heading">
-            <h2>Ventas registradas</h2>
-            <span className="purchase-counter">{saleMovements.length} registros</span>
+            <h2>{t('sales.registeredSales')}</h2>
+            <span className="purchase-counter">
+              {saleMovements.length} {t('purchases.records')}
+            </span>
           </div>
 
           <div className="table-wrap purchase-history-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Fecha</th>
-                  <th>Producto</th>
-                  <th>Cantidad</th>
-                  <th>Documento</th>
-                  <th>Cliente</th>
-                  <th>Tipo</th>
-                  <th>RUT / Id</th>
+                  <th>{t('purchases.date')}</th>
+                  <th>{t('sales.product')}</th>
+                  <th>{t('sales.quantity')}</th>
+                  <th>{t('sales.document')}</th>
+                  <th>{t('page.customers.title')}</th>
+                  <th>{t('customers.type')}</th>
+                  <th>{t('sales.identifier')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -306,8 +307,8 @@ function Sales() {
                   <tr>
                     <td colSpan={7}>
                       {canRegisterSale
-                        ? 'Aun no hay ventas registradas desde POS.'
-                        : 'Para registrar ventas primero agrega productos.'}
+                        ? t('sales.noSales')
+                        : t('sales.addProductsFirst')}
                     </td>
                   </tr>
                 )}

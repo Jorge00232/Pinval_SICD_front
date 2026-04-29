@@ -6,30 +6,38 @@ import {
   type ProductFamily,
 } from '../data/mockData';
 import { useInventory } from '../state/useInventory';
+import { useLanguage } from '../language/useLanguage';
 
 const BASE_FAMILIES = Object.keys(FAMILY_LABELS) as ProductFamily[];
 
 function Products() {
   const { addProduct, products } = useInventory();
+  const { t } = useLanguage();
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [newCategory, setNewCategory] = useState('');
   const [customCategories, setCustomCategories] = useState<ProductFamily[]>([]);
   const families = useMemo(
     () =>
-      [...new Set([...BASE_FAMILIES, ...customCategories, ...products.map((product) => product.familia)])],
+      [
+        ...new Set([
+          ...BASE_FAMILIES,
+          ...customCategories,
+          ...products.map((product) => product.familia),
+        ]),
+      ],
     [customCategories, products],
   );
 
   return (
     <AppLayout
-      title="Productos"
-      description="Catálogo alineado a codigo, descrip, familia, stock, prventa y prcosto."
+      title={t('page.products.title')}
+      description={t('page.products.description')}
     >
       <section className="products-layout">
         <article className="panel products-form-panel">
           <div className="panel-heading">
-            <h2>Nuevo producto</h2>
-            <span>{products.length} registros</span>
+            <h2>{t('products.newProduct')}</h2>
+            <span>{products.length} {t('products.records')}</span>
           </div>
           <form
             className="grid-form products-form"
@@ -52,28 +60,28 @@ function Products() {
             }}
           >
             <label>
-              Código
+              {t('products.code')}
               <input
                 name="codigo"
-                placeholder="Ej: 001104"
+                placeholder={t('products.codePlaceholder')}
                 maxLength={20}
                 required
               />
             </label>
             <label>
-              Descripción
+              {t('products.description')}
               <input
                 name="descrip"
-                placeholder="Nombre del producto"
+                placeholder={t('products.descriptionPlaceholder')}
                 required
               />
             </label>
             <label>
-              Categoría
+              {t('products.category')}
               <div className="select-with-action">
                 <select name="familia" required defaultValue="">
                   <option value="" disabled>
-                    Seleccione categoría
+                    {t('products.selectCategory')}
                   </option>
                   {families.map((family) => (
                     <option key={family} value={family}>
@@ -86,72 +94,72 @@ function Products() {
                   className="ghost-button"
                   onClick={() => setIsCategoryModalOpen(true)}
                 >
-                  Nueva categoría
+                  {t('products.newCategory')}
                 </button>
               </div>
             </label>
             <label>
-              Precio costo
+              {t('products.costPrice')}
               <input
                 name="prcosto"
                 type="number"
                 min="0"
-                placeholder="Costo unitario"
+                placeholder={t('products.costPlaceholder')}
                 required
               />
             </label>
             <label>
-              Precio venta
+              {t('products.salePrice')}
               <input
                 name="prventa"
                 type="number"
                 min="0"
-                placeholder="Precio de venta"
+                placeholder={t('products.salePlaceholder')}
                 required
               />
             </label>
             <label>
-              Stock
+              {t('products.stock')}
               <input
                 name="stock"
                 type="number"
                 min="0"
-                placeholder="Unidades"
+                placeholder={t('products.stockPlaceholder')}
                 required
               />
             </label>
             <label>
-              Stock mínimo
+              {t('products.minimumStock')}
               <input
                 name="minStock"
                 type="number"
                 min="0"
-                placeholder="Stock mínimo"
+                placeholder={t('products.minimumStockPlaceholder')}
                 required
               />
             </label>
-            <button type="submit">Agregar producto</button>
+            <button type="submit">{t('products.addProduct')}</button>
           </form>
         </article>
 
         <article className="panel">
           <div className="panel-heading">
-            <h2>Catálogo</h2>
-            <span>{products.length} productos</span>
+            <h2>{t('products.catalog')}</h2>
+            <span>{products.length} {t('products.productsCount')}</span>
           </div>
           <div className="table-wrap products-table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Código</th>
-                  <th>Descripción</th>
-                  <th>Familia</th>
-                  <th>Stock</th>
-                  <th>Pr. costo</th>
-                  <th>Pr. venta</th>
-                  <th>Val. costo</th>
-                  <th>Val. venta</th>
-                  <th>Stock mínimo</th>
+                  <th>{t('products.code')}</th>
+                  <th>{t('products.description')}</th>
+                  <th>{t('inventory.family')}</th>
+                  <th>{t('products.stock')}</th>
+                  <th>{t('products.costPrice')}</th>
+                  <th>{t('products.salePrice')}</th>
+                  <th>{t('products.costValue')}</th>
+                  <th>{t('products.saleValue')}</th>
+                  <th>{t('products.minimumStock')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -186,7 +194,7 @@ function Products() {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={9}>No hay productos registrados.</td>
+                    <td colSpan={9}>{t('products.noProducts')}</td>
                   </tr>
                 )}
               </tbody>
@@ -209,13 +217,13 @@ function Products() {
             onClick={(event) => event.stopPropagation()}
           >
             <div className="panel-heading">
-              <h2 id="new-category-title">Nueva categoría</h2>
+              <h2 id="new-category-title">{t('products.newCategory')}</h2>
               <button
                 type="button"
                 className="ghost-button"
                 onClick={() => setIsCategoryModalOpen(false)}
               >
-                Cerrar
+                {t('products.close')}
               </button>
             </div>
             <form
@@ -245,16 +253,16 @@ function Products() {
               }}
             >
               <label>
-                Nombre categoría
+                {t('products.categoryName')}
                 <input
                   value={newCategory}
                   onChange={(event) => setNewCategory(event.target.value)}
-                  placeholder="Ej: Cuidado personal"
+                  placeholder={t('products.categoryNamePlaceholder')}
                   maxLength={60}
                   required
                 />
               </label>
-              <button type="submit">Guardar categoría</button>
+              <button type="submit">{t('products.saveCategory')}</button>
             </form>
           </section>
         </div>

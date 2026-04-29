@@ -17,6 +17,7 @@ import {
   type InventoryContextValue,
   type InventoryState,
 } from './inventoryStore';
+import { fetchProducts } from '../api/productsApi';
 
 const storageKey = 'sicd-inventory-state-v1';
 
@@ -216,8 +217,44 @@ function getMovementId() {
   return `${Date.now()}-${crypto.randomUUID()}`;
 }
 
+function mergeProducts(currentProducts: Product[], backendProducts: Product[]) {
+  const backendCodes = new Set(
+    backendProducts.map((product) => product.codigo.toLowerCase()),
+  );
+
+  return [
+    ...backendProducts,
+    ...currentProducts.filter(
+      (product) => !backendCodes.has(product.codigo.toLowerCase()),
+    ),
+  ];
+}
+
 export function InventoryProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<InventoryState>(getInitialState);
+
+  useEffect(() => {
+    let isActive = true;
+
+    fetchProducts()
+      .then((backendProducts) => {
+        if (!isActive || backendProducts.length === 0) {
+          return;
+        }
+
+        setState((current) => ({
+          ...current,
+          products: mergeProducts(current.products, backendProducts),
+        }));
+      })
+      .catch(() => {
+        // El frontend puede seguir operando con datos locales si la API no esta levantada.
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   useEffect(() => {
     window.localStorage.setItem(storageKey, JSON.stringify(state));

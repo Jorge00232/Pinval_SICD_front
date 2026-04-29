@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { getTranslation } from './languageDictionary';
 import {
   LanguageContext,
@@ -20,12 +20,16 @@ function getInitialLanguage(): LanguageCode {
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<LanguageCode>(getInitialLanguage);
 
+  useEffect(() => {
+    window.localStorage.setItem(storageKey, language);
+    document.documentElement.lang = language;
+  }, [language]);
+
   const value = useMemo<LanguageContextValue>(
     () => ({
       language,
       setLanguage(nextLanguage) {
         setLanguageState(nextLanguage);
-        window.localStorage.setItem(storageKey, nextLanguage);
       },
       t(key) {
         return getTranslation(language, key);

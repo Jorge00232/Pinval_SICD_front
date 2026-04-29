@@ -12,48 +12,46 @@ function DataQuality() {
       <section className="two-column">
         <article className="panel">
           <div className="panel-heading">
-            <h2>Cargar archivo</h2>
-            <span>Excel actual</span>
+            <h2>{t('dataQuality.uploadFile')}</h2>
+            <span>{t('dataQuality.currentExcel')}</span>
           </div>
           <form className="grid-form" onSubmit={(event) => event.preventDefault()}>
             <label>
-              Tipo de informacion
+              {t('dataQuality.sourceType')}
               <select name="sourceType">
-                <option>Inventario</option>
-                <option>Productos</option>
-                <option>Ventas</option>
+                <option>{t('nav.inventory')}</option>
+                <option>{t('nav.products')}</option>
+                <option>{t('nav.sales')}</option>
               </select>
             </label>
             <label>
-              Archivo
+              {t('dataQuality.file')}
               <input name="file" type="file" accept=".xlsx,.xls,.csv" />
             </label>
-            <button type="submit">Validar archivo</button>
+            <button type="submit">{t('dataQuality.validateFile')}</button>
           </form>
         </article>
 
         <article className="panel">
           <div className="panel-heading">
-            <h2>Validaciones requeridas</h2>
-            <span>Gobernanza</span>
+            <h2>{t('dataQuality.requiredValidations')}</h2>
+            <span>{t('dataQuality.governance')}</span>
           </div>
           <ul className="check-list">
-            <li>Detectar productos duplicados.</li>
-            <li>Validar campos obligatorios como SKU, nombre y stock.</li>
-            <li>Revisar valores vacios o inconsistentes.</li>
-            <li>Registrar fecha, usuario y origen de la carga.</li>
+            <li>{t('dataQuality.validation1')}</li>
+            <li>{t('dataQuality.validation2')}</li>
+            <li>{t('dataQuality.validation3')}</li>
+            <li>{t('dataQuality.validation4')}</li>
           </ul>
         </article>
       </section>
 
       <section className="panel">
         <div className="panel-heading">
-          <h2>Resultado de validacion</h2>
-          <span>Sin archivo cargado</span>
+          <h2>{t('dataQuality.validationResult')}</h2>
+          <span>{t('dataQuality.noLoadedFile')}</span>
         </div>
-        <div className="empty-state">
-          Aun no se ha cargado un archivo real de Pinval para validar.
-        </div>
+        <div className="empty-state">{t('dataQuality.emptyState')}</div>
       </section>
     </AppLayout>
   );

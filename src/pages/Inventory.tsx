@@ -1,7 +1,11 @@
 import AppLayout from '../components/AppLayout';
-import { currencyFormatter, FAMILY_LABELS } from '../data/mockData';
+import { currencyFormatter, FAMILY_LABELS, type Product } from '../data/mockData';
 import { useInventory } from '../state/useInventory';
 import { useLanguage } from '../language/useLanguage';
+
+function requiresAdjustment(product: Product) {
+  return product.dataIssue === 'STOCK_NEGATIVO';
+}
 
 function Inventory() {
   const { products } = useInventory();
@@ -11,7 +15,9 @@ function Inventory() {
   const totalStock = products.reduce((sum, p) => sum + p.stock, 0);
   const totalValCosto = products.reduce((sum, p) => sum + p.stock * p.prcosto, 0);
   const totalValVenta = products.reduce((sum, p) => sum + p.stock * p.prventa, 0);
-  const lowStock = products.filter((p) => p.stock <= p.minStock);
+  const productsToReview = products.filter(
+    (p) => requiresAdjustment(p) || p.stock <= p.minStock,
+  );
 
   return (
     <AppLayout
@@ -26,7 +32,7 @@ function Inventory() {
         </article>
         <article className="metric-card warning">
           <span>{t('inventory.lowStockProducts')}</span>
-          <strong>{hasProducts ? lowStock.length : t('home.noData')}</strong>
+          <strong>{hasProducts ? productsToReview.length : t('home.noData')}</strong>
           <p>{t('inventory.lowStockDescription')}</p>
         </article>
         <article className="metric-card">
@@ -63,8 +69,18 @@ function Inventory() {
             <tbody>
               {products.length > 0 ? (
                 products.map((product) => {
-                  const needsRestock = product.stock <= product.minStock;
+                  const needsAdjustment = requiresAdjustment(product);
+                  const hasNoStock = !needsAdjustment && product.stock === 0;
+                  const needsRestock =
+                    !needsAdjustment && product.stock > 0 && product.stock <= product.minStock;
                   const sbtot = product.stock * product.prcosto;
+                  const statusLabel = needsAdjustment
+                    ? t('inventory.requiresAdjustment')
+                    : hasNoStock
+                      ? t('inventory.noStock')
+                      : needsRestock
+                        ? t('inventory.belowMinimum')
+                        : t('inventory.inRange');
 
                   return (
                     <tr key={product.codigo}>
@@ -73,11 +89,22 @@ function Inventory() {
                       <td className="inventory-family-cell">
                         {FAMILY_LABELS[product.familia] ?? product.familia}
                       </td>
-                      <td className="numeric-cell">{product.stock}</td>
+                      <td className="numeric-cell">
+                        {product.stock}
+                        {needsAdjustment ? (
+                          <span className="stock-note">
+                            {t('inventory.originalStock')}: {product.stockOriginal}
+                          </span>
+                        ) : null}
+                      </td>
                       <td className="numeric-cell">{product.minStock}</td>
                       <td>
-                        <span className={`status ${needsRestock ? 'danger' : 'ok'}`}>
-                          {needsRestock ? t('inventory.belowMinimum') : t('inventory.inRange')}
+                        <span
+                          className={`status ${
+                            needsAdjustment || hasNoStock || needsRestock ? 'danger' : 'ok'
+                          }`}
+                        >
+                          {statusLabel}
                         </span>
                       </td>
                       <td className="numeric-cell">{currencyFormatter.format(product.prcosto)}</td>

@@ -637,6 +637,14 @@ button:disabled:hover {
   color: #a24c43;
 }
 
+.stock-note {
+  display: block;
+  margin-top: 4px;
+  color: #6d7a76;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .customer-type-badge {
   display: inline-flex;
   padding: 6px 10px;
@@ -1437,6 +1445,10 @@ body.theme-dark .status.ok {
 body.theme-dark .status.danger {
   background: #35211f;
   color: #efada6;
+}
+
+body.theme-dark .stock-note {
+  color: #9fb1ac;
 }
 
 body.theme-dark .customer-type-badge.b2b {

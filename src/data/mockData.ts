@@ -46,6 +46,10 @@ export type Product = {
   prventa: number;
   /** Stock actual en unidades (= columna "stock") */
   stock: number;
+  /** Stock original recibido desde la fuente manual, antes de normalizarlo. */
+  stockOriginal?: number;
+  /** Marca de calidad cuando el dato de origen requiere revision operativa. */
+  dataIssue?: 'STOCK_NEGATIVO' | null;
   /**
    * Stock mínimo antes de alertar quiebre.
    * Campo de gestión interna — no tiene equivalente en los CSV,

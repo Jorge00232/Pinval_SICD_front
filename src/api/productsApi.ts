@@ -7,6 +7,8 @@ type ApiProduct = Partial<{
   descrip: string;
   familia: string;
   stock: number | string;
+  stockOriginal: number | string;
+  dataIssue: 'STOCK_NEGATIVO' | null;
   prcosto: number | string;
   prventa: number | string;
   minStock: number | string;
@@ -30,6 +32,11 @@ function normalizeApiProduct(product: ApiProduct): Product | null {
     descrip,
     familia: (product.familia || 'NO TIENE') as ProductFamily,
     stock: toNumber(product.stock),
+    stockOriginal:
+      product.stockOriginal === undefined
+        ? toNumber(product.stock)
+        : toNumber(product.stockOriginal),
+    dataIssue: product.dataIssue === 'STOCK_NEGATIVO' ? 'STOCK_NEGATIVO' : null,
     prcosto: toNumber(product.prcosto),
     prventa: toNumber(product.prventa),
     minStock: toNumber(product.minStock),

@@ -41,6 +41,8 @@ type LegacyProduct = Partial<{
   familia: string;
   prcosto: number;
   prventa: number;
+  stockOriginal: number;
+  dataIssue: 'STOCK_NEGATIVO' | null;
   salesHistory: number[];
 }>;
 
@@ -103,6 +105,11 @@ function normalizeProduct(product: LegacyProduct): Product | null {
         ? product.prventa
         : Number(product.salePrice ?? 0),
     stock: Number(product.stock ?? 0),
+    stockOriginal:
+      typeof product.stockOriginal === 'number'
+        ? product.stockOriginal
+        : Number(product.stock ?? 0),
+    dataIssue: product.dataIssue === 'STOCK_NEGATIVO' ? 'STOCK_NEGATIVO' : null,
     minStock: Number(product.minStock ?? 0),
     salesHistory: Array.isArray(product.salesHistory)
       ? product.salesHistory.filter((value): value is number => typeof value === 'number')

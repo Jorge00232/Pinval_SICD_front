@@ -503,7 +503,7 @@ button:disabled:hover {
 }
 
 .compact-metric.green .metric-icon {
-  background: #7c3aed;
+  background: #32a36b;
 }
 
 .compact-metric.red .metric-icon {
@@ -1020,6 +1020,11 @@ button:disabled:hover {
   color: #a24c43;
 }
 
+.status.warning {
+  background: #fff4df;
+  color: #9a6528;
+}
+
 .stock-note {
   display: block;
   margin-top: 4px;
@@ -1531,10 +1536,6 @@ select {
   align-items: center;
 }
 
-.products-table-wrap table {
-  min-width: 920px;
-}
-
 .inventory-metric-grid .metric-card span {
   font-size: 13px;
   font-weight: 650;
@@ -1583,6 +1584,242 @@ select {
 
 .inventory-family-cell {
   white-space: normal;
+}
+
+.catalog-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+  gap: 12px;
+  margin-bottom: 14px;
+  align-items: end;
+}
+
+.catalog-toolbar label,
+.inline-month-filter {
+  display: grid;
+  gap: 7px;
+  color: #40504c;
+  font-size: 13px;
+  font-weight: 540;
+}
+
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.catalog-card {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #e8eeeb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.catalog-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.catalog-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2f80ed;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.catalog-card > strong {
+  overflow: hidden;
+  color: #182321;
+  font-size: 15px;
+  font-weight: 610;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.catalog-card > p {
+  overflow: hidden;
+  margin: 0;
+  color: #667370;
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.catalog-card-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.catalog-card-metrics div {
+  display: grid;
+  gap: 2px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: #f7f9fb;
+}
+
+.catalog-card-metrics span {
+  color: #667370;
+  font-size: 11.5px;
+  font-weight: 620;
+}
+
+.catalog-card-metrics strong {
+  overflow: hidden;
+  color: #182321;
+  font-size: 15px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inventory-period-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.inline-month-filter {
+  min-width: 180px;
+}
+
+.period-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.period-summary-grid div {
+  display: grid;
+  gap: 6px;
+  padding: 13px;
+  border: 1px solid #e8eeeb;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.period-summary-grid span {
+  color: #667370;
+  font-size: 12.5px;
+  font-weight: 620;
+}
+
+.period-summary-grid strong {
+  color: #182321;
+  font-size: 20px;
+  font-weight: 650;
+}
+
+.panel-note {
+  margin: 0;
+  color: #667370;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.inventory-list {
+  display: grid;
+  gap: 10px;
+}
+
+.inventory-list-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px auto 112px;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid #e8eeeb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.inventory-list-main {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.inventory-list-main strong {
+  overflow: hidden;
+  color: #182321;
+  font-size: 15px;
+  font-weight: 610;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inventory-list-main span {
+  overflow: hidden;
+  color: #667370;
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inventory-list-stock {
+  display: grid;
+  justify-items: end;
+  gap: 1px;
+}
+
+.inventory-list-stock strong {
+  color: #182321;
+  font-size: 18px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.inventory-list-stock span,
+.inventory-list-stock small {
+  color: #667370;
+  font-size: 11.5px;
+  font-weight: 560;
+}
+
+.row-details {
+  justify-self: end;
+  position: relative;
+}
+
+.row-details summary {
+  color: #2f80ed;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 650;
+  list-style: none;
+}
+
+.row-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.row-details[open] summary {
+  margin-bottom: 8px;
+}
+
+.row-details div {
+  display: grid;
+  gap: 5px;
+  min-width: 190px;
+  padding: 10px;
+  border: 1px solid #e8eeeb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #40504c;
+  font-size: 12px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
 .code-cell {
@@ -1684,6 +1921,22 @@ select {
 
   .select-with-action {
     grid-template-columns: 1fr;
+  }
+
+  .catalog-toolbar,
+  .catalog-grid,
+  .period-summary-grid,
+  .inventory-list-card {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-list-stock,
+  .row-details {
+    justify-self: stretch;
+  }
+
+  .inventory-list-stock {
+    justify-items: start;
   }
 
   .purchase-item-row,
@@ -2278,6 +2531,11 @@ body.theme-dark .status.danger {
   color: #fecaca;
 }
 
+body.theme-dark .status.warning {
+  background: #3b2a12;
+  color: #fde68a;
+}
+
 body.theme-dark .customer-type-badge.b2c,
 body.theme-dark .compact-list-meta {
   background: #3b2a12;
@@ -2290,4 +2548,39 @@ body.theme-dark .compact-list-meta.success {
 
 body.theme-dark .compact-list-meta.success strong {
   color: #c4b5fd;
+}
+
+body.theme-dark .catalog-card,
+body.theme-dark .inventory-list-card,
+body.theme-dark .period-summary-grid div,
+body.theme-dark .row-details div,
+body.theme-dark .catalog-card-metrics div {
+  border-color: #263247;
+  background: #111827;
+}
+
+body.theme-dark .catalog-icon {
+  background: #172554;
+  color: #bfdbfe;
+}
+
+body.theme-dark .catalog-card > strong,
+body.theme-dark .catalog-card-metrics strong,
+body.theme-dark .period-summary-grid strong,
+body.theme-dark .inventory-list-main strong,
+body.theme-dark .inventory-list-stock strong {
+  color: #f8fafc;
+}
+
+body.theme-dark .catalog-card > p,
+body.theme-dark .catalog-card-metrics span,
+body.theme-dark .period-summary-grid span,
+body.theme-dark .panel-note,
+body.theme-dark .inventory-list-main span,
+body.theme-dark .inventory-list-stock span,
+body.theme-dark .inventory-list-stock small,
+body.theme-dark .catalog-toolbar label,
+body.theme-dark .inline-month-filter,
+body.theme-dark .row-details div {
+  color: #94a3b8;
 }

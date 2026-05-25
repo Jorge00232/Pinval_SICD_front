@@ -36,6 +36,8 @@ function Products() {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [newCategory, setNewCategory] = useState('');
   const [customCategories, setCustomCategories] = useState<ProductFamily[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedFamily, setSelectedFamily] = useState('all');
   const families = useMemo(
     () =>
       [
@@ -47,6 +49,23 @@ function Products() {
       ],
     [customCategories, products],
   );
+  const productsToReview = products.filter(
+    (product) => product.dataIssue === 'STOCK_NEGATIVO' || product.stock <= product.minStock,
+  );
+  const filteredProducts = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return products.filter((product) => {
+      const matchesSearch =
+        !normalizedSearch ||
+        product.codigo.toLowerCase().includes(normalizedSearch) ||
+        product.descrip.toLowerCase().includes(normalizedSearch);
+      const matchesFamily =
+        selectedFamily === 'all' || product.familia === selectedFamily;
+
+      return matchesSearch && matchesFamily;
+    });
+  }, [products, searchTerm, selectedFamily]);
 
   return (
     <AppLayout
@@ -54,11 +73,39 @@ function Products() {
       description={t('page.products.description')}
     >
       <section className="stacked-management-layout">
+        <section className="dashboard-kpi-strip">
+          <article className="metric-card compact-metric blue">
+            <span className="metric-icon">PR</span>
+            <span>{t('products.totalCatalog')}</span>
+            <strong>{products.length || t('home.noData')}</strong>
+            <p>{t('products.productsCount')}</p>
+          </article>
+          <article className="metric-card compact-metric amber">
+            <span className="metric-icon">CA</span>
+            <span>{t('products.categories')}</span>
+            <strong>{families.length || t('home.noData')}</strong>
+            <p>{t('products.activeCategories')}</p>
+          </article>
+          <article className="metric-card compact-metric red">
+            <span className="metric-icon">RE</span>
+            <span>{t('products.toReview')}</span>
+            <strong>{productsToReview.length || t('home.noData')}</strong>
+            <p>{t('inventory.lowStockProducts')}</p>
+          </article>
+          <article className="metric-card compact-metric green">
+            <span className="metric-icon">VI</span>
+            <span>{t('products.visible')}</span>
+            <strong>{filteredProducts.length || t('home.noData')}</strong>
+            <p>{t('products.filteredProducts')}</p>
+          </article>
+        </section>
+
         <article className="panel">
           <div className="panel-heading">
             <h2>{t('products.catalog')}</h2>
             <span>{products.length} {t('products.productsCount')}</span>
           </div>
+<<<<<<< Updated upstream
           <div className="table-wrap products-table-wrap">
             <table>
               <thead>
@@ -113,7 +160,81 @@ function Products() {
                 )}
               </tbody>
             </table>
+=======
+          <div className="catalog-toolbar">
+            <label>
+              {t('products.search')}
+              <input
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder={t('products.searchPlaceholder')}
+              />
+            </label>
+            <label>
+              {t('products.category')}
+              <select
+                value={selectedFamily}
+                onChange={(event) => setSelectedFamily(event.target.value)}
+              >
+                <option value="all">{t('reports.all')}</option>
+                {families.map((family) => (
+                  <option key={family} value={family}>
+                    {FAMILY_LABELS[family] ?? family}
+                  </option>
+                ))}
+              </select>
+            </label>
+>>>>>>> Stashed changes
           </div>
+          {filteredProducts.length > 0 ? (
+            <div className="catalog-grid">
+              {filteredProducts.slice(0, 18).map((product) => {
+                const needsReview =
+                  product.dataIssue === 'STOCK_NEGATIVO' || product.stock <= product.minStock;
+                const statusLabel = product.dataIssue === 'STOCK_NEGATIVO'
+                  ? t('inventory.requiresAdjustment')
+                  : product.stock <= product.minStock
+                    ? t('inventory.belowMinimum')
+                    : t('inventory.inRange');
+                const family = FAMILY_LABELS[product.familia] ?? product.familia;
+
+                return (
+                  <article className="catalog-card" key={product.codigo}>
+                    <div className="catalog-card-head">
+                      <span className="catalog-icon">
+                        {family.slice(0, 2).toUpperCase()}
+                      </span>
+                      <span className={`status ${needsReview ? 'danger' : 'ok'}`}>
+                        {statusLabel}
+                      </span>
+                    </div>
+                    <strong>{product.descrip}</strong>
+                    <p>{product.codigo} · {family}</p>
+                    <div className="catalog-card-metrics">
+                      <div>
+                        <span>{t('products.stock')}</span>
+                        <strong>{product.stock.toLocaleString('es-CL')}</strong>
+                      </div>
+                      <div>
+                        <span>{t('products.salePrice')}</span>
+                        <strong>{currencyFormatter.format(product.prventa)}</strong>
+                      </div>
+                    </div>
+                    <details className="row-details">
+                      <summary>{t('inventory.viewDetail')}</summary>
+                      <div>
+                        <span>{t('products.costPrice')}: {currencyFormatter.format(product.prcosto)}</span>
+                        <span>{t('products.minimumStock')}: {product.minStock}</span>
+                        <span>{t('products.category')}: {family}</span>
+                      </div>
+                    </details>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="empty-state">{t('products.noProducts')}</div>
+          )}
         </article>
 
         {canManage ? (

@@ -61,6 +61,8 @@ export type Product = {
    * Opcional hasta que el backend esté disponible.
    */
   salesHistory?: number[];
+  /** Fecha de registro o actualización de stock */
+  fecha?: string;
 };
 
 export type Supplier = {

@@ -7,6 +7,24 @@ function requiresAdjustment(product: Product) {
   return product.dataIssue === 'STOCK_NEGATIVO';
 }
 
+function formatDate(dateStr?: string) {
+  if (!dateStr) return '-';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}/${year}`;
+  }
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch {
+    return dateStr;
+  }
+}
+
 function Inventory() {
   const { products } = useInventory();
   const { t } = useLanguage();
@@ -61,6 +79,7 @@ function Inventory() {
                 <th>{t('inventory.family')}</th>
                 <th>{t('inventory.currentStock')}</th>
                 <th>{t('inventory.minimumStock')}</th>
+                <th>{t('inventory.fecha')}</th>
                 <th>{t('inventory.status')}</th>
                 <th>{t('inventory.costPrice')}</th>
                 <th>{t('inventory.costValue')}</th>
@@ -98,6 +117,7 @@ function Inventory() {
                         ) : null}
                       </td>
                       <td className="numeric-cell">{product.minStock}</td>
+                      <td>{formatDate(product.fecha)}</td>
                       <td>
                         <span
                           className={`status ${
@@ -114,7 +134,7 @@ function Inventory() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={8}>{t('inventory.noProducts')}</td>
+                  <td colSpan={9}>{t('inventory.noProducts')}</td>
                 </tr>
               )}
             </tbody>

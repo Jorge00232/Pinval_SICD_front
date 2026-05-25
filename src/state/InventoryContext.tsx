@@ -44,6 +44,7 @@ type LegacyProduct = Partial<{
   stockOriginal: number;
   dataIssue: 'STOCK_NEGATIVO' | null;
   salesHistory: number[];
+  fecha: string;
 }>;
 
 type LegacyCustomer = Partial<{
@@ -114,6 +115,7 @@ function normalizeProduct(product: LegacyProduct): Product | null {
     salesHistory: Array.isArray(product.salesHistory)
       ? product.salesHistory.filter((value): value is number => typeof value === 'number')
       : undefined,
+    fecha: typeof product.fecha === 'string' ? product.fecha : undefined,
   };
 }
 

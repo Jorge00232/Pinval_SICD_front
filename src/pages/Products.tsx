@@ -11,6 +11,24 @@ import { useLanguage } from '../language/useLanguage';
 
 const BASE_FAMILIES = Object.keys(FAMILY_LABELS) as ProductFamily[];
 
+function formatDate(dateStr?: string) {
+  if (!dateStr) return '-';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}/${year}`;
+  }
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch {
+    return dateStr;
+  }
+}
+
 function Products() {
   const { addProduct, products } = useInventory();
   const { t } = useLanguage();
@@ -54,6 +72,7 @@ function Products() {
                   <th>{t('products.costValue')}</th>
                   <th>{t('products.saleValue')}</th>
                   <th>{t('products.minimumStock')}</th>
+                  <th>{t('inventory.fecha')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -83,12 +102,13 @@ function Products() {
                           {currencyFormatter.format(sbtotal)}
                         </td>
                         <td className="numeric-cell">{product.minStock}</td>
+                        <td>{formatDate(product.fecha)}</td>
                       </tr>
                     );
                   })
                 ) : (
                   <tr>
-                    <td colSpan={9}>{t('products.noProducts')}</td>
+                    <td colSpan={10}>{t('products.noProducts')}</td>
                   </tr>
                 )}
               </tbody>
@@ -121,6 +141,7 @@ function Products() {
                     prventa: Number(formData.get('prventa')),
                     stock: Number(formData.get('stock')),
                     minStock: Number(formData.get('minStock')),
+                    fecha: String(formData.get('fecha')),
                   });
 
                   event.currentTarget.reset();
@@ -202,6 +223,15 @@ function Products() {
                     type="number"
                     min="0"
                     placeholder={t('products.minimumStockPlaceholder')}
+                    required
+                  />
+                </label>
+                <label>
+                  {t('inventory.fecha')}
+                  <input
+                    name="fecha"
+                    type="date"
+                    defaultValue={new Date().toISOString().split('T')[0]}
                     required
                   />
                 </label>

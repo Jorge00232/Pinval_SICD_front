@@ -12,6 +12,7 @@ type ApiProduct = Partial<{
   prcosto: number | string;
   prventa: number | string;
   minStock: number | string;
+  fecha: string | null;
 }>;
 
 function toNumber(value: unknown) {
@@ -40,6 +41,7 @@ function normalizeApiProduct(product: ApiProduct): Product | null {
     prcosto: toNumber(product.prcosto),
     prventa: toNumber(product.prventa),
     minStock: toNumber(product.minStock),
+    fecha: product.fecha ? String(product.fecha) : undefined,
   };
 }
 

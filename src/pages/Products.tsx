@@ -12,21 +12,26 @@ import { useLanguage } from '../language/useLanguage';
 const BASE_FAMILIES = Object.keys(FAMILY_LABELS) as ProductFamily[];
 
 function formatDate(dateStr?: string) {
-  if (!dateStr) return '-';
+  if (!dateStr) {
+    return '-';
+  }
+
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
     const [year, month, day] = dateStr.split('-');
     return `${day}/${month}/${year}`;
   }
-  try {
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return dateStr;
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  } catch {
+
+  const date = new Date(dateStr);
+
+  if (Number.isNaN(date.getTime())) {
     return dateStr;
   }
+
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+
+  return `${day}/${month}/${year}`;
 }
 
 function Products() {
@@ -105,62 +110,6 @@ function Products() {
             <h2>{t('products.catalog')}</h2>
             <span>{products.length} {t('products.productsCount')}</span>
           </div>
-<<<<<<< Updated upstream
-          <div className="table-wrap products-table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>{t('products.code')}</th>
-                  <th>{t('products.description')}</th>
-                  <th>{t('inventory.family')}</th>
-                  <th>{t('products.stock')}</th>
-                  <th>{t('products.costPrice')}</th>
-                  <th>{t('products.salePrice')}</th>
-                  <th>{t('products.costValue')}</th>
-                  <th>{t('products.saleValue')}</th>
-                  <th>{t('products.minimumStock')}</th>
-                  <th>{t('inventory.fecha')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.length > 0 ? (
-                  products.map((product) => {
-                    const sbtot = product.stock * product.prcosto;
-                    const sbtotal = product.stock * product.prventa;
-
-                    return (
-                      <tr key={product.codigo}>
-                        <td className="code-cell">{product.codigo}</td>
-                        <td className="description-cell">{product.descrip}</td>
-                        <td>{FAMILY_LABELS[product.familia] ?? product.familia}</td>
-                        <td className="numeric-cell">
-                          {product.stock.toLocaleString('es-CL')}
-                        </td>
-                        <td className="numeric-cell">
-                          {currencyFormatter.format(product.prcosto)}
-                        </td>
-                        <td className="numeric-cell">
-                          {currencyFormatter.format(product.prventa)}
-                        </td>
-                        <td className="numeric-cell">
-                          {currencyFormatter.format(sbtot)}
-                        </td>
-                        <td className="numeric-cell">
-                          {currencyFormatter.format(sbtotal)}
-                        </td>
-                        <td className="numeric-cell">{product.minStock}</td>
-                        <td>{formatDate(product.fecha)}</td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={10}>{t('products.noProducts')}</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-=======
           <div className="catalog-toolbar">
             <label>
               {t('products.search')}
@@ -184,7 +133,6 @@ function Products() {
                 ))}
               </select>
             </label>
->>>>>>> Stashed changes
           </div>
           {filteredProducts.length > 0 ? (
             <div className="catalog-grid">
@@ -209,7 +157,7 @@ function Products() {
                       </span>
                     </div>
                     <strong>{product.descrip}</strong>
-                    <p>{product.codigo} · {family}</p>
+                    <p>{product.codigo} - {family}</p>
                     <div className="catalog-card-metrics">
                       <div>
                         <span>{t('products.stock')}</span>
@@ -225,6 +173,7 @@ function Products() {
                       <div>
                         <span>{t('products.costPrice')}: {currencyFormatter.format(product.prcosto)}</span>
                         <span>{t('products.minimumStock')}: {product.minStock}</span>
+                        <span>{t('inventory.fecha')}: {formatDate(product.fecha)}</span>
                         <span>{t('products.category')}: {family}</span>
                       </div>
                     </details>

@@ -8,24 +8,29 @@ function requiresAdjustment(product: Product) {
   return product.dataIssue === 'STOCK_NEGATIVO';
 }
 
-<<<<<<< Updated upstream
 function formatDate(dateStr?: string) {
-  if (!dateStr) return '-';
+  if (!dateStr) {
+    return '-';
+  }
+
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
     const [year, month, day] = dateStr.split('-');
     return `${day}/${month}/${year}`;
   }
-  try {
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return dateStr;
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  } catch {
+
+  const date = new Date(dateStr);
+
+  if (Number.isNaN(date.getTime())) {
     return dateStr;
   }
-=======
+
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+
+  return `${day}/${month}/${year}`;
+}
+
 function getStatus(product: Product, t: (key: string) => string) {
   const needsAdjustment = requiresAdjustment(product);
   const hasNoStock = !needsAdjustment && product.stock === 0;
@@ -66,7 +71,6 @@ function parseMovementMonth(dateLabel: string) {
   }
 
   return `${year}-${String(month).padStart(2, '0')}`;
->>>>>>> Stashed changes
 }
 
 function Inventory() {
@@ -197,78 +201,6 @@ function Inventory() {
           <h2>{t('inventory.stockByProduct')}</h2>
           <span>{products.length} {t('products.productsCount')}</span>
         </div>
-<<<<<<< Updated upstream
-        <div className="table-wrap inventory-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>{t('inventory.code')}</th>
-                <th>{t('inventory.description')}</th>
-                <th>{t('inventory.family')}</th>
-                <th>{t('inventory.currentStock')}</th>
-                <th>{t('inventory.minimumStock')}</th>
-                <th>{t('inventory.fecha')}</th>
-                <th>{t('inventory.status')}</th>
-                <th>{t('inventory.costPrice')}</th>
-                <th>{t('inventory.costValue')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.length > 0 ? (
-                products.map((product) => {
-                  const needsAdjustment = requiresAdjustment(product);
-                  const hasNoStock = !needsAdjustment && product.stock === 0;
-                  const needsRestock =
-                    !needsAdjustment && product.stock > 0 && product.stock <= product.minStock;
-                  const sbtot = product.stock * product.prcosto;
-                  const statusLabel = needsAdjustment
-                    ? t('inventory.requiresAdjustment')
-                    : hasNoStock
-                      ? t('inventory.noStock')
-                      : needsRestock
-                        ? t('inventory.belowMinimum')
-                        : t('inventory.inRange');
-
-                  return (
-                    <tr key={product.codigo}>
-                      <td className="inventory-code-cell">{product.codigo}</td>
-                      <td className="inventory-description-cell">{product.descrip}</td>
-                      <td className="inventory-family-cell">
-                        {FAMILY_LABELS[product.familia] ?? product.familia}
-                      </td>
-                      <td className="numeric-cell">
-                        {product.stock}
-                        {needsAdjustment ? (
-                          <span className="stock-note">
-                            {t('inventory.originalStock')}: {product.stockOriginal}
-                          </span>
-                        ) : null}
-                      </td>
-                      <td className="numeric-cell">{product.minStock}</td>
-                      <td>{formatDate(product.fecha)}</td>
-                      <td>
-                        <span
-                          className={`status ${
-                            needsAdjustment || hasNoStock || needsRestock ? 'danger' : 'ok'
-                          }`}
-                        >
-                          {statusLabel}
-                        </span>
-                      </td>
-                      <td className="numeric-cell">{currencyFormatter.format(product.prcosto)}</td>
-                      <td className="numeric-cell">{currencyFormatter.format(sbtot)}</td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={9}>{t('inventory.noProducts')}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-=======
         {sortedProducts.length > 0 ? (
           <div className="inventory-list">
             {sortedProducts.slice(0, 12).map((product) => {
@@ -280,7 +212,7 @@ function Inventory() {
                 <article className="inventory-list-card" key={product.codigo}>
                   <div className="inventory-list-main">
                     <strong>{product.descrip}</strong>
-                    <span>{product.codigo} · {family}</span>
+                    <span>{product.codigo} - {family}</span>
                   </div>
                   <div className="inventory-list-stock">
                     <strong>{product.stock.toLocaleString('es-CL')}</strong>
@@ -296,6 +228,7 @@ function Inventory() {
                     <summary>{t('inventory.viewDetail')}</summary>
                     <div>
                       <span>{t('inventory.minimumStock')}: {product.minStock}</span>
+                      <span>{t('inventory.fecha')}: {formatDate(product.fecha)}</span>
                       <span>{t('inventory.costPrice')}: {currencyFormatter.format(product.prcosto)}</span>
                       <span>{t('products.salePrice')}: {currencyFormatter.format(product.prventa)}</span>
                       <span>{t('inventory.costValue')}: {currencyFormatter.format(costValue)}</span>
@@ -308,7 +241,6 @@ function Inventory() {
         ) : (
           <div className="empty-state">{t('inventory.noProducts')}</div>
         )}
->>>>>>> Stashed changes
       </section>
     </AppLayout>
   );

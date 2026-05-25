@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import '../App.css';
+import { getSession } from '../api/authApi';
 import { useTheme } from '../state/useTheme';
 import { useLanguage } from '../language/useLanguage';
 
@@ -10,23 +11,38 @@ type AppLayoutProps = {
   children: ReactNode;
 };
 
-const navItems = [
-  { to: '/home', labelKey: 'nav.dashboard' },
-  { to: '/sales', labelKey: 'nav.sales' },
-  { to: '/purchases', labelKey: 'nav.purchases' },
-  { to: '/inventory', labelKey: 'nav.inventory' },
-  { to: '/products', labelKey: 'nav.products' },
-  { to: '/movements', labelKey: 'nav.movements' },
-  { to: '/customers', labelKey: 'nav.customers' },
-  { to: '/suppliers', labelKey: 'nav.suppliers' },
-  { to: '/alerts', labelKey: 'nav.alerts' },
-  { to: '/reports', labelKey: 'nav.reports' },
+const navGroups = [
+  {
+    labelKey: 'nav.group.operation',
+    items: [
+      { to: '/home', labelKey: 'nav.dashboard', viewer: true },
+      { to: '/sales', labelKey: 'nav.sales', viewer: true },
+      { to: '/purchases', labelKey: 'nav.purchases', viewer: true },
+      { to: '/inventory', labelKey: 'nav.inventory', viewer: true },
+    ],
+  },
+  {
+    labelKey: 'nav.group.management',
+    items: [
+      { to: '/products', labelKey: 'nav.products', viewer: true },
+      { to: '/customers', labelKey: 'nav.customers', viewer: true },
+      { to: '/suppliers', labelKey: 'nav.suppliers', viewer: true },
+    ],
+  },
+  {
+    labelKey: 'nav.group.control',
+    items: [
+      { to: '/movements', labelKey: 'nav.movements', viewer: true },
+      { to: '/alerts', labelKey: 'nav.alerts', viewer: true },
+      { to: '/reports', labelKey: 'nav.reports', viewer: true },
+    ],
+  },
 ];
 
 function AppLayout({ title, description, children }: AppLayoutProps) {
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
-
+  const session = getSession();
   return (
     <div className="app-shell">
       <aside className="sidebar" aria-label={t('layout.mainNavigation')}>
@@ -41,30 +57,27 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
           </div>
 
           <p className="sidebar-caption">{t('layout.sidebarCaption')}</p>
-
-          <div className="role-list" aria-label={t('layout.systemRoles')}>
-            <span>{t('layout.roleAdmin')}</span>
-            <span>{t('layout.roleStock')}</span>
-            <span>{t('layout.roleView')}</span>
-          </div>
         </div>
 
         <nav className="side-nav">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) => (isActive ? 'active' : undefined)}
-            >
-              {t(item.labelKey)}
-            </NavLink>
+          {navGroups.map((group) => (
+            <div className="side-nav-group" key={group.labelKey}>
+              <span className="side-nav-heading">{t(group.labelKey)}</span>
+              {group.items
+                .filter((item) => session?.user.role !== 'VIEWER' || item.viewer)
+                .map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) => (isActive ? 'active' : undefined)}
+                  >
+                    {t(item.labelKey)}
+                  </NavLink>
+                ))}
+            </div>
           ))}
         </nav>
 
-        <div className="sidebar-footer">
-          <strong>Pinval</strong>
-          <span>{t('layout.sidebarFooter')}</span>
-        </div>
       </aside>
 
       <main className="content">
@@ -77,8 +90,12 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
           <div className="page-header-actions">
             <div className="page-context-card" aria-label={t('layout.pinvalContext')}>
               <span className="page-context-tag">Pinval</span>
-              <strong>{t('layout.contextTitle')}</strong>
-              <p>{t('layout.contextDescription')}</p>
+              <strong>{session?.user.name ?? t('layout.contextTitle')}</strong>
+              <p>
+                {session
+                  ? `${t('layout.activeRole')}: ${session.user.role}`
+                  : t('layout.contextDescription')}
+              </p>
             </div>
             <div className="language-toggle" aria-label={t('layout.languageLabel')}>
               <button

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import AppLayout from '../components/AppLayout';
+import { canManageData } from '../api/authApi';
 import { useInventory } from '../state/useInventory';
 import { useLanguage } from '../language/useLanguage';
 
@@ -39,7 +40,8 @@ function parseSaleDetail(detail: string) {
 function Sales() {
   const { customers, movements, products, recordSale } = useInventory();
   const { t } = useLanguage();
-  const canRegisterSale = products.length > 0;
+  const canRegister = canManageData();
+  const canRegisterSale = canRegister && products.length > 0;
   const saleMovements = movements.filter((movement) => movement.type === 'Salida');
   const [customerName, setCustomerName] = useState('B2C');
   const [customerIdentifier, setCustomerIdentifier] = useState('');
@@ -70,15 +72,71 @@ function Sales() {
       title={t('page.sales.title')}
       description={t('page.sales.description')}
     >
-      <section className="purchase-layout">
-        <article className="panel purchase-form-panel">
+      <section className="sales-layout">
+        <article className="panel purchase-history-panel">
           <div className="panel-heading">
-            <h2>{t('sales.registerSale')}</h2>
+            <h2>{t('sales.registeredSales')}</h2>
             <span className="purchase-counter">
-              {saleMovements.length} {t('sales.linesRegistered')}
+              {saleMovements.length} {t('purchases.records')}
             </span>
           </div>
 
+          <div className="table-wrap purchase-history-wrap sales-history-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>{t('purchases.date')}</th>
+                  <th>{t('sales.product')}</th>
+                  <th>{t('sales.quantity')}</th>
+                  <th>{t('sales.document')}</th>
+                  <th>{t('page.customers.title')}</th>
+                  <th>{t('customers.type')}</th>
+                  <th>{t('sales.identifier')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {saleMovements.length > 0 ? (
+                  saleMovements.map((movement) => {
+                    const detail = parseSaleDetail(movement.detail);
+
+                    return (
+                      <tr key={movement.id}>
+                        <td>{movement.date}</td>
+                        <td>{movement.product}</td>
+                        <td className="numeric-cell">{movement.quantity}</td>
+                        <td>{detail.document}</td>
+                        <td>{detail.customer}</td>
+                        <td>{detail.customerType}</td>
+                        <td>{detail.identifier}</td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={7}>
+                      {canRegisterSale
+                        ? t('sales.noSales')
+                        : canRegister
+                          ? t('sales.addProductsFirst')
+                          : t('sales.noSales')}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        {canRegister ? (
+          <details className="sales-form-disclosure">
+            <summary>
+              <span>{t('sales.registerSale')}</span>
+              <strong>
+                {saleMovements.length} {t('sales.linesRegistered')}
+              </strong>
+            </summary>
+
+          <article className="panel purchase-form-panel sales-form-panel">
           <form
             className="form purchase-form"
             onSubmit={(event) => {
@@ -263,59 +321,9 @@ function Sales() {
               </button>
             </div>
           </form>
-        </article>
-
-        <article className="panel purchase-history-panel">
-          <div className="panel-heading">
-            <h2>{t('sales.registeredSales')}</h2>
-            <span className="purchase-counter">
-              {saleMovements.length} {t('purchases.records')}
-            </span>
-          </div>
-
-          <div className="table-wrap purchase-history-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>{t('purchases.date')}</th>
-                  <th>{t('sales.product')}</th>
-                  <th>{t('sales.quantity')}</th>
-                  <th>{t('sales.document')}</th>
-                  <th>{t('page.customers.title')}</th>
-                  <th>{t('customers.type')}</th>
-                  <th>{t('sales.identifier')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {saleMovements.length > 0 ? (
-                  saleMovements.map((movement) => {
-                    const detail = parseSaleDetail(movement.detail);
-
-                    return (
-                      <tr key={movement.id}>
-                        <td>{movement.date}</td>
-                        <td>{movement.product}</td>
-                        <td className="numeric-cell">{movement.quantity}</td>
-                        <td>{detail.document}</td>
-                        <td>{detail.customer}</td>
-                        <td>{detail.customerType}</td>
-                        <td>{detail.identifier}</td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={7}>
-                      {canRegisterSale
-                        ? t('sales.noSales')
-                        : t('sales.addProductsFirst')}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </article>
+          </article>
+          </details>
+        ) : null}
       </section>
     </AppLayout>
   );

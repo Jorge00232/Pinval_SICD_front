@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import AppLayout from '../components/AppLayout';
+import { canManageData } from '../api/authApi';
 import { useInventory } from '../state/useInventory';
 import { useLanguage } from '../language/useLanguage';
 
@@ -20,7 +21,9 @@ function createPurchaseLine(codigo = ''): PurchaseLine {
 function Purchases() {
   const { movements, products, recordPurchase, suppliers } = useInventory();
   const { t } = useLanguage();
-  const canRegisterPurchase = products.length > 0 && suppliers.length > 0;
+  const canRegister = canManageData();
+  const canRegisterPurchase =
+    canRegister && products.length > 0 && suppliers.length > 0;
   const purchaseMovements = movements.filter(
     (movement) => movement.type === 'Entrada',
   );
@@ -35,15 +38,68 @@ function Purchases() {
       title={t('page.purchases.title')}
       description={t('page.purchases.description')}
     >
-      <section className="purchase-layout">
-        <article className="panel purchase-form-panel">
+      <section className="stacked-management-layout">
+        <article className="panel purchase-history-panel">
           <div className="panel-heading">
-            <h2>{t('purchases.registerPurchase')}</h2>
+            <h2>{t('purchases.history')}</h2>
             <span className="purchase-counter">
-              {purchaseMovements.length} {t('purchases.linesRegistered')}
+              {purchaseMovements.length} {t('purchases.records')}
             </span>
           </div>
 
+          <div className="table-wrap purchase-history-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>{t('purchases.date')}</th>
+                  <th>{t('purchases.product')}</th>
+                  <th>{t('purchases.quantity')}</th>
+                  <th>{t('sales.invoice')}</th>
+                  <th>{t('purchases.supplier')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {purchaseMovements.length > 0 ? (
+                  purchaseMovements.map((movement) => {
+                    const [documentPart, supplierPart] = movement.detail.split(' - ');
+                    const documentLabel = documentPart.replace('Factura ', '');
+
+                    return (
+                      <tr key={movement.id}>
+                        <td>{movement.date}</td>
+                        <td>{movement.product}</td>
+                        <td className="numeric-cell">{movement.quantity}</td>
+                        <td>{documentLabel}</td>
+                        <td>{supplierPart}</td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={5}>
+                      {canRegisterPurchase
+                        ? t('purchases.noPurchases')
+                        : canRegister
+                          ? t('purchases.addSuppliersProductsFirst')
+                          : t('purchases.noPurchases')}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        {canRegister ? (
+          <details className="form-disclosure">
+            <summary>
+              <span>{t('purchases.registerPurchase')}</span>
+              <strong>
+                {purchaseMovements.length} {t('purchases.linesRegistered')}
+              </strong>
+            </summary>
+
+          <article className="panel purchase-form-panel form-panel">
           <form
             className="form purchase-form"
             onSubmit={(event) => {
@@ -205,56 +261,9 @@ function Purchases() {
               </button>
             </div>
           </form>
-        </article>
-
-        <article className="panel purchase-history-panel">
-          <div className="panel-heading">
-            <h2>{t('purchases.history')}</h2>
-            <span className="purchase-counter">
-              {purchaseMovements.length} {t('purchases.records')}
-            </span>
-          </div>
-
-          <div className="table-wrap purchase-history-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>{t('purchases.date')}</th>
-                  <th>{t('purchases.product')}</th>
-                  <th>{t('purchases.quantity')}</th>
-                  <th>{t('sales.invoice')}</th>
-                  <th>{t('purchases.supplier')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {purchaseMovements.length > 0 ? (
-                  purchaseMovements.map((movement) => {
-                    const [documentPart, supplierPart] = movement.detail.split(' - ');
-                    const documentLabel = documentPart.replace('Factura ', '');
-
-                    return (
-                      <tr key={movement.id}>
-                        <td>{movement.date}</td>
-                        <td>{movement.product}</td>
-                        <td className="numeric-cell">{movement.quantity}</td>
-                        <td>{documentLabel}</td>
-                        <td>{supplierPart}</td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={5}>
-                      {canRegisterPurchase
-                        ? t('purchases.noPurchases')
-                        : t('purchases.addSuppliersProductsFirst')}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </article>
+          </article>
+          </details>
+        ) : null}
       </section>
     </AppLayout>
   );

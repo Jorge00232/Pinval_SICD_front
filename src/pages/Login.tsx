@@ -1,11 +1,16 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import '../App.css';
+import { login, saveSession } from '../api/authApi';
 import { useTheme } from '../state/useTheme';
 import { useLanguage } from '../language/useLanguage';
+import { useState } from 'react';
 
 function Login() {
+  const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   return (
     <div className="login-page">
@@ -41,12 +46,39 @@ function Login() {
           {theme === 'dark' ? t('layout.themeLight') : t('layout.themeDark')}
         </button>
 
-        <form className="form" onSubmit={(event) => event.preventDefault()}>
-          <label htmlFor="email">{t('login.user')}</label>
+        <form
+          className="form"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            setError('');
+            setIsSubmitting(true);
+
+            const formData = new FormData(event.currentTarget);
+
+            try {
+              const session = await login({
+                username: String(formData.get('username')).trim(),
+                password: String(formData.get('password')),
+              });
+
+              saveSession(session);
+              navigate('/home');
+            } catch (loginError) {
+              setError(
+                loginError instanceof Error
+                  ? loginError.message
+                  : t('login.loginError'),
+              );
+            } finally {
+              setIsSubmitting(false);
+            }
+          }}
+        >
+          <label htmlFor="username">{t('login.user')}</label>
           <input
-            id="email"
-            name="email"
-            type="email"
+            id="username"
+            name="username"
+            type="text"
             placeholder={t('login.userPlaceholder')}
             autoComplete="username"
             required
@@ -62,14 +94,13 @@ function Login() {
             required
           />
 
-          <label htmlFor="role">{t('login.role')}</label>
-          <select id="role" name="role" defaultValue="admin">
-            <option value="admin">{t('layout.roleAdmin')}</option>
-            <option value="stock">{t('layout.roleStock')}</option>
-            <option value="consulta">{t('layout.roleView')}</option>
-          </select>
+          <p className="login-help">{t('login.demoUsers')}</p>
 
-          <button type="submit">{t('login.submit')}</button>
+          {error ? <p className="form-message error">{error}</p> : null}
+
+          <button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? t('login.submitting') : t('login.submit')}
+          </button>
         </form>
 
         <div className="login-links">

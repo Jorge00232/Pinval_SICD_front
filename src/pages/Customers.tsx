@@ -1,10 +1,12 @@
 import AppLayout from '../components/AppLayout';
+import { canManageData } from '../api/authApi';
 import { useInventory } from '../state/useInventory';
 import { useLanguage } from '../language/useLanguage';
 
 function Customers() {
   const { addCustomer, customers } = useInventory();
   const { t } = useLanguage();
+  const canManage = canManageData();
   const totalB2B = customers.filter(
     (customer) => customer.customerType === 'B2B',
   ).length;
@@ -17,71 +19,7 @@ function Customers() {
       title={t('page.customers.title')}
       description={t('page.customers.description')}
     >
-      <section className="products-layout">
-        <article className="panel products-form-panel">
-          <div className="panel-heading">
-            <h2>{t('customers.newCustomer')}</h2>
-            <span>{customers.length} {t('customers.records')}</span>
-          </div>
-
-          <form
-            className="grid-form products-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-
-              const formData = new FormData(event.currentTarget);
-
-              addCustomer({
-                name: String(formData.get('name')).trim(),
-                contact: String(formData.get('contact')).trim(),
-                identifier: String(formData.get('identifier')).trim(),
-                customerType: String(formData.get('customerType')) as 'B2B' | 'B2C',
-              });
-
-              event.currentTarget.reset();
-            }}
-          >
-            <label>
-              {t('customers.name')}
-              <input
-                name="name"
-                placeholder={t('customers.namePlaceholder')}
-                maxLength={120}
-                required
-              />
-            </label>
-
-            <label>
-              {t('customers.type')}
-              <select name="customerType" defaultValue="B2B" required>
-                <option value="B2B">B2B</option>
-                <option value="B2C">B2C</option>
-              </select>
-            </label>
-
-            <label>
-              {t('customers.identifier')}
-              <input
-                name="identifier"
-                placeholder={t('customers.identifierPlaceholder')}
-                maxLength={60}
-              />
-            </label>
-
-            <label>
-              {t('customers.contact')}
-              <input
-                name="contact"
-                placeholder={t('customers.contactPlaceholder')}
-                maxLength={120}
-                required
-              />
-            </label>
-
-            <button type="submit">{t('customers.addCustomer')}</button>
-          </form>
-        </article>
-
+      <section className="stacked-management-layout">
         <article className="panel">
           <div className="panel-heading">
             <h2>{t('customers.registry')}</h2>
@@ -131,6 +69,76 @@ function Customers() {
             </table>
           </div>
         </article>
+
+        {canManage ? (
+          <details className="form-disclosure">
+            <summary>
+              <span>{t('customers.newCustomer')}</span>
+              <strong>
+                {customers.length} {t('customers.records')}
+              </strong>
+            </summary>
+
+            <article className="panel products-form-panel form-panel">
+              <form
+                className="grid-form products-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+
+                  const formData = new FormData(event.currentTarget);
+
+                  addCustomer({
+                    name: String(formData.get('name')).trim(),
+                    contact: String(formData.get('contact')).trim(),
+                    identifier: String(formData.get('identifier')).trim(),
+                    customerType: String(formData.get('customerType')) as 'B2B' | 'B2C',
+                  });
+
+                  event.currentTarget.reset();
+                }}
+              >
+                <label>
+                  {t('customers.name')}
+                  <input
+                    name="name"
+                    placeholder={t('customers.namePlaceholder')}
+                    maxLength={120}
+                    required
+                  />
+                </label>
+
+                <label>
+                  {t('customers.type')}
+                  <select name="customerType" defaultValue="B2B" required>
+                    <option value="B2B">B2B</option>
+                    <option value="B2C">B2C</option>
+                  </select>
+                </label>
+
+                <label>
+                  {t('customers.identifier')}
+                  <input
+                    name="identifier"
+                    placeholder={t('customers.identifierPlaceholder')}
+                    maxLength={60}
+                  />
+                </label>
+
+                <label>
+                  {t('customers.contact')}
+                  <input
+                    name="contact"
+                    placeholder={t('customers.contactPlaceholder')}
+                    maxLength={120}
+                    required
+                  />
+                </label>
+
+                <button type="submit">{t('customers.addCustomer')}</button>
+              </form>
+            </article>
+          </details>
+        ) : null}
       </section>
     </AppLayout>
   );

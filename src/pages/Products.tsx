@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import AppLayout from '../components/AppLayout';
+import { canManageData } from '../api/authApi';
 import {
   currencyFormatter,
   FAMILY_LABELS,
@@ -13,6 +14,7 @@ const BASE_FAMILIES = Object.keys(FAMILY_LABELS) as ProductFamily[];
 function Products() {
   const { addProduct, products } = useInventory();
   const { t } = useLanguage();
+  const canManage = canManageData();
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [newCategory, setNewCategory] = useState('');
   const [customCategories, setCustomCategories] = useState<ProductFamily[]>([]);
@@ -33,115 +35,7 @@ function Products() {
       title={t('page.products.title')}
       description={t('page.products.description')}
     >
-      <section className="products-layout">
-        <article className="panel products-form-panel">
-          <div className="panel-heading">
-            <h2>{t('products.newProduct')}</h2>
-            <span>{products.length} {t('products.records')}</span>
-          </div>
-          <form
-            className="grid-form products-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-
-              const formData = new FormData(event.currentTarget);
-
-              addProduct({
-                codigo: String(formData.get('codigo')).trim(),
-                descrip: String(formData.get('descrip')).trim(),
-                familia: String(formData.get('familia')) as ProductFamily,
-                prcosto: Number(formData.get('prcosto')),
-                prventa: Number(formData.get('prventa')),
-                stock: Number(formData.get('stock')),
-                minStock: Number(formData.get('minStock')),
-              });
-
-              event.currentTarget.reset();
-            }}
-          >
-            <label>
-              {t('products.code')}
-              <input
-                name="codigo"
-                placeholder={t('products.codePlaceholder')}
-                maxLength={20}
-                required
-              />
-            </label>
-            <label>
-              {t('products.description')}
-              <input
-                name="descrip"
-                placeholder={t('products.descriptionPlaceholder')}
-                required
-              />
-            </label>
-            <label>
-              {t('products.category')}
-              <div className="select-with-action">
-                <select name="familia" required defaultValue="">
-                  <option value="" disabled>
-                    {t('products.selectCategory')}
-                  </option>
-                  {families.map((family) => (
-                    <option key={family} value={family}>
-                      {FAMILY_LABELS[family] ?? family}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  className="ghost-button"
-                  onClick={() => setIsCategoryModalOpen(true)}
-                >
-                  {t('products.newCategory')}
-                </button>
-              </div>
-            </label>
-            <label>
-              {t('products.costPrice')}
-              <input
-                name="prcosto"
-                type="number"
-                min="0"
-                placeholder={t('products.costPlaceholder')}
-                required
-              />
-            </label>
-            <label>
-              {t('products.salePrice')}
-              <input
-                name="prventa"
-                type="number"
-                min="0"
-                placeholder={t('products.salePlaceholder')}
-                required
-              />
-            </label>
-            <label>
-              {t('products.stock')}
-              <input
-                name="stock"
-                type="number"
-                min="0"
-                placeholder={t('products.stockPlaceholder')}
-                required
-              />
-            </label>
-            <label>
-              {t('products.minimumStock')}
-              <input
-                name="minStock"
-                type="number"
-                min="0"
-                placeholder={t('products.minimumStockPlaceholder')}
-                required
-              />
-            </label>
-            <button type="submit">{t('products.addProduct')}</button>
-          </form>
-        </article>
-
+      <section className="stacked-management-layout">
         <article className="panel">
           <div className="panel-heading">
             <h2>{t('products.catalog')}</h2>
@@ -201,9 +95,124 @@ function Products() {
             </table>
           </div>
         </article>
+
+        {canManage ? (
+          <details className="form-disclosure">
+            <summary>
+              <span>{t('products.newProduct')}</span>
+              <strong>
+                {products.length} {t('products.records')}
+              </strong>
+            </summary>
+
+            <article className="panel products-form-panel form-panel">
+              <form
+                className="grid-form products-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+
+                  const formData = new FormData(event.currentTarget);
+
+                  addProduct({
+                    codigo: String(formData.get('codigo')).trim(),
+                    descrip: String(formData.get('descrip')).trim(),
+                    familia: String(formData.get('familia')) as ProductFamily,
+                    prcosto: Number(formData.get('prcosto')),
+                    prventa: Number(formData.get('prventa')),
+                    stock: Number(formData.get('stock')),
+                    minStock: Number(formData.get('minStock')),
+                  });
+
+                  event.currentTarget.reset();
+                }}
+              >
+                <label>
+                  {t('products.code')}
+                  <input
+                    name="codigo"
+                    placeholder={t('products.codePlaceholder')}
+                    maxLength={20}
+                    required
+                  />
+                </label>
+                <label>
+                  {t('products.description')}
+                  <input
+                    name="descrip"
+                    placeholder={t('products.descriptionPlaceholder')}
+                    required
+                  />
+                </label>
+                <label>
+                  {t('products.category')}
+                  <div className="select-with-action">
+                    <select name="familia" required defaultValue="">
+                      <option value="" disabled>
+                        {t('products.selectCategory')}
+                      </option>
+                      {families.map((family) => (
+                        <option key={family} value={family}>
+                          {FAMILY_LABELS[family] ?? family}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      onClick={() => setIsCategoryModalOpen(true)}
+                    >
+                      {t('products.newCategory')}
+                    </button>
+                  </div>
+                </label>
+                <label>
+                  {t('products.costPrice')}
+                  <input
+                    name="prcosto"
+                    type="number"
+                    min="0"
+                    placeholder={t('products.costPlaceholder')}
+                    required
+                  />
+                </label>
+                <label>
+                  {t('products.salePrice')}
+                  <input
+                    name="prventa"
+                    type="number"
+                    min="0"
+                    placeholder={t('products.salePlaceholder')}
+                    required
+                  />
+                </label>
+                <label>
+                  {t('products.stock')}
+                  <input
+                    name="stock"
+                    type="number"
+                    min="0"
+                    placeholder={t('products.stockPlaceholder')}
+                    required
+                  />
+                </label>
+                <label>
+                  {t('products.minimumStock')}
+                  <input
+                    name="minStock"
+                    type="number"
+                    min="0"
+                    placeholder={t('products.minimumStockPlaceholder')}
+                    required
+                  />
+                </label>
+                <button type="submit">{t('products.addProduct')}</button>
+              </form>
+            </article>
+          </details>
+        ) : null}
       </section>
 
-      {isCategoryModalOpen ? (
+      {canManage && isCategoryModalOpen ? (
         <div
           className="modal-backdrop"
           role="presentation"

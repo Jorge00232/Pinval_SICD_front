@@ -63,6 +63,14 @@ export type Product = {
   salesHistory?: number[];
   /** Fecha de registro o actualización de stock */
   fecha?: string;
+  /** Ubicación física en el almacén (ej: Bodega A - Estante 2) */
+  ubicacion?: string;
+  /** Proveedor asociado al producto */
+  proveedor?: string;
+  /** Número de lote del producto */
+  lote?: string;
+  /** Fecha de caducidad del producto (en formato YYYY-MM-DD) */
+  fechaCaducidad?: string;
 };
 
 export type Supplier = {

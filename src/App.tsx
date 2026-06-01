@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Landing from './pages/Landing';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Inventory from './pages/Inventory';
@@ -19,7 +20,7 @@ function App() {
       <ThemeProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Navigate to="/home" replace />} />
+            <Route path="/" element={<Landing />} />
 
             <Route path="/home" element={<Home />} />
             <Route path="/login" element={<Login />} />
@@ -33,7 +34,7 @@ function App() {
             <Route path="/alerts" element={<Alerts />} />
             <Route path="/reports" element={<Reports />} />
 
-            <Route path="*" element={<Navigate to="/home" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
       </ThemeProvider>

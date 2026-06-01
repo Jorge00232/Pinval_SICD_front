@@ -13,6 +13,10 @@ type ApiProduct = Partial<{
   prventa: number | string;
   minStock: number | string;
   fecha: string | null;
+  ubicacion: string | null;
+  proveedor: string | null;
+  lote: string | null;
+  fechaCaducidad: string | null;
 }>;
 
 function toNumber(value: unknown) {
@@ -42,6 +46,10 @@ function normalizeApiProduct(product: ApiProduct): Product | null {
     prventa: toNumber(product.prventa),
     minStock: toNumber(product.minStock),
     fecha: product.fecha ? String(product.fecha) : undefined,
+    ubicacion: product.ubicacion ? String(product.ubicacion).trim() : undefined,
+    proveedor: product.proveedor ? String(product.proveedor).trim() : undefined,
+    lote: product.lote ? String(product.lote).trim() : undefined,
+    fechaCaducidad: product.fechaCaducidad ? String(product.fechaCaducidad).trim() : undefined,
   };
 }
 
@@ -62,3 +70,21 @@ export async function fetchProducts() {
     .map((product) => normalizeApiProduct(product as ApiProduct))
     .filter((product): product is Product => product !== null);
 }
+
+export async function createProduct(product: Product) {
+  const response = await fetch(`${apiBaseUrl}/products`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(product),
+  });
+
+  if (!response.ok) {
+    throw new Error('No se pudo guardar el producto en el backend.');
+  }
+
+  const data: unknown = await response.json();
+  return normalizeApiProduct(data as ApiProduct);
+}
+

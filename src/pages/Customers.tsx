@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import AppLayout from '../components/AppLayout';
 import { canManageData } from '../api/authApi';
 import { useInventory } from '../state/useInventory';
@@ -7,12 +8,34 @@ function Customers() {
   const { addCustomer, customers } = useInventory();
   const { t } = useLanguage();
   const canManage = canManageData();
+
+  // Filter States
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedType, setSelectedType] = useState('all');
+
   const totalB2B = customers.filter(
     (customer) => customer.customerType === 'B2B',
   ).length;
   const totalB2C = customers.filter(
     (customer) => customer.customerType === 'B2C',
   ).length;
+
+  // Reactive Multi-attribute filter
+  const filteredCustomers = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    return customers.filter((customer) => {
+      const matchesSearch =
+        !query ||
+        customer.name.toLowerCase().includes(query) ||
+        (customer.identifier && customer.identifier.toLowerCase().includes(query)) ||
+        customer.contact.toLowerCase().includes(query);
+
+      const matchesType =
+        selectedType === 'all' || customer.customerType === selectedType;
+
+      return matchesSearch && matchesType;
+    });
+  }, [customers, searchTerm, selectedType]);
 
   return (
     <AppLayout
@@ -28,6 +51,29 @@ function Customers() {
             </span>
           </div>
 
+          {/* Dynamic Filters Toolbar */}
+          <div className="catalog-toolbar" style={{ borderBottom: '1px dashed #e2e8f0', paddingBottom: '14px', marginBottom: '16px' }}>
+            <label>
+              {t('products.search')}
+              <input
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder={t('customers.namePlaceholder') || 'Buscar cliente...'}
+              />
+            </label>
+            <label>
+              {t('customers.type')}
+              <select
+                value={selectedType}
+                onChange={(event) => setSelectedType(event.target.value)}
+              >
+                <option value="all">{t('reports.all')}</option>
+                <option value="B2B">B2B</option>
+                <option value="B2C">B2C</option>
+              </select>
+            </label>
+          </div>
+
           <div className="table-wrap products-table-wrap">
             <table>
               <thead>
@@ -41,8 +87,8 @@ function Customers() {
                 </tr>
               </thead>
               <tbody>
-                {customers.length > 0 ? (
-                  customers.map((customer) => (
+                {filteredCustomers.length > 0 ? (
+                  filteredCustomers.map((customer) => (
                     <tr key={customer.name}>
                       <td className="description-cell">{customer.name}</td>
                       <td>
@@ -62,7 +108,7 @@ function Customers() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6}>{t('customers.noCustomers')}</td>
+                    <td colSpan={6}>{t('customers.noCustomers') || 'Sin clientes registrados'}</td>
                   </tr>
                 )}
               </tbody>

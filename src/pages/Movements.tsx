@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import AppLayout from '../components/AppLayout';
 import { useInventory } from '../state/useInventory';
 import { useLanguage } from '../language/useLanguage';
@@ -5,6 +6,11 @@ import { useLanguage } from '../language/useLanguage';
 function Movements() {
   const { movements } = useInventory();
   const { t } = useLanguage();
+
+  // Filter States
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedType, setSelectedType] = useState('all');
+  const [selectedUser, setSelectedUser] = useState('all');
 
   const getMovementTypeLabel = (type: string) => {
     if (type === 'Entrada') {
@@ -18,6 +24,34 @@ function Movements() {
     return t('movements.adjustment');
   };
 
+  // Dynamically collect unique operators who registered movements
+  const uniqueUsers = useMemo(() => {
+    const users = movements
+      .map((m) => m.user)
+      .filter((u): u is string => typeof u === 'string' && u.trim().length > 0);
+    return [...new Set(users)].sort();
+  }, [movements]);
+
+  // Reactive Multi-attribute filter
+  const filteredMovements = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    return movements.filter((m) => {
+      const matchesSearch =
+        !query ||
+        m.product.toLowerCase().includes(query) ||
+        m.detail.toLowerCase().includes(query) ||
+        m.id.toLowerCase().includes(query);
+
+      const matchesType =
+        selectedType === 'all' || m.type === selectedType;
+
+      const matchesUser =
+        selectedUser === 'all' || m.user === selectedUser;
+
+      return matchesSearch && matchesType && matchesUser;
+    });
+  }, [movements, searchTerm, selectedType, selectedUser]);
+
   return (
     <AppLayout
       title={t('page.movements.title')}
@@ -26,8 +60,47 @@ function Movements() {
       <section className="panel">
         <div className="panel-heading">
           <h2>{t('movements.fullHistory')}</h2>
-          <span>{movements.length} {t('home.movements')}</span>
+          <span>{filteredMovements.length} {t('home.movements')}</span>
         </div>
+
+        {/* Dynamic Filters Toolbar */}
+        <div className="catalog-toolbar" style={{ borderBottom: '1px dashed #e2e8f0', paddingBottom: '14px', marginBottom: '16px' }}>
+          <label>
+            {t('products.search')}
+            <input
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder={t('products.searchPlaceholder') || 'Buscar...'}
+            />
+          </label>
+          <label>
+            {t('movements.type')}
+            <select
+              value={selectedType}
+              onChange={(event) => setSelectedType(event.target.value)}
+            >
+              <option value="all">{t('reports.all')}</option>
+              <option value="Entrada">{t('movements.entry')}</option>
+              <option value="Salida">{t('movements.exit')}</option>
+              <option value="Ajuste">{t('movements.adjustment')}</option>
+            </select>
+          </label>
+          <label>
+            {t('movements.user')}
+            <select
+              value={selectedUser}
+              onChange={(event) => setSelectedUser(event.target.value)}
+            >
+              <option value="all">{t('reports.all')}</option>
+              {uniqueUsers.map((user) => (
+                <option key={user} value={user}>
+                  {user}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
         <div className="table-wrap">
           <table>
             <thead>
@@ -41,8 +114,8 @@ function Movements() {
               </tr>
             </thead>
             <tbody>
-              {movements.length > 0 ? (
-                movements.map((movement) => (
+              {filteredMovements.length > 0 ? (
+                filteredMovements.map((movement) => (
                   <tr key={movement.id}>
                     <td>
                       <span

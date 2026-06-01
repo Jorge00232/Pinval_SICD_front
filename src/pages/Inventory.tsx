@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import AppLayout from '../components/AppLayout';
 import { currencyFormatter, FAMILY_LABELS, type Product } from '../data/mockData';
 import { useInventory } from '../state/useInventory';
@@ -76,8 +77,17 @@ function parseMovementMonth(dateLabel: string) {
 function Inventory() {
   const { movements, products } = useInventory();
   const { t } = useLanguage();
+  const [searchParams] = useSearchParams();
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth);
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const [selectedFamily, setSelectedFamily] = useState('all');
+
   const hasProducts = products.length > 0;
+
+  const families = useMemo(
+    () => [...new Set(products.map((product) => product.familia))].sort(),
+    [products],
+  );
 
   const inventoryProducts = useMemo(
     () => products.filter((product) => !requiresAdjustment(product) && product.stock > 0),
@@ -93,17 +103,27 @@ function Inventory() {
   );
   const sortedProducts = useMemo(
     () =>
-      [...products].sort((a, b) => {
-        const priorityA = requiresAdjustment(a) || a.stock <= a.minStock ? 0 : 1;
-        const priorityB = requiresAdjustment(b) || b.stock <= b.minStock ? 0 : 1;
+      [...products]
+        .filter((product) => {
+          const matchesSearch =
+            !searchTerm.trim() ||
+            product.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            product.descrip.toLowerCase().includes(searchTerm.toLowerCase());
+          const matchesFamily =
+            selectedFamily === 'all' || product.familia === selectedFamily;
+          return matchesSearch && matchesFamily;
+        })
+        .sort((a, b) => {
+          const priorityA = requiresAdjustment(a) || a.stock <= a.minStock ? 0 : 1;
+          const priorityB = requiresAdjustment(b) || b.stock <= b.minStock ? 0 : 1;
 
-        if (priorityA !== priorityB) {
-          return priorityA - priorityB;
-        }
+          if (priorityA !== priorityB) {
+            return priorityA - priorityB;
+          }
 
-        return a.descrip.localeCompare(b.descrip);
-      }),
-    [products],
+          return a.descrip.localeCompare(b.descrip);
+        }),
+    [products, searchTerm, selectedFamily],
   );
   const productByName = useMemo(
     () => new Map(products.map((product) => [product.descrip, product])),
@@ -200,6 +220,30 @@ function Inventory() {
         <div className="panel-heading">
           <h2>{t('inventory.stockByProduct')}</h2>
           <span>{products.length} {t('products.productsCount')}</span>
+        </div>
+        <div className="catalog-toolbar" style={{ borderBottom: '1px dashed #e2e8f0', paddingBottom: '14px', marginBottom: '16px' }}>
+          <label>
+            {t('products.search')}
+            <input
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder={t('products.searchPlaceholder')}
+            />
+          </label>
+          <label>
+            {t('products.category')}
+            <select
+              value={selectedFamily}
+              onChange={(event) => setSelectedFamily(event.target.value)}
+            >
+              <option value="all">{t('reports.all')}</option>
+              {families.map((family) => (
+                <option key={family} value={family}>
+                  {FAMILY_LABELS[family] ?? family}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
         {sortedProducts.length > 0 ? (
           <div className="inventory-list">

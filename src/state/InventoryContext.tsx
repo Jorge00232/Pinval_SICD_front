@@ -17,13 +17,103 @@ import {
   type InventoryContextValue,
   type InventoryState,
 } from './inventoryStore';
-import { fetchProducts } from '../api/productsApi';
+import { fetchProducts, createProduct } from '../api/productsApi';
 
 const storageKey = 'sicd-inventory-state-v1';
 
 const emptyState: InventoryState = {
-  products: [],
-  suppliers: [],
+  products: [
+    {
+      codigo: '001101',
+      descrip: 'Shampoo Neutro Hidratante 400ml',
+      familia: 'SHAMPOO',
+      prcosto: 1800,
+      prventa: 3200,
+      stock: 45,
+      minStock: 10,
+      fecha: '2026-05-15',
+      ubicacion: 'Bodega 1 - Estante A2',
+      proveedor: 'Distribuidora Central',
+      lote: 'SH-9921',
+      fechaCaducidad: '2027-08-20',
+    },
+    {
+      codigo: '001102',
+      descrip: 'Detergente Liquido Lavado Ropa 3L',
+      familia: 'LAV_.ROPA',
+      prcosto: 3500,
+      prventa: 6490,
+      stock: 8,
+      minStock: 15,
+      fecha: '2026-05-18',
+      ubicacion: 'Bodega 1 - Estante B5',
+      proveedor: 'Distribuidora Central',
+      lote: 'DET-4402',
+      fechaCaducidad: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 15 days from now (Near expiration)
+    },
+    {
+      codigo: '001103',
+      descrip: 'Cloro Tradicional Concentrado 2L',
+      familia: 'CLORO',
+      prcosto: 850,
+      prventa: 1500,
+      stock: 2,
+      minStock: 5,
+      fecha: '2026-05-20',
+      ubicacion: 'Bodega 2 - Pasillo D',
+      proveedor: 'Quimica del Norte',
+      lote: 'CL-0018',
+      fechaCaducidad: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 days ago (Expired)
+    },
+    {
+      codigo: '001104',
+      descrip: 'Lavaloza Activo Limon 750ml',
+      familia: 'LAVALOZA',
+      prcosto: 1100,
+      prventa: 1990,
+      stock: 60,
+      minStock: 12,
+      fecha: '2026-05-22',
+      ubicacion: 'Bodega 2 - Pasillo E',
+      proveedor: 'Quimica del Norte',
+      lote: 'LV-8871',
+      fechaCaducidad: '2028-02-10',
+    },
+    {
+      codigo: '001105',
+      descrip: 'Pasta Dental Triple Accion 150g',
+      familia: 'DENTAL',
+      prcosto: 980,
+      prventa: 1890,
+      stock: 24,
+      minStock: 8,
+      fecha: '2026-05-25',
+      ubicacion: 'Bodega 1 - Estante C1',
+      proveedor: 'Distribuidora Central',
+      lote: 'DEN-1102',
+      fechaCaducidad: '2027-11-05',
+    }
+  ],
+  suppliers: [
+    {
+      name: 'Distribuidora Central',
+      identifier: '76.452.122-3',
+      contactName: 'Carlos Gomez',
+      phone: '+56 9 7711 2233',
+      email: 'carlos@distribuidoracentral.cl',
+      lastPurchase: '2026-05-18',
+      totalPurchases: 2,
+    },
+    {
+      name: 'Quimica del Norte',
+      identifier: '77.892.110-K',
+      contactName: 'Patricia Tapia',
+      phone: '+56 9 8833 4455',
+      email: 'ventas@quimicadelnorte.cl',
+      lastPurchase: '2026-05-20',
+      totalPurchases: 1,
+    }
+  ],
   customers: [],
   movements: [],
 };
@@ -45,6 +135,10 @@ type LegacyProduct = Partial<{
   dataIssue: 'STOCK_NEGATIVO' | null;
   salesHistory: number[];
   fecha: string;
+  ubicacion: string;
+  proveedor: string;
+  lote: string;
+  fechaCaducidad: string;
 }>;
 
 type LegacyCustomer = Partial<{
@@ -116,6 +210,10 @@ function normalizeProduct(product: LegacyProduct): Product | null {
       ? product.salesHistory.filter((value): value is number => typeof value === 'number')
       : undefined,
     fecha: typeof product.fecha === 'string' ? product.fecha : undefined,
+    ubicacion: typeof product.ubicacion === 'string' ? product.ubicacion.trim() : undefined,
+    proveedor: typeof product.proveedor === 'string' ? product.proveedor.trim() : undefined,
+    lote: typeof product.lote === 'string' ? product.lote.trim() : undefined,
+    fechaCaducidad: typeof product.fechaCaducidad === 'string' ? product.fechaCaducidad.trim() : undefined,
   };
 }
 
@@ -209,7 +307,11 @@ function getInitialState() {
   }
 
   try {
-    return normalizeState(JSON.parse(savedState));
+    const parsed = normalizeState(JSON.parse(savedState));
+    if (parsed.products.length === 0) {
+      return emptyState;
+    }
+    return parsed;
   } catch {
     return emptyState;
   }
@@ -293,6 +395,11 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
             ...current,
             products: [...current.products, product],
           };
+        });
+
+        // Sync with backend asynchronously
+        createProduct(product).catch((err) => {
+          console.warn('No se pudo sincronizar el nuevo producto con el backend:', err);
         });
       },
       addSupplier(supplier) {

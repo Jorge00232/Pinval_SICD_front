@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import '../App.css';
 import { getSession } from '../api/authApi';
 import { useTheme } from '../state/useTheme';
@@ -138,10 +138,28 @@ function getSidebarIcon(to: string) {
 function AppLayout({ title, description, children }: AppLayoutProps) {
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
+  const navigate = useNavigate();
   const session = getSession();
+
+  const handleLogout = () => {
+    window.localStorage.removeItem('sicd-auth-session');
+    navigate('/login');
+  };
+
   const [isCollapsed, setIsCollapsed] = useState(() => {
     return localStorage.getItem('sidebar-collapsed') === 'true';
   });
+
+  // Dropdown & Settings states
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(() => {
+    return localStorage.getItem('sicd-user-avatar') || '';
+  });
+
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [emailNotif, setEmailNotif] = useState(() => localStorage.getItem('sicd-settings-email') !== 'false');
+  const [smsNotif, setSmsNotif] = useState(() => localStorage.getItem('sicd-settings-sms') !== 'false');
+  const [twoFactor, setTwoFactor] = useState(() => localStorage.getItem('sicd-settings-2fa') === 'true');
 
   const toggleSidebar = () => {
     setIsCollapsed((prev) => {
@@ -149,6 +167,27 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
       localStorage.setItem('sidebar-collapsed', String(newVal));
       return newVal;
     });
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64Data = reader.result as string;
+        setAvatarUrl(base64Data);
+        localStorage.setItem('sicd-user-avatar', base64Data);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const saveSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    localStorage.setItem('sicd-settings-email', String(emailNotif));
+    localStorage.setItem('sicd-settings-sms', String(smsNotif));
+    localStorage.setItem('sicd-settings-2fa', String(twoFactor));
+    setShowSettingsModal(false);
   };
 
   return (
@@ -266,14 +305,199 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
             >
               {theme === 'dark' ? t('layout.themeLight') : t('layout.themeDark')}
             </button>
-            <NavLink to="/login" className="secondary-action">
-              {t('layout.changeUser')}
-            </NavLink>
+
+            {/* Profile Avatar & Dropdown Container */}
+            <div className="profile-avatar-container">
+              <button
+                type="button"
+                className="profile-avatar-trigger"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                aria-label="Abrir perfil"
+              >
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="profile-avatar-img" />
+                ) : (
+                  <div className="profile-avatar-placeholder">
+                    {session?.user.name ? session.user.name.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                )}
+                <span className="profile-avatar-badge"></span>
+              </button>
+
+              {isDropdownOpen && (
+                <>
+                  <div className="dropdown-overlay-detector" onClick={() => setIsDropdownOpen(false)}></div>
+                  <div className="avatar-dropdown-menu">
+                    {/* User Info Header */}
+                    <div className="dropdown-user-info">
+                      <div className="dropdown-user-avatar-wrapper">
+                        {avatarUrl ? (
+                          <img src={avatarUrl} alt="Avatar Large" className="dropdown-user-avatar-img" />
+                        ) : (
+                          <div className="dropdown-user-avatar-placeholder">
+                            {session?.user.name ? session.user.name.charAt(0).toUpperCase() : 'U'}
+                          </div>
+                        )}
+                        <label className="change-avatar-label" htmlFor="avatar-file-input" title="Cambiar foto de perfil">
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                            <circle cx="12" cy="13" r="4"></circle>
+                          </svg>
+                          <input
+                            id="avatar-file-input"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleAvatarChange}
+                            style={{ display: 'none' }}
+                          />
+                        </label>
+                      </div>
+                      <div className="dropdown-user-copy">
+                        <strong>{session?.user.name ?? t('layout.contextTitle')}</strong>
+                        <span className="dropdown-username">@{session?.user.username ?? 'user'}</span>
+                        <span className="role-badge-v2">{session?.user.role ?? 'VIEWER'}</span>
+                      </div>
+                    </div>
+
+                    <div className="dropdown-divider"></div>
+
+                    {/* Menu Options */}
+                    <div className="dropdown-options">
+                      <button
+                        type="button"
+                        className="dropdown-item"
+                        onClick={() => {
+                          setShowSettingsModal(true);
+                          setIsDropdownOpen(false);
+                        }}
+                      >
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="3"></circle>
+                          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                        <span>{language === 'es' ? 'Configuración de cuenta' : 'Account Settings'}</span>
+                      </button>
+
+                      <NavLink to="/login" className="dropdown-item">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="9" cy="7" r="4"></circle>
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        <span>{t('layout.changeUser')}</span>
+                      </NavLink>
+
+                      <div className="dropdown-divider"></div>
+
+                      <button
+                        type="button"
+                        className="dropdown-item logout-btn-item"
+                        onClick={handleLogout}
+                      >
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                          <polyline points="16 17 21 12 16 7"></polyline>
+                          <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                        <span>{t('layout.logout')}</span>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
           </div>
         </header>
 
         <section className="page-body">{children}</section>
       </main>
+
+      {/* Account Settings Modal */}
+      {showSettingsModal && (
+        <div className="modal-backdrop-v2" onClick={() => setShowSettingsModal(false)}>
+          <div className="modal-content-v2" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-v2">
+              <h2>{language === 'es' ? 'Configuración de la Cuenta' : 'Account Settings'}</h2>
+              <button
+                type="button"
+                className="close-modal-btn-v2"
+                onClick={() => setShowSettingsModal(false)}
+                aria-label="Cerrar modal"
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={saveSettings} className="settings-form-v2">
+              <div className="settings-section-v2" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <h3 style={{ fontSize: '15px', color: theme === 'dark' ? '#cbd5e1' : '#334155' }}>
+                  {language === 'es' ? 'Preferencias del Sistema' : 'System Preferences'}
+                </h3>
+                
+                <div className="form-group-v2">
+                  <label className="checkbox-container-v2">
+                    <input
+                      type="checkbox"
+                      checked={emailNotif}
+                      onChange={(e) => setEmailNotif(e.target.checked)}
+                    />
+                    <span className="checkbox-checkmark-v2"></span>
+                    <span className="checkbox-label-v2">
+                      {language === 'es' ? 'Notificaciones por Correo' : 'Email Notifications'}
+                    </span>
+                  </label>
+                </div>
+
+                <div className="form-group-v2">
+                  <label className="checkbox-container-v2">
+                    <input
+                      type="checkbox"
+                      checked={smsNotif}
+                      onChange={(e) => setSmsNotif(e.target.checked)}
+                    />
+                    <span className="checkbox-checkmark-v2"></span>
+                    <span className="checkbox-label-v2">
+                      {language === 'es' ? 'Alertas SMS de inventario bajo' : 'SMS alerts for low stock'}
+                    </span>
+                  </label>
+                </div>
+
+                <div className="form-group-v2">
+                  <label className="checkbox-container-v2">
+                    <input
+                      type="checkbox"
+                      checked={twoFactor}
+                      onChange={(e) => setTwoFactor(e.target.checked)}
+                    />
+                    <span className="checkbox-checkmark-v2"></span>
+                    <span className="checkbox-label-v2">
+                      {language === 'es' ? 'Doble factor de autenticación (2FA)' : 'Two-Factor Authentication (2FA)'}
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="modal-footer-v2">
+                <button
+                  type="button"
+                  className="secondary-btn-v2"
+                  onClick={() => setShowSettingsModal(false)}
+                >
+                  {language === 'es' ? 'Cancelar' : 'Cancel'}
+                </button>
+                <button type="submit" className="submit-btn-v2" style={{ width: 'auto' }}>
+                  {language === 'es' ? 'Guardar Cambios' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

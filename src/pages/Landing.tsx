@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import AppLayout from '../components/AppLayout';
 import { useLanguage } from '../language/useLanguage';
 import { useInventory } from '../state/useInventory';
+import { getSession } from '../api/authApi';
 
 const sectionData = [
   {
@@ -41,13 +42,104 @@ const sectionData = [
   },
 ];
 
+function getSubmoduleIcon(to: string) {
+  switch (to) {
+    case '/home':
+      return (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <rect x="3" y="3" width="7" height="9"></rect>
+          <rect x="14" y="3" width="7" height="5"></rect>
+          <rect x="14" y="12" width="7" height="9"></rect>
+          <rect x="3" y="16" width="7" height="5"></rect>
+        </svg>
+      );
+    case '/sales':
+      return (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <line x1="12" y1="1" x2="12" y2="23"></line>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+        </svg>
+      );
+    case '/purchases':
+      return (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <circle cx="9" cy="21" r="1"></circle>
+          <circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
+      );
+    case '/inventory':
+      return (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+          <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+      );
+    case '/products':
+      return (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+          <line x1="7" y1="7" x2="7.01" y2="7"></line>
+        </svg>
+      );
+    case '/customers':
+      return (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+      );
+    case '/suppliers':
+      return (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <rect x="1" y="3" width="15" height="13"></rect>
+          <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+          <circle cx="5.5" cy="18.5" r="2.5"></circle>
+          <circle cx="18.5" cy="18.5" r="2.5"></circle>
+        </svg>
+      );
+    case '/movements':
+      return (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <polyline points="17 1 21 5 17 9"></polyline>
+          <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+          <polyline points="7 23 3 19 7 15"></polyline>
+          <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+        </svg>
+      );
+    case '/alerts':
+      return (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      );
+    case '/reports':
+      return (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+      );
+    default:
+      return null;
+  }
+}
+
 function Landing() {
   const navigate = useNavigate();
-  const { t } = useLanguage();
-  const { products } = useInventory();
+  const { t, language } = useLanguage();
+  const { products, suppliers, customers, movements } = useInventory();
+  const session = getSession();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSection, setSelectedSection] = useState('all');
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
 
   // Flatten all items with their parent section metadata for search
   const allItems = useMemo(
@@ -108,16 +200,27 @@ function Landing() {
       .slice(0, 8); // Top 8 matches
   }, [searchTerm, selectedSection, products]);
 
-  // Filtered sections for non-search grouped view
-  const filteredSections = useMemo(
-    () =>
-      sectionData.filter(
-        (s) => selectedSection === 'all' || s.id === selectedSection,
-      ),
-    [selectedSection],
-  );
-
   const hasAnyResults = searchResults.length > 0 || productResults.length > 0;
+
+  // Real-time calculations for metrics
+  const totalStockUnits = useMemo(() => {
+    return products.reduce((acc, p) => acc + p.stock, 0);
+  }, [products]);
+
+  const activeAlertsCount = useMemo(() => {
+    const adjustmentAlerts = products.filter((p) => p.dataIssue === 'STOCK_NEGATIVO').length;
+    const criticalAlerts = products.filter((p) => p.dataIssue !== 'STOCK_NEGATIVO' && p.stock === 0).length;
+    const warningAlerts = products.filter((p) => p.dataIssue !== 'STOCK_NEGATIVO' && p.stock > 0 && p.stock <= p.minStock).length;
+    return adjustmentAlerts + criticalAlerts + warningAlerts;
+  }, [products]);
+
+  const shipmentsCount = useMemo(() => {
+    return movements.filter((m) => m.type === 'Salida').length;
+  }, [movements]);
+
+  const toggleCard = (sectionId: string) => {
+    setExpandedCard((prev) => (prev === sectionId ? null : sectionId));
+  };
 
   return (
     <AppLayout
@@ -295,44 +398,188 @@ function Landing() {
           )}
         </div>
       ) : (
-        /* Default grouped view */
-        <div className="landing-sections">
-          {filteredSections.map((section, sectionIndex) => (
-            <section
-              key={section.id}
-              className={`landing-section landing-section--${section.color}`}
-              style={{ animationDelay: `${sectionIndex * 0.1}s` }}
-            >
-              <div className="landing-section-header">
-                <div className={`landing-section-indicator ${section.color}`} />
-                <div>
-                  <h2>{t(section.titleKey)}</h2>
-                  <p>{t(section.descriptionKey)}</p>
+        /* Premium Dashboard Layout matching target image */
+        <div style={{ padding: '24px 0' }}>
+          {/* Welcome and Summary header */}
+          <div className="landing-welcome-container">
+            <div className="landing-welcome-info">
+              <h1>
+                {language === 'es'
+                  ? `Welcome back, ${session?.user.name ?? 'Alex'}.`
+                  : `Welcome back, ${session?.user.name ?? 'Alex'}.`}
+              </h1>
+              <p>
+                {language === 'es' ? (
+                  <>
+                    Operational status is <span className="status-highlight">Stable</span>. You have <strong style={{ color: '#dc2626' }}>{activeAlertsCount}</strong> pending alerts to review.
+                  </>
+                ) : (
+                  <>
+                    Operational status is <span className="status-highlight">Stable</span>. You have <strong style={{ color: '#dc2626' }}>{activeAlertsCount}</strong> pending alerts to review.
+                  </>
+                )}
+              </p>
+            </div>
+
+            <div className="landing-top-summaries">
+              <div className="landing-summary-widget">
+                <span>{language === 'es' ? 'TOTAL ITEMS' : 'TOTAL ITEMS'}</span>
+                <strong>{totalStockUnits.toLocaleString()}</strong>
+              </div>
+              <div className="landing-summary-widget alert-widget">
+                <span>{language === 'es' ? 'ACTIVE ALERTS' : 'ACTIVE ALERTS'}</span>
+                <strong>{activeAlertsCount < 10 ? `0${activeAlertsCount}` : activeAlertsCount}</strong>
+              </div>
+              <div className="landing-summary-widget shipment-widget">
+                <span>{language === 'es' ? 'SHIPMENTS' : 'SHIPMENTS'}</span>
+                <strong>{shipmentsCount}</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* Grid of the 3 major components */}
+          <div className="landing-main-dashboard-grid">
+            {/* Card 1: Operación */}
+            <div className={`landing-column-card card-blue ${expandedCard === 'operation' ? 'is-expanded' : ''}`} onClick={() => toggleCard('operation')} style={{ cursor: 'pointer' }}>
+              <div className="landing-column-header">
+                <div className="landing-column-icon-box blue">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <rect x="3" y="3" width="7" height="9"></rect>
+                    <rect x="14" y="3" width="7" height="5"></rect>
+                    <rect x="14" y="12" width="7" height="9"></rect>
+                    <rect x="3" y="16" width="7" height="5"></rect>
+                  </svg>
+                </div>
+                <div className={`landing-column-arrow-box ${expandedCard === 'operation' ? 'rotated' : ''}`}>
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
                 </div>
               </div>
+              <div className="landing-column-info">
+                <h2>{language === 'es' ? 'Operación' : 'Operación'}</h2>
+                <p>
+                  {language === 'es'
+                    ? 'Real-time oversight of manufacturing cycles, stock levels, and purchasing workflows.'
+                    : 'Real-time oversight of manufacturing cycles, stock levels, and purchasing workflows.'}
+                </p>
+              </div>
 
-              <div className="landing-cards-grid">
-                {section.items.map((item, itemIndex) => (
-                  <button
-                    key={item.to}
-                    type="button"
-                    className={`landing-card landing-card--${section.color}`}
-                    onClick={() => navigate(item.to)}
-                    style={{ animationDelay: `${sectionIndex * 0.1 + itemIndex * 0.06}s` }}
-                  >
-                    <div className={`landing-card-icon ${section.color}`}>
-                      {item.icon}
-                    </div>
-                    <div className="landing-card-content">
-                      <strong>{t(item.labelKey)}</strong>
-                      <p>{t(item.descKey)}</p>
-                    </div>
-                    <span className="landing-card-arrow">→</span>
-                  </button>
+              <div className={`landing-sub-options-grid ${expandedCard === 'operation' ? 'is-visible' : ''}`} onClick={(e) => e.stopPropagation()}>
+                {sectionData[0].items.map((item) => (
+                  <Link key={item.to} to={item.to} className="landing-sub-option-item">
+                    <span className="landing-sub-option-icon blue">{getSubmoduleIcon(item.to)}</span>
+                    <span>{t(item.labelKey)}</span>
+                    <span className="arrow-indicator">→</span>
+                  </Link>
                 ))}
               </div>
-            </section>
-          ))}
+
+              <div className="landing-column-stats">
+                <div className="landing-stat-box stat-blue">
+                  <span>EFFICIENCY</span>
+                  <strong>94.2%</strong>
+                </div>
+                <div className="landing-stat-box stat-blue">
+                  <span>ACTIVE JOBS</span>
+                  <strong>{movements.length}</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: Gestión */}
+            <div className={`landing-column-card card-amber ${expandedCard === 'management' ? 'is-expanded' : ''}`} onClick={() => toggleCard('management')} style={{ cursor: 'pointer' }}>
+              <div className="landing-column-header">
+                <div className="landing-column-icon-box amber">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                  </svg>
+                </div>
+                <div className={`landing-column-arrow-box ${expandedCard === 'management' ? 'rotated' : ''}`}>
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </div>
+              </div>
+              <div className="landing-column-info">
+                <h2>{language === 'es' ? 'Gestión' : 'Gestión'}</h2>
+                <p>
+                  {language === 'es'
+                    ? 'Comprehensive management of client relations, supplier contracts, and product catalogs.'
+                    : 'Comprehensive management of client relations, supplier contracts, and product catalogs.'}
+                </p>
+              </div>
+
+              <div className={`landing-sub-options-grid ${expandedCard === 'management' ? 'is-visible' : ''}`} onClick={(e) => e.stopPropagation()}>
+                {sectionData[1].items.map((item) => (
+                  <Link key={item.to} to={item.to} className="landing-sub-option-item">
+                    <span className="landing-sub-option-icon amber">{getSubmoduleIcon(item.to)}</span>
+                    <span>{t(item.labelKey)}</span>
+                    <span className="arrow-indicator">→</span>
+                  </Link>
+                ))}
+              </div>
+
+              <div className="landing-column-stats">
+                <div className="landing-stat-box stat-amber">
+                  <span>NEW LEADS</span>
+                  <strong>24</strong>
+                </div>
+                <div className="landing-stat-box stat-amber">
+                  <span>SUPPLIERS</span>
+                  <strong>{suppliers.length}</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: Control */}
+            <div className={`landing-column-card card-red ${expandedCard === 'control' ? 'is-expanded' : ''}`} onClick={() => toggleCard('control')} style={{ cursor: 'pointer' }}>
+              <div className="landing-column-header">
+                <div className="landing-column-icon-box red">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  </svg>
+                </div>
+                <div className={`landing-column-arrow-box ${expandedCard === 'control' ? 'rotated' : ''}`}>
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </div>
+              </div>
+              <div className="landing-column-info">
+                <h2>{language === 'es' ? 'Control' : 'Control'}</h2>
+                <p>
+                  {language === 'es'
+                    ? 'Critical monitoring system for audit trails, security alerts, and compliance reporting.'
+                    : 'Critical monitoring system for audit trails, security alerts, and compliance reporting.'}
+                </p>
+              </div>
+
+              <div className={`landing-sub-options-grid ${expandedCard === 'control' ? 'is-visible' : ''}`} onClick={(e) => e.stopPropagation()}>
+                {sectionData[2].items.map((item) => (
+                  <Link key={item.to} to={item.to} className="landing-sub-option-item">
+                    <span className="landing-sub-option-icon red">{getSubmoduleIcon(item.to)}</span>
+                    <span>{t(item.labelKey)}</span>
+                    <span className="arrow-indicator">→</span>
+                  </Link>
+                ))}
+              </div>
+
+              <div className="landing-column-stats">
+                <div className="landing-stat-box stat-red">
+                  <span>UPTIME</span>
+                  <strong>99.9%</strong>
+                </div>
+                <div className="landing-stat-box stat-red">
+                  <span>INCIDENTS</span>
+                  <strong>{activeAlertsCount > 0 ? activeAlertsCount : 'None'}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </AppLayout>

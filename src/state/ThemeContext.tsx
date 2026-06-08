@@ -13,13 +13,22 @@ function getInitialTheme(): ThemeMode {
   }
 
   const savedTheme = window.localStorage.getItem(storageKey);
-  return savedTheme === 'dark' ? 'dark' : 'light';
+
+  if (savedTheme === 'dark' || savedTheme === 'light') {
+    return savedTheme;
+  }
+
+  return 'light';
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
 
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     window.localStorage.setItem(storageKey, theme);
     document.body.classList.toggle('theme-dark', theme === 'dark');
   }, [theme]);
@@ -28,7 +37,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     () => ({
       theme,
       toggleTheme() {
-        setTheme((current) => (current === 'dark' ? 'light' : 'dark'));
+        setTheme((currentTheme) =>
+          currentTheme === 'dark' ? 'light' : 'dark',
+        );
       },
     }),
     [theme],

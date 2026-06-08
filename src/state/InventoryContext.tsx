@@ -5,7 +5,6 @@ import {
   type ReactNode,
 } from 'react';
 import {
-  FAMILY_LABELS,
   type Customer,
   type InventoryMovement,
   type Product,
@@ -21,11 +20,55 @@ import { fetchProducts, createProduct } from '../api/productsApi';
 
 const storageKey = 'sicd-inventory-state-v1';
 
+function toDisplayProductName(rawName?: string | null) {
+  if (!rawName) {
+    return '';
+  }
+
+  const cleaned = rawName
+    .replace(/_/g, ' ')
+    .replace(/\*/g, ' x')
+    .replace(/\//g, ' / ')
+    .replace(/\./g, ' ')
+    .replace(/\b(\d+)\s*CC\b/gi, '$1 cc')
+    .replace(/\b(\d+)\s*ML\b/gi, '$1 ml')
+    .replace(/\b(\d+)\s*LT\b/gi, '$1 L')
+    .replace(/\b(\d+)\s*LTS\b/gi, '$1 L')
+    .replace(/\b(\d+)\s*L\b/gi, '$1 L')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return cleaned
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+    .replace(/\bCc\b/g, 'cc')
+    .replace(/\bMl\b/g, 'ml')
+    .replace(/\bL\b/g, 'L')
+    .replace(/\bX\s*(\d+)/g, 'x$1')
+    .replace(/\s+\/\s+/g, ' / ');
+}
+
+function toSearchProductName(rawName?: string | null) {
+  return toDisplayProductName(rawName)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^\w\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getProductDisplayName(product: Product) {
+  return product.displayName?.trim() || product.descrip?.trim() || 'Producto sin nombre';
+}
+
 const emptyState: InventoryState = {
   products: [
     {
       codigo: '001101',
       descrip: 'Shampoo Neutro Hidratante 400ml',
+      displayName: 'Shampoo Neutro Hidratante 400 ml',
+      searchName: 'shampoo neutro hidratante 400 ml',
       familia: 'SHAMPOO',
       prcosto: 1800,
       prventa: 3200,
@@ -40,6 +83,8 @@ const emptyState: InventoryState = {
     {
       codigo: '001102',
       descrip: 'Detergente Liquido Lavado Ropa 3L',
+      displayName: 'Detergente Liquido Lavado Ropa 3 L',
+      searchName: 'detergente liquido lavado ropa 3 l',
       familia: 'LAV_.ROPA',
       prcosto: 3500,
       prventa: 6490,
@@ -49,11 +94,15 @@ const emptyState: InventoryState = {
       ubicacion: 'Bodega 1 - Estante B5',
       proveedor: 'Distribuidora Central',
       lote: 'DET-4402',
-      fechaCaducidad: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 15 days from now (Near expiration)
+      fechaCaducidad: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0],
     },
     {
       codigo: '001103',
       descrip: 'Cloro Tradicional Concentrado 2L',
+      displayName: 'Cloro Tradicional Concentrado 2 L',
+      searchName: 'cloro tradicional concentrado 2 l',
       familia: 'CLORO',
       prcosto: 850,
       prventa: 1500,
@@ -63,11 +112,15 @@ const emptyState: InventoryState = {
       ubicacion: 'Bodega 2 - Pasillo D',
       proveedor: 'Quimica del Norte',
       lote: 'CL-0018',
-      fechaCaducidad: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 days ago (Expired)
+      fechaCaducidad: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0],
     },
     {
       codigo: '001104',
       descrip: 'Lavaloza Activo Limon 750ml',
+      displayName: 'Lavaloza Activo Limon 750 ml',
+      searchName: 'lavaloza activo limon 750 ml',
       familia: 'LAVALOZA',
       prcosto: 1100,
       prventa: 1990,
@@ -82,6 +135,8 @@ const emptyState: InventoryState = {
     {
       codigo: '001105',
       descrip: 'Pasta Dental Triple Accion 150g',
+      displayName: 'Pasta Dental Triple Accion 150g',
+      searchName: 'pasta dental triple accion 150g',
       familia: 'DENTAL',
       prcosto: 980,
       prventa: 1890,
@@ -92,7 +147,7 @@ const emptyState: InventoryState = {
       proveedor: 'Distribuidora Central',
       lote: 'DEN-1102',
       fechaCaducidad: '2027-11-05',
-    }
+    },
   ],
   suppliers: [
     {
@@ -112,7 +167,7 @@ const emptyState: InventoryState = {
       email: 'ventas@quimicadelnorte.cl',
       lastPurchase: '2026-05-20',
       totalPurchases: 1,
-    }
+    },
   ],
   customers: [],
   movements: [],
@@ -128,13 +183,15 @@ type LegacyProduct = Partial<{
   minStock: number;
   codigo: string;
   descrip: string;
+  displayName: string;
+  searchName: string;
   familia: string;
   prcosto: number;
   prventa: number;
   stockOriginal: number;
   dataIssue: 'STOCK_NEGATIVO' | null;
   salesHistory: number[];
-  fecha: string;
+  fecha: string | null;
   ubicacion: string;
   proveedor: string;
   lote: string;
@@ -162,8 +219,8 @@ type LegacySupplier = Partial<{
 }>;
 
 function normalizeFamily(value: unknown): ProductFamily {
-  if (typeof value === 'string' && value in FAMILY_LABELS) {
-    return value as ProductFamily;
+  if (typeof value === 'string' && value.trim()) {
+    return value.trim() as ProductFamily;
   }
 
   return 'NO TIENE';
@@ -176,6 +233,7 @@ function normalizeProduct(product: LegacyProduct): Product | null {
       : typeof product.sku === 'string'
         ? product.sku.trim()
         : '';
+
   const descrip =
     typeof product.descrip === 'string'
       ? product.descrip.trim()
@@ -187,9 +245,23 @@ function normalizeProduct(product: LegacyProduct): Product | null {
     return null;
   }
 
+  const displayName =
+    typeof product.displayName === 'string' && product.displayName.trim()
+      ? product.displayName.trim()
+      : toDisplayProductName(descrip);
+
+  const searchName =
+    typeof product.searchName === 'string' && product.searchName.trim()
+      ? product.searchName.trim()
+      : toSearchProductName(displayName || descrip);
+
+  const stock = Number(product.stock ?? 0);
+
   return {
     codigo,
     descrip,
+    displayName,
+    searchName,
     familia: normalizeFamily(product.familia ?? product.category),
     prcosto:
       typeof product.prcosto === 'number'
@@ -199,21 +271,38 @@ function normalizeProduct(product: LegacyProduct): Product | null {
       typeof product.prventa === 'number'
         ? product.prventa
         : Number(product.salePrice ?? 0),
-    stock: Number(product.stock ?? 0),
+    stock,
     stockOriginal:
       typeof product.stockOriginal === 'number'
         ? product.stockOriginal
-        : Number(product.stock ?? 0),
+        : stock,
     dataIssue: product.dataIssue === 'STOCK_NEGATIVO' ? 'STOCK_NEGATIVO' : null,
-    minStock: Number(product.minStock ?? 0),
+    minStock: Number(product.minStock ?? 5),
     salesHistory: Array.isArray(product.salesHistory)
       ? product.salesHistory.filter((value): value is number => typeof value === 'number')
       : undefined,
-    fecha: typeof product.fecha === 'string' ? product.fecha : undefined,
-    ubicacion: typeof product.ubicacion === 'string' ? product.ubicacion.trim() : undefined,
-    proveedor: typeof product.proveedor === 'string' ? product.proveedor.trim() : undefined,
-    lote: typeof product.lote === 'string' ? product.lote.trim() : undefined,
-    fechaCaducidad: typeof product.fechaCaducidad === 'string' ? product.fechaCaducidad.trim() : undefined,
+    fecha:
+      typeof product.fecha === 'string'
+        ? product.fecha
+        : product.fecha === null
+          ? null
+          : undefined,
+    ubicacion:
+      typeof product.ubicacion === 'string' && product.ubicacion.trim()
+        ? product.ubicacion.trim()
+        : undefined,
+    proveedor:
+      typeof product.proveedor === 'string' && product.proveedor.trim()
+        ? product.proveedor.trim()
+        : undefined,
+    lote:
+      typeof product.lote === 'string' && product.lote.trim()
+        ? product.lote.trim()
+        : undefined,
+    fechaCaducidad:
+      typeof product.fechaCaducidad === 'string' && product.fechaCaducidad.trim()
+        ? product.fechaCaducidad.trim()
+        : undefined,
   };
 }
 
@@ -308,9 +397,11 @@ function getInitialState() {
 
   try {
     const parsed = normalizeState(JSON.parse(savedState));
+
     if (parsed.products.length === 0) {
       return emptyState;
     }
+
     return parsed;
   } catch {
     return emptyState;
@@ -329,12 +420,16 @@ function getMovementId() {
 }
 
 function mergeProducts(currentProducts: Product[], backendProducts: Product[]) {
+  const normalizedBackendProducts = backendProducts
+    .map((product) => normalizeProduct(product))
+    .filter((product): product is Product => product !== null);
+
   const backendCodes = new Set(
-    backendProducts.map((product) => product.codigo.toLowerCase()),
+    normalizedBackendProducts.map((product) => product.codigo.toLowerCase()),
   );
 
   return [
-    ...backendProducts,
+    ...normalizedBackendProducts,
     ...currentProducts.filter(
       (product) => !backendCodes.has(product.codigo.toLowerCase()),
     ),
@@ -359,7 +454,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
         }));
       })
       .catch(() => {
-        // El frontend puede seguir operando con datos locales si la API no esta levantada.
+        // El frontend puede seguir operando con datos locales si la API no está levantada.
       });
 
     return () => {
@@ -374,18 +469,26 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
   const value = useMemo<InventoryContextValue>(
     () => ({
       ...state,
+
       addProduct(product) {
+        const normalizedProduct = normalizeProduct(product);
+
+        if (!normalizedProduct) {
+          return;
+        }
+
         setState((current) => {
           const exists = current.products.some(
-            (item) => item.codigo.toLowerCase() === product.codigo.toLowerCase(),
+            (item) =>
+              item.codigo.toLowerCase() === normalizedProduct.codigo.toLowerCase(),
           );
 
           if (exists) {
             return {
               ...current,
               products: current.products.map((item) =>
-                item.codigo.toLowerCase() === product.codigo.toLowerCase()
-                  ? product
+                item.codigo.toLowerCase() === normalizedProduct.codigo.toLowerCase()
+                  ? normalizedProduct
                   : item,
               ),
             };
@@ -393,15 +496,18 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
 
           return {
             ...current,
-            products: [...current.products, product],
+            products: [...current.products, normalizedProduct],
           };
         });
 
-        // Sync with backend asynchronously
-        createProduct(product).catch((err) => {
-          console.warn('No se pudo sincronizar el nuevo producto con el backend:', err);
+        createProduct(normalizedProduct).catch((err) => {
+          console.warn(
+            'No se pudo sincronizar el nuevo producto con el backend:',
+            err,
+          );
         });
       },
+
       addSupplier(supplier) {
         setState((current) => ({
           ...current,
@@ -415,6 +521,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
           ],
         }));
       },
+
       addCustomer(customer) {
         setState((current) => ({
           ...current,
@@ -428,6 +535,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
           ],
         }));
       },
+
       recordPurchase(purchase) {
         setState((current) => {
           const validItems = purchase.items.filter(
@@ -445,7 +553,10 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
             quantityByCode.set(item.codigo, currentQuantity + item.quantity);
           }
 
-          const existingProducts = new Set(current.products.map((item) => item.codigo));
+          const existingProducts = new Set(
+            current.products.map((item) => item.codigo),
+          );
+
           const filteredEntries = [...quantityByCode.entries()].filter(([codigo]) =>
             existingProducts.has(codigo),
           );
@@ -461,7 +572,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
               return {
                 id: getMovementId(),
                 type: 'Entrada',
-                product: product.descrip,
+                product: getProductDisplayName(product),
                 quantity,
                 user: 'Usuario local',
                 date: getDateTimeLabel(),
@@ -477,6 +588,9 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
                 ? {
                     ...item,
                     stock: item.stock + (quantityByCode.get(item.codigo) ?? 0),
+                    stockOriginal:
+                      (item.stockOriginal ?? item.stock) +
+                      (quantityByCode.get(item.codigo) ?? 0),
                   }
                 : item,
             ),
@@ -493,6 +607,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
           };
         });
       },
+
       recordSale(sale) {
         setState((current) => {
           const validItems = sale.items.filter(
@@ -513,6 +628,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
           const existingProducts = new Map(
             current.products.map((item) => [item.codigo, item] as const),
           );
+
           const filteredEntries = [...quantityByCode.entries()].filter(([codigo]) =>
             existingProducts.has(codigo),
           );
@@ -531,6 +647,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
           }
 
           const movementDate = getDateTimeLabel();
+
           const movements: InventoryMovement[] = filteredEntries.map(
             ([codigo, quantity]) => {
               const product = existingProducts.get(codigo)!;
@@ -542,7 +659,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
               return {
                 id: getMovementId(),
                 type: 'Salida',
-                product: product.descrip,
+                product: getProductDisplayName(product),
                 quantity,
                 user: 'Usuario local',
                 date: movementDate,
@@ -557,7 +674,13 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
             ...current,
             products: current.products.map((item) =>
               quantityByCode.has(item.codigo)
-                ? { ...item, stock: item.stock - (quantityByCode.get(item.codigo) ?? 0) }
+                ? {
+                    ...item,
+                    stock: item.stock - (quantityByCode.get(item.codigo) ?? 0),
+                    stockOriginal:
+                      (item.stockOriginal ?? item.stock) -
+                      (quantityByCode.get(item.codigo) ?? 0),
+                  }
                 : item,
             ),
             customers: current.customers.map((customer) =>

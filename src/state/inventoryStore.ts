@@ -13,6 +13,8 @@ export type InventoryState = {
   movements: InventoryMovement[];
 };
 
+export type ProductInput = Product;
+
 export type PurchaseInput = {
   date: string;
   supplierName: string;
@@ -35,14 +37,20 @@ export type SaleInput = {
   }>;
 };
 
+export type SupplierInput = Pick<
+  Supplier,
+  'name' | 'identifier' | 'contactName' | 'phone' | 'email'
+>;
+
+export type CustomerInput = Pick<
+  Customer,
+  'name' | 'contact' | 'customerType' | 'identifier'
+>;
+
 export type InventoryContextValue = InventoryState & {
-  addProduct: (product: Product) => void;
-  addSupplier: (
-    supplier: Pick<Supplier, 'name' | 'identifier' | 'contactName' | 'phone' | 'email'>,
-  ) => void;
-  addCustomer: (
-    customer: Pick<Customer, 'name' | 'contact' | 'customerType' | 'identifier'>,
-  ) => void;
+  addProduct: (product: ProductInput) => void;
+  addSupplier: (supplier: SupplierInput) => void;
+  addCustomer: (customer: CustomerInput) => void;
   recordPurchase: (purchase: PurchaseInput) => void;
   recordSale: (sale: SaleInput) => void;
 };

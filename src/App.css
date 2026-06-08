@@ -1,3 +1,4 @@
+
 .app-shell {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
@@ -2022,7 +2023,9 @@ select {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+  overflow: visible;
 }
+
 
 .catalog-card {
   display: grid;
@@ -6351,4 +6354,502 @@ body.theme-dark .dropdown-item.logout-btn-item:hover svg {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+/* ── Product detail panel cleanup ───────────────────────────
+   Usado por Products.tsx: product-details, product-detail-panel,
+   product-detail-section, product-detail-grid y product-original-name.
+   Este bloque deja el detalle del producto más limpio y reemplaza visualmente
+   el detalle antiguo basado en row-details/product-details-grid.
+*/
+
+.product-details {
+  margin-top: 12px;
+  justify-self: stretch;
+}
+
+.product-details summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  color: #2f80ed;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  list-style: none;
+}
+
+.product-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.product-details summary::after {
+  content: '↓';
+  font-size: 12px;
+  line-height: 1;
+  transition: transform 0.18s ease;
+}
+
+.product-details[open] summary::after {
+  transform: rotate(180deg);
+}
+
+.product-detail-panel {
+  display: grid;
+  gap: 14px;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.product-detail-section {
+  display: grid;
+  gap: 10px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.product-detail-section:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.product-detail-section h4 {
+  margin: 0;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.product-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.product-detail-grid div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.product-detail-grid span,
+.product-original-name span {
+  display: block;
+  color: #64748b;
+  font-size: 11.5px;
+  font-weight: 650;
+}
+
+.product-detail-grid strong {
+  display: block;
+  overflow-wrap: anywhere;
+  color: #182321;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.product-detail-section.subtle {
+  opacity: 0.95;
+}
+
+.product-original-name {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.product-original-name code {
+  display: block;
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #475569;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 11.5px;
+  line-height: 1.4;
+  white-space: normal;
+  word-break: break-word;
+}
+
+body.theme-dark .product-details summary {
+  color: #60a5fa;
+}
+
+body.theme-dark .product-detail-panel {
+  border-color: #263247;
+  background: #0f172a;
+}
+
+body.theme-dark .product-detail-section {
+  border-bottom-color: #263247;
+}
+
+body.theme-dark .product-detail-section h4,
+body.theme-dark .product-detail-grid span,
+body.theme-dark .product-original-name span {
+  color: #94a3b8;
+}
+
+body.theme-dark .product-detail-grid strong {
+  color: #f8fafc;
+}
+
+body.theme-dark .product-original-name code {
+  border-color: #263247;
+  background: #111827;
+  color: #cbd5e1;
+}
+
+@media (max-width: 720px) {
+  .product-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─────────────────────────────────────────────── */
+/* Detalle compacto de producto                    */
+/* Usado por Products.tsx con compact-product-details */
+/* ─────────────────────────────────────────────── */
+
+.catalog-card {
+  position: relative;
+  overflow: visible;
+}
+
+.catalog-grid,
+.panel {
+  overflow: visible;
+}
+
+.compact-product-details {
+  position: relative;
+  justify-self: start;
+  margin-top: 2px;
+}
+
+.compact-product-details summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #2f80ed;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  list-style: none;
+}
+
+.compact-product-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.compact-product-details summary::after {
+  content: '↓';
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.compact-product-details[open] summary::after {
+  content: '↑';
+}
+
+.compact-detail-popover {
+  position: absolute;
+  left: 0;
+  bottom: 26px;
+  z-index: 60;
+  width: min(340px, calc(100vw - 48px));
+  padding: 12px;
+  border: 1px solid #dbe3df;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.18);
+}
+
+.compact-detail-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #edf1ef;
+}
+
+.compact-detail-header strong {
+  overflow: hidden;
+  color: #182321;
+  font-size: 13px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compact-detail-header span {
+  flex: 0 0 auto;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.compact-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px 12px;
+}
+
+.compact-detail-grid div {
+  min-width: 0;
+}
+
+.compact-detail-grid span,
+.compact-original-name span {
+  display: block;
+  margin-bottom: 3px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.compact-detail-grid strong {
+  display: block;
+  overflow: hidden;
+  color: #182321;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compact-original-name {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #edf1ef;
+}
+
+.compact-original-name code {
+  display: block;
+  overflow: hidden;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #475569;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Evita que el popover se corte en la tercera columna */
+.catalog-card:nth-child(3n) .compact-detail-popover {
+  right: 0;
+  left: auto;
+}
+
+body.theme-dark .compact-product-details summary {
+  color: #60a5fa;
+}
+
+body.theme-dark .compact-detail-popover {
+  border-color: #263247;
+  background: #111827;
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.38);
+}
+
+body.theme-dark .compact-detail-header {
+  border-color: #263247;
+}
+
+body.theme-dark .compact-detail-header strong,
+body.theme-dark .compact-detail-grid strong {
+  color: #f8fafc;
+}
+
+body.theme-dark .compact-detail-header span,
+body.theme-dark .compact-detail-grid span,
+body.theme-dark .compact-original-name span {
+  color: #94a3b8;
+}
+
+body.theme-dark .compact-original-name {
+  border-color: #263247;
+}
+
+body.theme-dark .compact-original-name code {
+  background: #0f172a;
+  color: #cbd5e1;
+}
+
+@media (max-width: 1060px) {
+  .compact-detail-popover {
+    position: static;
+    width: 100%;
+    margin-top: 10px;
+    box-shadow: none;
+  }
+}
+
+@media (max-width: 680px) {
+  .compact-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .compact-detail-popover {
+    padding: 10px;
+  }
+}
+
+/* ─────────────────────────────────────────────── */
+/* Acciones compactas del detalle de producto      */
+/* Usado por Products.tsx: Ubicar / Editar         */
+/* ─────────────────────────────────────────────── */
+
+.compact-detail-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #edf1ef;
+}
+
+.compact-detail-secondary-button,
+.compact-detail-edit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.compact-detail-secondary-button {
+  border: 1px solid #dbeafe;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.compact-detail-secondary-button:hover,
+.compact-detail-secondary-button:focus-visible {
+  background: #dbeafe;
+  outline: none;
+}
+
+.compact-detail-edit-button {
+  border: 0;
+  background: #2f80ed;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.compact-detail-edit-button:hover,
+.compact-detail-edit-button:focus-visible {
+  background: #256bd1;
+  outline: none;
+}
+
+body.theme-dark .compact-detail-actions {
+  border-color: #263247;
+}
+
+body.theme-dark .compact-detail-secondary-button {
+  border-color: #1d4ed8;
+  background: #172554;
+  color: #bfdbfe;
+}
+
+body.theme-dark .compact-detail-secondary-button:hover,
+body.theme-dark .compact-detail-secondary-button:focus-visible {
+  background: #1e3a8a;
+}
+
+body.theme-dark .compact-detail-edit-button {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+body.theme-dark .compact-detail-edit-button:hover,
+body.theme-dark .compact-detail-edit-button:focus-visible {
+  background: #2563eb;
+}
+
+
+/* ─────────────────────────────────────────────── */
+/* Carga progresiva del catálogo de productos      */
+/* Usado por Products.tsx: Ver 100 más / Ver todo  */
+/* ─────────────────────────────────────────────── */
+
+.catalog-load-more {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid #e8eeeb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.catalog-load-more span {
+  color: #667370;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.catalog-load-more div {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.catalog-load-more button {
+  min-height: 34px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+body.theme-dark .catalog-load-more {
+  border-color: #263247;
+  background: #111827;
+}
+
+body.theme-dark .catalog-load-more span {
+  color: #94a3b8;
+}
+
+@media (max-width: 680px) {
+  .catalog-load-more {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .catalog-load-more div {
+    flex-direction: column;
+    justify-content: stretch;
+  }
+
+  .catalog-load-more button {
+    width: 100%;
+  }
 }

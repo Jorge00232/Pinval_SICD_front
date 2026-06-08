@@ -9,7 +9,24 @@ function requiresAdjustment(product: Product) {
   return product.dataIssue === 'STOCK_NEGATIVO';
 }
 
-function formatDate(dateStr?: string) {
+function getProductDisplayName(product: Product) {
+  return product.displayName?.trim() || product.descrip?.trim() || 'Producto sin nombre';
+}
+
+function getProductSearchText(product: Product) {
+  return [
+    product.codigo,
+    product.searchName,
+    product.displayName,
+    product.descrip,
+    product.familia,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
+function formatDate(dateStr?: string | null) {
   if (!dateStr) {
     return '-';
   }
@@ -93,24 +110,31 @@ function Inventory() {
     () => products.filter((product) => !requiresAdjustment(product) && product.stock > 0),
     [products],
   );
+
   const totalStock = inventoryProducts.reduce((sum, product) => sum + product.stock, 0);
+
   const totalValCosto = inventoryProducts.reduce(
     (sum, product) => sum + product.stock * product.prcosto,
     0,
   );
+
   const productsToReview = products.filter(
     (product) => requiresAdjustment(product) || product.stock <= product.minStock,
   );
+
   const sortedProducts = useMemo(
     () =>
       [...products]
         .filter((product) => {
+          const normalizedSearchTerm = searchTerm.toLowerCase().trim();
+
           const matchesSearch =
-            !searchTerm.trim() ||
-            product.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            product.descrip.toLowerCase().includes(searchTerm.toLowerCase());
+            !normalizedSearchTerm ||
+            getProductSearchText(product).includes(normalizedSearchTerm);
+
           const matchesFamily =
             selectedFamily === 'all' || product.familia === selectedFamily;
+
           return matchesSearch && matchesFamily;
         })
         .sort((a, b) => {
@@ -121,17 +145,26 @@ function Inventory() {
             return priorityA - priorityB;
           }
 
-          return a.descrip.localeCompare(b.descrip);
+          return getProductDisplayName(a).localeCompare(getProductDisplayName(b));
         }),
     [products, searchTerm, selectedFamily],
   );
+
   const productByName = useMemo(
-    () => new Map(products.map((product) => [product.descrip, product])),
+    () =>
+      new Map(
+        products.flatMap((product) => [
+          [product.descrip, product],
+          [product.displayName || product.descrip, product],
+        ]),
+      ),
     [products],
   );
+
   const periodMovements = movements.filter(
     (movement) => parseMovementMonth(movement.date) === selectedMonth,
   );
+
   const periodStats = periodMovements.reduce(
     (totals, movement) => {
       const product = productByName.get(movement.product);
@@ -153,6 +186,7 @@ function Inventory() {
     },
     { purchaseCost: 0, saleCost: 0, saleRevenue: 0 },
   );
+
   const estimatedMargin = periodStats.saleRevenue - periodStats.saleCost;
 
   return (
@@ -167,18 +201,21 @@ function Inventory() {
           <strong>{hasProducts ? totalStock.toLocaleString('es-CL') : t('home.noData')}</strong>
           <p>{t('home.units')}</p>
         </article>
+
         <article className="metric-card compact-metric amber">
           <span className="metric-icon">RE</span>
           <span>{t('inventory.lowStockProducts')}</span>
           <strong>{hasProducts ? productsToReview.length : t('home.noData')}</strong>
           <p>{t('home.products')}</p>
         </article>
+
         <article className="metric-card compact-metric green">
           <span className="metric-icon">CO</span>
           <span>{t('inventory.availableCost')}</span>
           <strong>{hasProducts ? currencyFormatter.format(totalValCosto) : t('home.noData')}</strong>
           <p>{t('inventory.availableCostDescription')}</p>
         </article>
+
         <article className="metric-card compact-metric red">
           <span className="metric-icon">MO</span>
           <span>{t('inventory.movementsPeriod')}</span>
@@ -199,6 +236,7 @@ function Inventory() {
             />
           </label>
         </div>
+
         <div className="period-summary-grid">
           <div>
             <span>{t('inventory.purchaseCostPeriod')}</span>
@@ -213,15 +251,26 @@ function Inventory() {
             <strong>{currencyFormatter.format(estimatedMargin)}</strong>
           </div>
         </div>
+
         <p className="panel-note">{t('inventory.periodNote')}</p>
       </section>
 
       <section className="panel">
         <div className="panel-heading">
           <h2>{t('inventory.stockByProduct')}</h2>
-          <span>{products.length} {t('products.productsCount')}</span>
+          <span>
+            {products.length} {t('products.productsCount')}
+          </span>
         </div>
-        <div className="catalog-toolbar" style={{ borderBottom: '1px dashed #e2e8f0', paddingBottom: '14px', marginBottom: '16px' }}>
+
+        <div
+          className="catalog-toolbar"
+          style={{
+            borderBottom: '1px dashed #e2e8f0',
+            paddingBottom: '14px',
+            marginBottom: '16px',
+          }}
+        >
           <label>
             {t('products.search')}
             <input
@@ -230,6 +279,7 @@ function Inventory() {
               placeholder={t('products.searchPlaceholder')}
             />
           </label>
+
           <label>
             {t('products.category')}
             <select
@@ -245,19 +295,24 @@ function Inventory() {
             </select>
           </label>
         </div>
+
         {sortedProducts.length > 0 ? (
           <div className="inventory-list">
             {sortedProducts.slice(0, 12).map((product) => {
               const status = getStatus(product, t);
               const family = FAMILY_LABELS[product.familia] ?? product.familia;
               const costValue = Math.max(product.stock, 0) * product.prcosto;
+              const productName = getProductDisplayName(product);
 
               return (
                 <article className="inventory-list-card" key={product.codigo}>
                   <div className="inventory-list-main">
-                    <strong>{product.descrip}</strong>
-                    <span>{product.codigo} - {family}</span>
+                    <strong title={product.descrip}>{productName}</strong>
+                    <span>
+                      {product.codigo} - {family}
+                    </span>
                   </div>
+
                   <div className="inventory-list-stock">
                     <strong>{product.stock.toLocaleString('es-CL')}</strong>
                     <span>{t('home.units')}</span>
@@ -267,7 +322,9 @@ function Inventory() {
                       </small>
                     ) : null}
                   </div>
+
                   <span className={`status ${status.tone}`}>{status.label}</span>
+
                   <details className="row-details">
                     <summary>{t('inventory.viewDetail')}</summary>
                     <div>
@@ -276,6 +333,7 @@ function Inventory() {
                       <span>{t('inventory.costPrice')}: {currencyFormatter.format(product.prcosto)}</span>
                       <span>{t('products.salePrice')}: {currencyFormatter.format(product.prventa)}</span>
                       <span>{t('inventory.costValue')}: {currencyFormatter.format(costValue)}</span>
+                      <span>Nombre original: {product.descrip}</span>
                     </div>
                   </details>
                 </article>

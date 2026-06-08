@@ -6,69 +6,100 @@ export type ProductFamily = string;
 
 /** Etiquetas legibles para mostrar en la UI */
 export const FAMILY_LABELS: Record<string, string> = {
-  'SHAMPOO': 'Shampoo / Acond.',
+  SHAMPOO: 'Shampoo / Acond.',
   'LAV_.ROPA': 'Lavado ropa',
-  'CLORO': 'Cloro',
-  'LAVALOZA': 'Lavaloza',
+  CLORO: 'Cloro',
+  LAVALOZA: 'Lavaloza',
   'P.HIG': 'Papel higiénico',
-  'DENTAL': 'Dental',
+  DENTAL: 'Dental',
   'T._HUMEDAS': 'Toallas húmedas',
   'T._HIGIENICAS': 'Toallas higiénicas',
-  'VELAS': 'Velas',
-  'AEROSOL': 'Aerosol',
-  'PAÑAL': 'Pañal',
-  'LIMPIA_PISOS': 'Limpia pisos',
+  VELAS: 'Velas',
+  AEROSOL: 'Aerosol',
+  PAÑAL: 'Pañal',
+  LIMPIA_PISOS: 'Limpia pisos',
   'NO TIENE': 'Sin categoría',
 };
 
 /**
  * Producto del catálogo.
- * Campos alineados con stockvalorizado.csv y ventas.csv.
+ * Campos alineados con stockvalorizado.csv, ventas.csv y respuesta del backend.
  *
- * CSV → Frontend:
- *   codigo   → codigo
- *   descrip  → descrip
- *   prcosto  → prcosto
- *   prventa  → prventa
- *   stock    → stock
- *   familia  → familia
+ * CSV / Backend → Frontend:
+ *   codigo       → codigo
+ *   descrip      → descrip
+ *   displayName  → nombre limpio para mostrar en pantalla
+ *   searchName   → nombre normalizado para búsqueda/chatbot
+ *   prcosto      → prcosto
+ *   prventa      → prventa
+ *   stock        → stock
+ *   familia      → familia
  */
 export type Product = {
   /** Código interno del producto (= columna "codigo" en stockvalorizado.csv) */
   codigo: string;
-  /** Descripción / nombre del producto (= columna "descrip") */
+
+  /** Descripción / nombre original del producto (= columna "descrip") */
   descrip: string;
+
+  /**
+   * Nombre limpio para mostrar en la UI.
+   * Ejemplo:
+   * descrip: "CLORO_ROPA_COLOR_ARCADIA_960CC*12"
+   * displayName: "Cloro Ropa Color Arcadia 960 cc x12"
+   */
+  displayName?: string;
+
+  /**
+   * Nombre normalizado para búsqueda y chatbot.
+   * Ejemplo:
+   * searchName: "cloro ropa color arcadia 960 cc x12"
+   */
+  searchName?: string;
+
   /** Familia / categoría (= columna "familia" en ventas.csv) */
   familia: ProductFamily;
+
   /** Precio de costo unitario en CLP (= columna "prcosto") */
   prcosto: number;
+
   /** Precio de venta unitario en CLP (= columna "prventa") */
   prventa: number;
+
   /** Stock actual en unidades (= columna "stock") */
   stock: number;
+
   /** Stock original recibido desde la fuente manual, antes de normalizarlo. */
   stockOriginal?: number;
-  /** Marca de calidad cuando el dato de origen requiere revision operativa. */
+
+  /** Marca de calidad cuando el dato de origen requiere revisión operativa. */
   dataIssue?: 'STOCK_NEGATIVO' | null;
+
   /**
    * Stock mínimo antes de alertar quiebre.
    * Campo de gestión interna — no tiene equivalente en los CSV,
    * pero se guardará en la BD propia del sistema.
    */
   minStock: number;
+
   /**
    * Historial de ventas por período (= columnas ventas01..ventas13).
    * Opcional hasta que el backend esté disponible.
    */
   salesHistory?: number[];
+
   /** Fecha de registro o actualización de stock */
-  fecha?: string;
+  fecha?: string | null;
+
   /** Ubicación física en el almacén (ej: Bodega A - Estante 2) */
   ubicacion?: string;
+
   /** Proveedor asociado al producto */
   proveedor?: string;
+
   /** Número de lote del producto */
   lote?: string;
+
   /** Fecha de caducidad del producto (en formato YYYY-MM-DD) */
   fechaCaducidad?: string;
 };

@@ -134,7 +134,7 @@ function getSubmoduleIcon(to: string) {
 function Landing() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
-  const { products, suppliers, customers, movements } = useInventory();
+  const { products, suppliers, movements } = useInventory();
   const session = getSession();
 
   const [searchTerm, setSearchTerm] = useState('');

@@ -13,6 +13,7 @@ import Movements from './pages/Movements';
 import Alerts from './pages/Alerts';
 import Reports from './pages/Reports';
 import ProtectedRoute from './components/ProtectedRoute';
+import ChatbotWidget from './components/ChatbotWidget';
 import { ThemeProvider } from './state/ThemeContext';
 import { LanguageProvider } from './language/LanguageContext';
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -125,6 +126,7 @@ function App() {
 
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            <ChatbotWidget />
           </BrowserRouter>
         </ThemeProvider>
       </LanguageProvider>

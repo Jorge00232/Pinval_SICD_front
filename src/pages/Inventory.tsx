@@ -1,7 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import AppLayout from '../components/AppLayout';
 import { currencyFormatter, FAMILY_LABELS, type Product } from '../data/mockData';
+import { fetchProductExistenceCard, type ProductExistenceCard } from '../api/productsApi';
+import {
+  fetchInventoryMovements,
+  type BackendInventoryMovement,
+} from '../api/inventoryMovementsApi';
 import { useInventory } from '../state/useInventory';
 import { useLanguage } from '../language/useLanguage';
 
@@ -91,13 +96,52 @@ function parseMovementMonth(dateLabel: string) {
   return `${year}-${String(month).padStart(2, '0')}`;
 }
 
+function formatOptionalCurrency(value: number | null) {
+  if (value === null) {
+    return '-';
+  }
+
+  return currencyFormatter.format(value);
+}
+
 function Inventory() {
   const { movements, products } = useInventory();
   const { t } = useLanguage();
   const [searchParams] = useSearchParams();
+
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth);
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [selectedFamily, setSelectedFamily] = useState('all');
+
+  const [backendMovements, setBackendMovements] = useState<BackendInventoryMovement[]>([]);
+
+  const [existenceCard, setExistenceCard] = useState<ProductExistenceCard | null>(null);
+  const [existenceCardLoading, setExistenceCardLoading] = useState(false);
+  const [existenceCardError, setExistenceCardError] = useState('');
+
+  useEffect(() => {
+    let isActive = true;
+
+    fetchInventoryMovements()
+      .then((data) => {
+        if (!isActive) {
+          return;
+        }
+
+        setBackendMovements(data);
+      })
+      .catch(() => {
+        if (!isActive) {
+          return;
+        }
+
+        setBackendMovements([]);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   const hasProducts = products.length > 0;
 
@@ -121,6 +165,41 @@ function Inventory() {
   const productsToReview = products.filter(
     (product) => requiresAdjustment(product) || product.stock <= product.minStock,
   );
+
+  const movementSummaryByCode = useMemo(() => {
+    const summary = new Map<
+      string,
+      {
+        entradas: number;
+        salidas: number;
+      }
+    >();
+
+    for (const movement of backendMovements) {
+      const codigo = movement.codigo.trim();
+
+      if (!codigo) {
+        continue;
+      }
+
+      const current = summary.get(codigo) ?? {
+        entradas: 0,
+        salidas: 0,
+      };
+
+      if (movement.type === 'ENTRADA') {
+        current.entradas += movement.quantity;
+      }
+
+      if (movement.type === 'SALIDA') {
+        current.salidas += movement.quantity;
+      }
+
+      summary.set(codigo, current);
+    }
+
+    return summary;
+  }, [backendMovements]);
 
   const sortedProducts = useMemo(
     () =>
@@ -188,6 +267,42 @@ function Inventory() {
   );
 
   const estimatedMargin = periodStats.saleRevenue - periodStats.saleCost;
+
+  async function refreshBackendMovements() {
+    try {
+      const updatedMovements = await fetchInventoryMovements();
+      setBackendMovements(updatedMovements);
+    } catch {
+      setBackendMovements([]);
+    }
+  }
+
+  async function handleOpenExistenceCard(product: Product) {
+    setExistenceCard(null);
+    setExistenceCardError('');
+    setExistenceCardLoading(true);
+
+    try {
+      const card = await fetchProductExistenceCard(product.codigo);
+      setExistenceCard(card);
+
+      await refreshBackendMovements();
+    } catch (error) {
+      setExistenceCardError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar la tarjeta de existencia.',
+      );
+    } finally {
+      setExistenceCardLoading(false);
+    }
+  }
+
+  function handleCloseExistenceCard() {
+    setExistenceCard(null);
+    setExistenceCardError('');
+    setExistenceCardLoading(false);
+  }
 
   return (
     <AppLayout
@@ -303,6 +418,10 @@ function Inventory() {
               const family = FAMILY_LABELS[product.familia] ?? product.familia;
               const costValue = Math.max(product.stock, 0) * product.prcosto;
               const productName = getProductDisplayName(product);
+              const movementSummary = movementSummaryByCode.get(product.codigo) ?? {
+                entradas: 0,
+                salidas: 0,
+              };
 
               return (
                 <article className="inventory-list-card" key={product.codigo}>
@@ -311,6 +430,24 @@ function Inventory() {
                     <span>
                       {product.codigo} - {family}
                     </span>
+                  </div>
+
+                  <div className="inventory-row-center-actions">
+                    <span className="inventory-movement-chip entry">
+                      Entradas {movementSummary.entradas.toLocaleString('es-CL')}
+                    </span>
+
+                    <span className="inventory-movement-chip exit">
+                      Salidas {movementSummary.salidas.toLocaleString('es-CL')}
+                    </span>
+
+                    <button
+                      type="button"
+                      className="existence-card-button"
+                      onClick={() => void handleOpenExistenceCard(product)}
+                    >
+                      Tarjeta existencia
+                    </button>
                   </div>
 
                   <div className="inventory-list-stock">
@@ -325,17 +462,19 @@ function Inventory() {
 
                   <span className={`status ${status.tone}`}>{status.label}</span>
 
-                  <details className="row-details">
-                    <summary>{t('inventory.viewDetail')}</summary>
-                    <div>
-                      <span>{t('inventory.minimumStock')}: {product.minStock}</span>
-                      <span>{t('inventory.fecha')}: {formatDate(product.fecha)}</span>
-                      <span>{t('inventory.costPrice')}: {currencyFormatter.format(product.prcosto)}</span>
-                      <span>{t('products.salePrice')}: {currencyFormatter.format(product.prventa)}</span>
-                      <span>{t('inventory.costValue')}: {currencyFormatter.format(costValue)}</span>
-                      <span>Nombre original: {product.descrip}</span>
-                    </div>
-                  </details>
+                  <div className="inventory-row-actions">
+                    <details className="row-details">
+                      <summary>{t('inventory.viewDetail')}</summary>
+                      <div>
+                        <span>{t('inventory.minimumStock')}: {product.minStock}</span>
+                        <span>{t('inventory.fecha')}: {formatDate(product.fecha)}</span>
+                        <span>{t('inventory.costPrice')}: {currencyFormatter.format(product.prcosto)}</span>
+                        <span>{t('products.salePrice')}: {currencyFormatter.format(product.prventa)}</span>
+                        <span>{t('inventory.costValue')}: {currencyFormatter.format(costValue)}</span>
+                        <span>Nombre original: {product.descrip}</span>
+                      </div>
+                    </details>
+                  </div>
                 </article>
               );
             })}
@@ -344,6 +483,141 @@ function Inventory() {
           <div className="empty-state">{t('inventory.noProducts')}</div>
         )}
       </section>
+
+      {(existenceCardLoading || existenceCardError || existenceCard) ? (
+        <div className="modal-backdrop existence-card-backdrop" role="presentation">
+          <section className="modal-panel existence-card-modal" role="dialog" aria-modal="true">
+            <div className="existence-card-header">
+              <div>
+                <span>Tarjeta de existencia</span>
+                <h2>{existenceCard?.displayName || 'Cargando producto...'}</h2>
+                {existenceCard ? (
+                  <p>
+                    Código {existenceCard.codigo} · {existenceCard.familia}
+                  </p>
+                ) : null}
+              </div>
+
+              <button
+                type="button"
+                className="existence-card-close"
+                onClick={handleCloseExistenceCard}
+                aria-label="Cerrar tarjeta de existencia"
+              >
+                ×
+              </button>
+            </div>
+
+            {existenceCardLoading ? (
+              <div className="empty-state">Cargando tarjeta de existencia...</div>
+            ) : null}
+
+            {existenceCardError ? (
+              <div className="form-message error">{existenceCardError}</div>
+            ) : null}
+
+            {existenceCard && !existenceCardLoading ? (
+              <>
+                <div className="existence-card-summary">
+                  <div>
+                    <span>Stock actual</span>
+                    <strong>{existenceCard.currentStock.toLocaleString('es-CL')}</strong>
+                  </div>
+                  <div>
+                    <span>Total entradas</span>
+                    <strong>{existenceCard.totalEntradas.toLocaleString('es-CL')}</strong>
+                  </div>
+                  <div>
+                    <span>Total salidas</span>
+                    <strong>{existenceCard.totalSalidas.toLocaleString('es-CL')}</strong>
+                  </div>
+                  <div>
+                    <span>Valor costo</span>
+                    <strong>{currencyFormatter.format(existenceCard.stockValueByCostPrice)}</strong>
+                  </div>
+                </div>
+
+                <div className="existence-card-price-grid">
+                  <div>
+                    <span>Precio costo</span>
+                    <strong>{currencyFormatter.format(existenceCard.prcosto)}</strong>
+                  </div>
+                  <div>
+                    <span>Precio venta</span>
+                    <strong>{currencyFormatter.format(existenceCard.prventa)}</strong>
+                  </div>
+                  <div>
+                    <span>Valor venta stock</span>
+                    <strong>{currencyFormatter.format(existenceCard.stockValueBySalePrice)}</strong>
+                  </div>
+                </div>
+
+                {existenceCard.dataIssue === 'STOCK_NEGATIVO' ? (
+                  <p className="existence-card-warning">
+                    Este producto requiere ajuste porque su stock original es{' '}
+                    {existenceCard.stockOriginal}.
+                  </p>
+                ) : null}
+
+                <div className="table-wrap existence-card-table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Detalle</th>
+                        <th>Entrada</th>
+                        <th>Salida</th>
+                        <th>Stock total</th>
+                        <th>Precio unitario</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {existenceCard.movements.length > 0 ? (
+                        existenceCard.movements.map((movement) => (
+                          <tr key={movement.id}>
+                            <td>{formatDate(movement.fecha)}</td>
+                            <td>{movement.detalle}</td>
+                            <td className="numeric-cell">
+                              {movement.entrada
+                                ? movement.entrada.toLocaleString('es-CL')
+                                : '-'}
+                            </td>
+                            <td className="numeric-cell">
+                              {movement.salida
+                                ? movement.salida.toLocaleString('es-CL')
+                                : '-'}
+                            </td>
+                            <td className="numeric-cell">
+                              {movement.stockTotal === null
+                                ? '-'
+                                : movement.stockTotal.toLocaleString('es-CL')}
+                            </td>
+                            <td className="numeric-cell">
+                              {formatOptionalCurrency(movement.precioUnitario)}
+                            </td>
+                            <td className="numeric-cell">
+                              {formatOptionalCurrency(movement.total)}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={7}>
+                            Todavía no hay movimientos registrados para este producto.
+                            La tarjeta ya está lista para mostrar entradas y salidas cuando
+                            compras y ventas creen movimientos reales en el backend.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            ) : null}
+          </section>
+        </div>
+      ) : null}
     </AppLayout>
   );
 }

@@ -5,6 +5,8 @@ const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 type ApiProduct = Partial<{
   codigo: string;
   descrip: string;
+  displayName: string;
+  searchName: string;
   familia: string;
   stock: number | string;
   stockOriginal: number | string;
@@ -18,6 +20,35 @@ type ApiProduct = Partial<{
   lote: string | null;
   fechaCaducidad: string | null;
 }>;
+
+export type ExistenceCardMovement = {
+  id: number;
+  fecha: string;
+  detalle: string;
+  entrada: number;
+  salida: number;
+  stockTotal: number | null;
+  precioUnitario: number | null;
+  total: number | null;
+};
+
+export type ProductExistenceCard = {
+  codigo: string;
+  descrip: string;
+  displayName: string;
+  searchName: string;
+  familia: string;
+  currentStock: number;
+  stockOriginal: number;
+  dataIssue: 'STOCK_NEGATIVO' | null;
+  totalEntradas: number;
+  totalSalidas: number;
+  prcosto: number;
+  prventa: number;
+  stockValueBySalePrice: number;
+  stockValueByCostPrice: number;
+  movements: ExistenceCardMovement[];
+};
 
 function toNumber(value: unknown) {
   const parsed = Number(value);
@@ -35,6 +66,14 @@ function normalizeApiProduct(product: ApiProduct): Product | null {
   return {
     codigo,
     descrip,
+    displayName:
+      typeof product.displayName === 'string' && product.displayName.trim()
+        ? product.displayName.trim()
+        : descrip,
+    searchName:
+      typeof product.searchName === 'string' && product.searchName.trim()
+        ? product.searchName.trim()
+        : descrip.toLowerCase(),
     familia: (product.familia || 'NO TIENE') as ProductFamily,
     stock: toNumber(product.stock),
     stockOriginal:
@@ -50,6 +89,48 @@ function normalizeApiProduct(product: ApiProduct): Product | null {
     proveedor: product.proveedor ? String(product.proveedor).trim() : undefined,
     lote: product.lote ? String(product.lote).trim() : undefined,
     fechaCaducidad: product.fechaCaducidad ? String(product.fechaCaducidad).trim() : undefined,
+  };
+}
+
+function normalizeExistenceCard(data: unknown): ProductExistenceCard {
+  const card = data as Partial<ProductExistenceCard>;
+
+  return {
+    codigo: String(card.codigo ?? '').trim(),
+    descrip: String(card.descrip ?? '').trim(),
+    displayName: String(card.displayName ?? card.descrip ?? 'Producto sin nombre').trim(),
+    searchName: String(card.searchName ?? '').trim(),
+    familia: String(card.familia ?? 'NO TIENE').trim(),
+    currentStock: toNumber(card.currentStock),
+    stockOriginal: toNumber(card.stockOriginal),
+    dataIssue: card.dataIssue === 'STOCK_NEGATIVO' ? 'STOCK_NEGATIVO' : null,
+    totalEntradas: toNumber(card.totalEntradas),
+    totalSalidas: toNumber(card.totalSalidas),
+    prcosto: toNumber(card.prcosto),
+    prventa: toNumber(card.prventa),
+    stockValueBySalePrice: toNumber(card.stockValueBySalePrice),
+    stockValueByCostPrice: toNumber(card.stockValueByCostPrice),
+    movements: Array.isArray(card.movements)
+      ? card.movements.map((movement) => ({
+          id: toNumber(movement.id),
+          fecha: String(movement.fecha ?? ''),
+          detalle: String(movement.detalle ?? 'Movimiento'),
+          entrada: toNumber(movement.entrada),
+          salida: toNumber(movement.salida),
+          stockTotal:
+            movement.stockTotal === null || movement.stockTotal === undefined
+              ? null
+              : toNumber(movement.stockTotal),
+          precioUnitario:
+            movement.precioUnitario === null || movement.precioUnitario === undefined
+              ? null
+              : toNumber(movement.precioUnitario),
+          total:
+            movement.total === null || movement.total === undefined
+              ? null
+              : toNumber(movement.total),
+        }))
+      : [],
   };
 }
 
@@ -71,6 +152,25 @@ export async function fetchProducts() {
     .filter((product): product is Product => product !== null);
 }
 
+export async function fetchProductExistenceCard(codigo: string) {
+  const cleanCode = codigo.trim();
+
+  if (!cleanCode) {
+    throw new Error('Código de producto inválido.');
+  }
+
+  const response = await fetch(
+    `${apiBaseUrl}/products/${encodeURIComponent(cleanCode)}/existence-card`,
+  );
+
+  if (!response.ok) {
+    throw new Error('No se pudo cargar la tarjeta de existencia del producto.');
+  }
+
+  const data: unknown = await response.json();
+  return normalizeExistenceCard(data);
+}
+
 export async function createProduct(product: Product) {
   const response = await fetch(`${apiBaseUrl}/products`, {
     method: 'POST',
@@ -87,4 +187,3 @@ export async function createProduct(product: Product) {
   const data: unknown = await response.json();
   return normalizeApiProduct(data as ApiProduct);
 }
-

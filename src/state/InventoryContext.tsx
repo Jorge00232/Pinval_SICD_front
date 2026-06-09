@@ -1,9 +1,4 @@
-import {
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   type Customer,
   type InventoryMovement,
@@ -17,6 +12,7 @@ import {
   type InventoryState,
 } from './inventoryStore';
 import { fetchProducts, createProduct } from '../api/productsApi';
+import { createInventoryMovements } from '../api/inventoryMovementsApi';
 
 const storageKey = 'sicd-inventory-state-v1';
 
@@ -553,8 +549,8 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
             quantityByCode.set(item.codigo, currentQuantity + item.quantity);
           }
 
-          const existingProducts = new Set(
-            current.products.map((item) => item.codigo),
+          const existingProducts = new Map(
+            current.products.map((item) => [item.codigo, item] as const),
           );
 
           const filteredEntries = [...quantityByCode.entries()].filter(([codigo]) =>
@@ -567,7 +563,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
 
           const movements: InventoryMovement[] = filteredEntries.map(
             ([codigo, quantity]) => {
-              const product = current.products.find((item) => item.codigo === codigo)!;
+              const product = existingProducts.get(codigo)!;
 
               return {
                 id: getMovementId(),
@@ -580,6 +576,30 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
               };
             },
           );
+
+          const backendMovements = filteredEntries.map(([codigo, quantity]) => {
+            const product = existingProducts.get(codigo)!;
+
+            return {
+              codigo,
+              productName: getProductDisplayName(product),
+              type: 'ENTRADA' as const,
+              quantity,
+              unitPrice: product.prcosto,
+              totalPrice: quantity * product.prcosto,
+              reason: `Factura ${purchase.documentNumber} - ${purchase.supplierName}`,
+              createdAt: purchase.date
+                ? new Date(`${purchase.date}T12:00:00`).toISOString()
+                : new Date().toISOString(),
+            };
+          });
+
+          createInventoryMovements(backendMovements).catch((error) => {
+            console.warn(
+              'No se pudieron sincronizar las entradas con el backend:',
+              error,
+            );
+          });
 
           return {
             ...current,
@@ -669,6 +689,34 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
               };
             },
           );
+
+          const backendMovements = filteredEntries.map(([codigo, quantity]) => {
+            const product = existingProducts.get(codigo)!;
+            const customerDetail = sale.customerName || 'Cliente sin nombre';
+            const identifierDetail = sale.customerIdentifier?.trim()
+              ? ` | Id: ${sale.customerIdentifier.trim()}`
+              : '';
+
+            return {
+              codigo,
+              productName: getProductDisplayName(product),
+              type: 'SALIDA' as const,
+              quantity,
+              unitPrice: product.prventa,
+              totalPrice: quantity * product.prventa,
+              reason:
+                `${sale.documentType} ${sale.documentNumber} - ` +
+                `${customerDetail} | Tipo: ${sale.customerType}${identifierDetail}`,
+              createdAt: new Date().toISOString(),
+            };
+          });
+
+          createInventoryMovements(backendMovements).catch((error) => {
+            console.warn(
+              'No se pudieron sincronizar las salidas con el backend:',
+              error,
+            );
+          });
 
           return {
             ...current,

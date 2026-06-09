@@ -6853,3 +6853,373 @@ body.theme-dark .catalog-load-more span {
     width: 100%;
   }
 }
+
+/* ─────────────────────────────────────────────── */
+/* Tarjeta de existencia - Inventario              */
+/* ─────────────────────────────────────────────── */
+
+.inventory-row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.existence-card-button {
+  padding: 8px 10px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 12.5px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.existence-card-button:hover,
+.existence-card-button:focus-visible {
+  background: #dbeafe;
+  color: #1d4ed8;
+  outline: none;
+}
+
+.existence-card-backdrop {
+  z-index: 180;
+  align-items: start;
+  overflow-y: auto;
+}
+
+.existence-card-modal {
+  display: grid;
+  gap: 16px;
+  width: min(1120px, calc(100vw - 32px));
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+
+.existence-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.existence-card-header span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.existence-card-header h2 {
+  margin: 4px 0;
+  color: #182321;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.existence-card-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.existence-card-close {
+  display: grid;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.existence-card-close:hover,
+.existence-card-close:focus-visible {
+  background: #f8fafc;
+  color: #0f172a;
+  outline: none;
+}
+
+.existence-card-summary,
+.existence-card-price-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.existence-card-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.existence-card-price-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.existence-card-summary div,
+.existence-card-price-grid div {
+  display: grid;
+  gap: 4px;
+  padding: 13px;
+  border: 1px solid #e8eeeb;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.existence-card-summary span,
+.existence-card-price-grid span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.existence-card-summary strong,
+.existence-card-price-grid strong {
+  color: #182321;
+  font-size: 18px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.existence-card-warning {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.existence-card-table-wrap table {
+  min-width: 900px;
+}
+
+.existence-card-table-wrap th,
+.existence-card-table-wrap td {
+  white-space: normal;
+}
+
+body.theme-dark .existence-card-button {
+  border-color: #1d4ed8;
+  background: #172554;
+  color: #bfdbfe;
+}
+
+body.theme-dark .existence-card-button:hover,
+body.theme-dark .existence-card-button:focus-visible {
+  background: #1e3a8a;
+  color: #dbeafe;
+}
+
+body.theme-dark .existence-card-header {
+  border-color: #263247;
+}
+
+body.theme-dark .existence-card-header h2,
+body.theme-dark .existence-card-summary strong,
+body.theme-dark .existence-card-price-grid strong {
+  color: #f8fafc;
+}
+
+body.theme-dark .existence-card-header span,
+body.theme-dark .existence-card-header p,
+body.theme-dark .existence-card-summary span,
+body.theme-dark .existence-card-price-grid span {
+  color: #94a3b8;
+}
+
+body.theme-dark .existence-card-close {
+  border-color: #263247;
+  background: #111827;
+  color: #cbd5e1;
+}
+
+body.theme-dark .existence-card-close:hover,
+body.theme-dark .existence-card-close:focus-visible {
+  background: #1e293b;
+  color: #f8fafc;
+}
+
+body.theme-dark .existence-card-summary div,
+body.theme-dark .existence-card-price-grid div {
+  border-color: #263247;
+  background: #0f172a;
+}
+
+body.theme-dark .existence-card-warning {
+  border-color: #7f1d1d;
+  background: #3f1d1d;
+  color: #fecaca;
+}
+
+@media (max-width: 1060px) {
+  .inventory-row-actions {
+    justify-content: flex-start;
+  }
+
+  .existence-card-summary,
+  .existence-card-price-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ─────────────────────────────────────────────── */
+/* Resumen entradas/salidas en fila de inventario  */
+/* ─────────────────────────────────────────────── */
+
+.inventory-product-inline-summary {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.inventory-product-inline-summary > span:first-child {
+  color: #667370;
+  font-size: 12.5px;
+}
+
+.inventory-movement-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 750;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.inventory-movement-chip.entry {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.inventory-movement-chip.exit {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+body.theme-dark .inventory-movement-chip.entry {
+  background: #14532d;
+  color: #bbf7d0;
+}
+
+body.theme-dark .inventory-movement-chip.exit {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
+
+/* ─────────────────────────────────────────────── */
+/* Inventario: acciones centrales por producto     */
+/* ─────────────────────────────────────────────── */
+
+.inventory-list-card {
+  grid-template-columns: minmax(260px, 1.2fr) minmax(320px, 1fr) 110px auto 100px;
+}
+
+.inventory-row-center-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.inventory-row-center-actions .existence-card-button {
+  margin-left: 2px;
+}
+
+.inventory-product-inline-summary {
+  display: none;
+}
+
+/* Mantiene el botón compacto en la zona central */
+.existence-card-button {
+  padding: 8px 10px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 12.5px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.existence-card-button:hover,
+.existence-card-button:focus-visible {
+  background: #dbeafe;
+  color: #1d4ed8;
+  outline: none;
+}
+
+/* Chips de entrada/salida */
+.inventory-movement-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 750;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.inventory-movement-chip.entry {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.inventory-movement-chip.exit {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Dark mode */
+body.theme-dark .existence-card-button {
+  border-color: #1d4ed8;
+  background: #172554;
+  color: #bfdbfe;
+}
+
+body.theme-dark .existence-card-button:hover,
+body.theme-dark .existence-card-button:focus-visible {
+  background: #1e3a8a;
+  color: #dbeafe;
+}
+
+body.theme-dark .inventory-movement-chip.entry {
+  background: #14532d;
+  color: #bbf7d0;
+}
+
+body.theme-dark .inventory-movement-chip.exit {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
+@media (max-width: 1060px) {
+  .inventory-list-card {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-row-center-actions {
+    justify-content: flex-start;
+  }
+}

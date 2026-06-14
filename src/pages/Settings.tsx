@@ -5,7 +5,7 @@ import { useTheme } from '../state/useTheme';
 import { getSession } from '../api/authApi';
 
 function Settings() {
-  const { t, language, setLanguage } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const session = getSession();
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import AppLayout from '../components/AppLayout';
 import ProductSearchSelect from '../components/ProductSearchSelect';
 import { canManageData } from '../api/authApi';
@@ -12,12 +12,82 @@ type PurchaseLine = {
   quantity: number;
 };
 
+type MovementLike = {
+  detail?: string | null;
+};
+
+const PURCHASE_DOCUMENT_PREFIX = 'COMP';
+
 function createPurchaseLine(codigo = ''): PurchaseLine {
   return {
     id: crypto.randomUUID(),
     codigo,
     quantity: 1,
   };
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function generateNextDocumentNumber(
+  movements: MovementLike[],
+  prefix: string,
+) {
+  const documentPattern = new RegExp(
+    `\\b${escapeRegExp(prefix)}-(\\d+)\\b`,
+    'i',
+  );
+
+  const maxDocumentNumber = movements.reduce((maxNumber, movement) => {
+    const match = String(movement.detail ?? '').match(documentPattern);
+
+    if (!match) {
+      return maxNumber;
+    }
+
+    const parsedNumber = Number(match[1]);
+
+    if (!Number.isFinite(parsedNumber)) {
+      return maxNumber;
+    }
+
+    return Math.max(maxNumber, parsedNumber);
+  }, 0);
+
+  return `${prefix}-${String(maxDocumentNumber + 1).padStart(6, '0')}`;
+}
+
+function getTodayInputValue() {
+  const today = new Date();
+  const localToday = new Date(
+    today.getTime() - today.getTimezoneOffset() * 60 * 1000,
+  );
+
+  return localToday.toISOString().slice(0, 10);
+}
+
+function isFutureDate(value: string) {
+  if (!value) {
+    return false;
+  }
+
+  const selectedDate = new Date(`${value}T00:00:00`);
+  const today = new Date();
+
+  today.setHours(0, 0, 0, 0);
+
+  return selectedDate > today;
+}
+
+function getPurchaseDocumentLabel(detail: string) {
+  const [documentPart = '-'] = detail.split(' - ');
+  return documentPart.replace(/^Factura\s+/i, '').trim() || '-';
+}
+
+function getPurchaseSupplierLabel(detail: string) {
+  const [, supplierPart = '-'] = detail.split(' - ');
+  return supplierPart.trim() || '-';
 }
 
 function Purchases() {
@@ -33,9 +103,15 @@ function Purchases() {
     (movement) => movement.type === 'Entrada',
   );
 
-  const [purchaseDate, setPurchaseDate] = useState('');
+  const nextDocumentNumber = useMemo(
+    () => generateNextDocumentNumber(purchaseMovements, PURCHASE_DOCUMENT_PREFIX),
+    [purchaseMovements],
+  );
+
+  const todayDate = useMemo(() => getTodayInputValue(), []);
+
+  const [purchaseDate, setPurchaseDate] = useState(todayDate);
   const [supplierName, setSupplierName] = useState('');
-  const [documentNumber, setDocumentNumber] = useState('');
   const [items, setItems] = useState<PurchaseLine[]>([createPurchaseLine()]);
   const [formMessage, setFormMessage] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
@@ -71,22 +147,15 @@ function Purchases() {
 
               <tbody>
                 {purchaseMovements.length > 0 ? (
-                  purchaseMovements.map((movement) => {
-                    const [documentPart, supplierPart = '-'] =
-                      movement.detail.split(' - ');
-
-                    const documentLabel = documentPart.replace('Factura ', '');
-
-                    return (
-                      <tr key={movement.id}>
-                        <td>{movement.date}</td>
-                        <td>{movement.product}</td>
-                        <td className="numeric-cell">{movement.quantity}</td>
-                        <td>{documentLabel}</td>
-                        <td>{supplierPart}</td>
-                      </tr>
-                    );
-                  })
+                  purchaseMovements.map((movement) => (
+                    <tr key={movement.id}>
+                      <td>{movement.date}</td>
+                      <td>{movement.product}</td>
+                      <td className="numeric-cell">{movement.quantity}</td>
+                      <td>{getPurchaseDocumentLabel(movement.detail)}</td>
+                      <td>{getPurchaseSupplierLabel(movement.detail)}</td>
+                    </tr>
+                  ))
                 ) : (
                   <tr>
                     <td colSpan={5}>
@@ -134,6 +203,16 @@ function Purchases() {
                       !Number.isFinite(item.quantity) || item.quantity <= 0,
                   );
 
+                  if (!purchaseDate) {
+                    setFormMessage('Debes seleccionar una fecha válida.');
+                    return;
+                  }
+
+                  if (isFutureDate(purchaseDate)) {
+                    setFormMessage('La fecha de la compra no puede ser futura.');
+                    return;
+                  }
+
                   if (!selectedSupplier) {
                     setFormMessage('Debes seleccionar un proveedor válido.');
                     return;
@@ -152,12 +231,11 @@ function Purchases() {
                   recordPurchase({
                     date: purchaseDate,
                     supplierName: selectedSupplier,
-                    documentNumber,
+                    documentNumber: nextDocumentNumber,
                     items: normalizedItems,
                   });
 
-                  setPurchaseDate('');
-                  setDocumentNumber('');
+                  setPurchaseDate(todayDate);
                   setSupplierName('');
                   setItems([createPurchaseLine()]);
                   setFormMessage('');
@@ -171,6 +249,7 @@ function Purchases() {
                     <input
                       type="date"
                       value={purchaseDate}
+                      max={todayDate}
                       onChange={(event) => setPurchaseDate(event.target.value)}
                       required
                     />
@@ -201,11 +280,10 @@ function Purchases() {
                     {t('purchases.invoiceNumber')}
 
                     <input
-                      value={documentNumber}
-                      onChange={(event) => setDocumentNumber(event.target.value)}
-                      placeholder={t('purchases.invoicePlaceholder')}
-                      maxLength={40}
-                      required
+                      value={nextDocumentNumber}
+                      readOnly
+                      aria-readonly="true"
+                      title="Número generado automáticamente al registrar la compra"
                     />
                   </label>
                 </div>

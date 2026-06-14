@@ -201,6 +201,7 @@ function Landing() {
   }, [searchTerm, selectedSection, products]);
 
   const hasAnyResults = searchResults.length > 0 || productResults.length > 0;
+  const shouldAllowLandingScroll = isFiltering || expandedCard !== null;
 
   // Real-time calculations for metrics
   const totalStockUnits = useMemo(() => {
@@ -208,10 +209,20 @@ function Landing() {
   }, [products]);
 
   const activeAlertsCount = useMemo(() => {
-    const adjustmentAlerts = products.filter((p) => p.dataIssue === 'STOCK_NEGATIVO').length;
-    const criticalAlerts = products.filter((p) => p.dataIssue !== 'STOCK_NEGATIVO' && p.stock === 0).length;
-    const warningAlerts = products.filter((p) => p.dataIssue !== 'STOCK_NEGATIVO' && p.stock > 0 && p.stock <= p.minStock).length;
-    return adjustmentAlerts + criticalAlerts + warningAlerts;
+    return products.filter((product) => {
+      const currentStock = Number(product.stock) || 0;
+      const minimumStock = Number(product.minStock) || 0;
+
+      if (currentStock > minimumStock) {
+        return false;
+      }
+
+      return (
+        product.dataIssue === 'STOCK_NEGATIVO' ||
+        currentStock <= 0 ||
+        currentStock <= minimumStock
+      );
+    }).length;
   }, [products]);
 
   const shipmentsCount = useMemo(() => {
@@ -227,7 +238,8 @@ function Landing() {
       title={t('landing.title')}
       description={t('landing.subtitle')}
     >
-      {/* ── Global Search & Filter Bar ───────────────────────── */}
+      <div className={`landing-fit-screen ${shouldAllowLandingScroll ? 'can-scroll' : ''}`}>
+        {/* ── Global Search & Filter Bar ───────────────────────── */}
       <div className="landing-search-bar">
         <div className="landing-search-input-wrapper">
           <svg
@@ -399,7 +411,7 @@ function Landing() {
         </div>
       ) : (
         /* Premium Dashboard Layout matching target image */
-        <div style={{ padding: '24px 0' }}>
+        <div className="landing-dashboard-overview">
           {/* Welcome and Summary header */}
           <div className="landing-welcome-container">
             <div className="landing-welcome-info">
@@ -582,6 +594,7 @@ function Landing() {
           </div>
         </div>
       )}
+      </div>
     </AppLayout>
   );
 }

@@ -7764,4 +7764,321 @@ h3 {
 
 .brand span {
   font-size: calc(12px * var(--global-font-scale)) !important;
-}
+}
+
+/* ─────────────────────────────────────────────── */
+/* Landing adaptable: sin scroll inicial           */
+/* ─────────────────────────────────────────────── */
+
+/*
+  Esta sección deja Inicio ajustado al alto disponible.
+  Sin búsqueda ni tarjeta expandida: no hay scroll.
+  Con búsqueda o tarjeta expandida: se habilita scroll interno.
+*/
+
+.app-shell:has(.landing-fit-screen) {
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+.app-shell:has(.landing-fit-screen) .content {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: stretch;
+  height: calc(100dvh - 32px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-shell:has(.landing-fit-screen) .page-header {
+  min-height: 0;
+  padding-bottom: clamp(8px, 1.4vh, 12px);
+}
+
+.app-shell:has(.landing-fit-screen) .page-body {
+  display: grid;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.landing-fit-screen {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: clamp(10px, 1.4vh, 16px);
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.landing-fit-screen.can-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+}
+
+.landing-fit-screen .landing-search-bar {
+  margin-bottom: 0;
+  padding: clamp(12px, 1.9vh, 18px) clamp(14px, 2vw, 22px);
+}
+
+.landing-fit-screen .landing-search-input {
+  height: clamp(38px, 5.5vh, 46px);
+}
+
+.landing-fit-screen .landing-section-pills {
+  gap: 8px;
+}
+
+.landing-fit-screen .landing-pill {
+  padding: clamp(5px, 0.9vh, 6px) 16px;
+}
+
+.landing-dashboard-overview {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: clamp(14px, 2vh, 22px);
+  min-height: 0;
+  overflow: hidden;
+  padding: clamp(8px, 1.2vh, 16px) 0 0;
+}
+
+.landing-fit-screen.can-scroll .landing-dashboard-overview {
+  overflow: visible;
+}
+
+.landing-fit-screen .landing-welcome-container {
+  margin-bottom: 0;
+}
+
+.landing-fit-screen .landing-welcome-info h1 {
+  font-size: clamp(22px, 3.6vh, 28px);
+  margin-bottom: clamp(4px, 0.8vh, 8px);
+}
+
+.landing-fit-screen .landing-welcome-info p {
+  line-height: 1.35;
+}
+
+.landing-fit-screen .landing-top-summaries {
+  gap: clamp(10px, 1.2vw, 16px);
+}
+
+.landing-fit-screen .landing-summary-widget {
+  min-width: clamp(112px, 11vw, 140px);
+  padding: clamp(10px, 1.6vh, 14px) clamp(14px, 1.7vw, 20px);
+}
+
+.landing-fit-screen .landing-summary-widget strong {
+  font-size: clamp(20px, 3.2vh, 24px);
+  line-height: 1;
+}
+
+.landing-fit-screen .landing-main-dashboard-grid {
+  min-height: 0;
+  height: 100%;
+  margin-bottom: 0;
+  gap: clamp(14px, 1.8vw, 24px);
+  align-items: stretch;
+}
+
+.landing-fit-screen .landing-column-card {
+  min-height: 0;
+  height: 100%;
+  padding: clamp(16px, 2.7vh, 28px) clamp(16px, 2.2vw, 26px);
+  gap: clamp(12px, 2vh, 22px);
+  overflow: hidden;
+}
+
+.landing-fit-screen.can-scroll .landing-column-card {
+  height: auto;
+  min-height: clamp(280px, 44vh, 390px);
+  overflow: visible;
+}
+
+.landing-fit-screen .landing-column-info h2 {
+  font-size: clamp(20px, 3vh, 24px);
+  margin-bottom: clamp(6px, 1vh, 10px);
+}
+
+.landing-fit-screen .landing-column-info p {
+  min-height: 0;
+  font-size: clamp(12.5px, 1.8vh, 13.5px);
+  line-height: 1.42;
+}
+
+.landing-fit-screen .landing-column-icon-box {
+  width: clamp(38px, 5.6vh, 44px);
+  height: clamp(38px, 5.6vh, 44px);
+}
+
+.landing-fit-screen .landing-column-stats {
+  gap: clamp(8px, 1.2vw, 12px);
+}
+
+.landing-fit-screen .landing-stat-box {
+  padding: clamp(8px, 1.3vh, 10px) clamp(10px, 1.3vw, 12px);
+}
+
+.landing-fit-screen .landing-stat-box strong {
+  line-height: 1.05;
+}
+
+.landing-fit-screen .landing-sub-options-grid {
+  flex: 0 0 auto;
+}
+
+.landing-fit-screen:not(.can-scroll) .landing-sub-options-grid:not(.is-visible) {
+  border-top: 0;
+}
+
+.landing-fit-screen.can-scroll .landing-main-dashboard-grid {
+  align-items: start;
+}
+
+/* Resultado de búsqueda: puede crecer y por eso siempre usa scroll interno */
+.landing-fit-screen.can-scroll .landing-sections {
+  max-width: none;
+  padding: 8px 0 24px;
+  overflow: visible;
+}
+
+@media (max-height: 820px) {
+  .app-shell:has(.landing-fit-screen) .page-title-group > p:last-child {
+    max-width: 520px;
+    font-size: 13.5px;
+    line-height: 1.35;
+  }
+
+  .landing-fit-screen {
+    gap: 10px;
+  }
+
+  .landing-fit-screen .landing-search-bar {
+    padding: 12px 16px;
+  }
+
+  .landing-fit-screen .landing-welcome-container {
+    gap: 14px;
+  }
+
+  .landing-fit-screen .landing-column-card {
+    padding: 16px 18px;
+    gap: 12px;
+  }
+
+  .landing-fit-screen .landing-column-info h2 {
+    margin-bottom: 6px;
+  }
+
+  .landing-fit-screen .landing-column-info p {
+    line-height: 1.32;
+  }
+
+  .landing-fit-screen .landing-summary-widget {
+    padding: 10px 14px;
+  }
+}
+
+@media (max-height: 720px) and (min-width: 1025px) {
+  .landing-fit-screen:not(.can-scroll) .landing-top-summaries {
+    display: none;
+  }
+
+  .landing-fit-screen:not(.can-scroll) .landing-column-stats {
+    display: none;
+  }
+
+  .landing-dashboard-overview {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .app-shell:has(.landing-fit-screen),
+  .app-shell:has(.landing-fit-screen) .content {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .app-shell:has(.landing-fit-screen) .page-body,
+  .landing-fit-screen {
+    height: auto;
+    overflow: visible;
+  }
+
+  .landing-dashboard-overview,
+  .landing-fit-screen .landing-main-dashboard-grid {
+    height: auto;
+    overflow: visible;
+  }
+
+  .landing-fit-screen .landing-column-card {
+    height: auto;
+    overflow: visible;
+  }
+}
+
+
+/* ─────────────────────────────────────────────── */
+/* Productos: carga automática por scroll          */
+/* ─────────────────────────────────────────────── */
+
+.catalog-infinite-scroll-trigger {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 52px;
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px dashed #dbe4df;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.catalog-infinite-scroll-trigger span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.catalog-infinite-scroll-trigger[aria-hidden='false'] span::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #2f80ed;
+  box-shadow: 14px 0 0 #93c5fd, 28px 0 0 #bfdbfe;
+  animation: catalog-scroll-dots 0.9s infinite ease-in-out alternate;
+}
+
+@keyframes catalog-scroll-dots {
+  from {
+    opacity: 0.55;
+    transform: translateX(0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(4px);
+  }
+}
+
+body.theme-dark .catalog-infinite-scroll-trigger {
+  border-color: #263247;
+  background: #0f172a;
+  color: #94a3b8;
+}
+
+body.theme-dark .catalog-infinite-scroll-trigger[aria-hidden='false'] span::before {
+  background: #60a5fa;
+  box-shadow: 14px 0 0 #3b82f6, 28px 0 0 #1d4ed8;
+}

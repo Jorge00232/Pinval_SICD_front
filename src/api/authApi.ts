@@ -2,12 +2,14 @@ const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 const sessionStorageKey = 'sicd-auth-session';
 
+export const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
+
 export type UserRole = 'ADMIN' | 'STOCK' | 'VIEWER';
 
 export type AuthUser = {
   id: string;
   username: string;
-  email?: string;
+  email?: string | null;
   name: string;
   role: UserRole;
 };
@@ -15,6 +17,12 @@ export type AuthUser = {
 export type AuthSession = {
   accessToken: string;
   user: AuthUser;
+};
+
+export type StoredAuthSession = AuthSession & {
+  createdAt: number;
+  lastActivityAt: number;
+  expiresAt: number;
 };
 
 export type TwoFactorRequiredResponse = {
@@ -29,6 +37,96 @@ type LoginInput = {
   username: string;
   password: string;
 };
+
+export type AuditUserInfo = {
+  user: string;
+  detail: string;
+};
+
+function normalizeText(value: unknown) {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  return String(value).trim();
+}
+
+function normalizeUser(user: AuthUser): AuthUser {
+  return {
+    id: normalizeText(user.id),
+    username: normalizeText(user.username),
+    email: normalizeText(user.email) || null,
+    name: normalizeText(user.name),
+    role: user.role,
+  };
+}
+
+function normalizeSession(session: AuthSession): AuthSession {
+  return {
+    accessToken: normalizeText(session.accessToken),
+    user: normalizeUser(session.user),
+  };
+}
+
+function createStoredSession(session: AuthSession): StoredAuthSession {
+  const now = Date.now();
+  const normalizedSession = normalizeSession(session);
+
+  return {
+    ...normalizedSession,
+    createdAt: now,
+    lastActivityAt: now,
+    expiresAt: now + SESSION_TIMEOUT_MS,
+  };
+}
+
+function isStoredSession(value: unknown): value is StoredAuthSession {
+  const session = value as Partial<StoredAuthSession>;
+
+  return (
+    typeof session.accessToken === 'string' &&
+    typeof session.user === 'object' &&
+    session.user !== null &&
+    typeof session.createdAt === 'number' &&
+    typeof session.lastActivityAt === 'number' &&
+    typeof session.expiresAt === 'number'
+  );
+}
+
+function readStoredSession(): StoredAuthSession | null {
+  const savedSession = window.localStorage.getItem(sessionStorageKey);
+
+  if (!savedSession) {
+    return null;
+  }
+
+  try {
+    const parsedSession = JSON.parse(savedSession) as unknown;
+
+    if (!isStoredSession(parsedSession)) {
+      logout();
+      return null;
+    }
+
+    const normalizedSession: StoredAuthSession = {
+      accessToken: normalizeText(parsedSession.accessToken),
+      user: normalizeUser(parsedSession.user),
+      createdAt: parsedSession.createdAt,
+      lastActivityAt: parsedSession.lastActivityAt,
+      expiresAt: parsedSession.expiresAt,
+    };
+
+    if (Date.now() >= normalizedSession.expiresAt) {
+      logout();
+      return null;
+    }
+
+    return normalizedSession;
+  } catch {
+    logout();
+    return null;
+  }
+}
 
 export async function login(credentials: LoginInput): Promise<LoginResponse> {
   const response = await fetch(`${apiBaseUrl}/auth/login`, {
@@ -110,25 +208,85 @@ export async function verifyTOTP(
     throw new Error(errorBody?.message ?? 'Código 2FA incorrecto.');
   }
 
-  return (await response.json()) as AuthSession;
+  const session = (await response.json()) as AuthSession;
+  return normalizeSession(session);
 }
 
 export function saveSession(session: AuthSession) {
-  window.localStorage.setItem(sessionStorageKey, JSON.stringify(session));
+  window.localStorage.setItem(
+    sessionStorageKey,
+    JSON.stringify(createStoredSession(session)),
+  );
 }
 
 export function getSession(): AuthSession | null {
+  const storedSession = readStoredSession();
+
+  if (!storedSession) {
+    return null;
+  }
+
+  return {
+    accessToken: storedSession.accessToken,
+    user: storedSession.user,
+  };
+}
+
+export function getStoredSession(): StoredAuthSession | null {
+  return readStoredSession();
+}
+
+export function refreshSessionActivity() {
+  const storedSession = readStoredSession();
+
+  if (!storedSession) {
+    return null;
+  }
+
+  const now = Date.now();
+
+  const updatedSession: StoredAuthSession = {
+    ...storedSession,
+    lastActivityAt: now,
+    expiresAt: now + SESSION_TIMEOUT_MS,
+  };
+
+  window.localStorage.setItem(
+    sessionStorageKey,
+    JSON.stringify(updatedSession),
+  );
+
+  return updatedSession;
+}
+
+export function isSessionExpired(): boolean {
   const savedSession = window.localStorage.getItem(sessionStorageKey);
 
   if (!savedSession) {
-    return null;
+    return true;
   }
 
   try {
-    return JSON.parse(savedSession) as AuthSession;
+    const parsedSession = JSON.parse(savedSession) as Partial<StoredAuthSession>;
+
+    if (typeof parsedSession.expiresAt !== 'number') {
+      return true;
+    }
+
+    return Date.now() >= parsedSession.expiresAt;
   } catch {
-    return null;
+    return true;
   }
+}
+
+export function getSessionRemainingMs(): number {
+  const storedSession = readStoredSession();
+
+  if (!storedSession) {
+    return 0;
+  }
+
+  return Math.max(storedSession.expiresAt - Date.now(), 0);
 }
 
 export function getAccessToken(): string | null {
@@ -141,6 +299,29 @@ export function getCurrentUser(): AuthUser | null {
 
 export function getCurrentRole(): UserRole | null {
   return getSession()?.user.role ?? null;
+}
+
+export function getCurrentUserAuditInfo(): AuditUserInfo {
+  const user = getCurrentUser();
+
+  if (!user) {
+    return {
+      user: 'Usuario no identificado',
+      detail: 'SIN_ROL',
+    };
+  }
+
+  const auditUser =
+    normalizeText(user.email) ||
+    normalizeText(user.username) ||
+    normalizeText(user.name) ||
+    normalizeText(user.id) ||
+    'Usuario no identificado';
+
+  return {
+    user: auditUser,
+    detail: user.role || 'SIN_ROL',
+  };
 }
 
 export function isAuthenticated(): boolean {

@@ -1,7 +1,13 @@
 import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import '../App.css';
-import { getSession } from '../api/authApi';
+import {
+  getSession,
+  getSessionRemainingMs,
+  isSessionExpired,
+  logout,
+  refreshSessionActivity,
+} from '../api/authApi';
 import { fetchSidebarSummary, type SidebarSummary } from '../api/sidebarApi';
 import { useLanguage } from '../language/useLanguage';
 
@@ -12,6 +18,14 @@ type AppLayoutProps = {
 };
 
 const SEEN_MOVEMENTS_STORAGE_KEY = 'sicd-seen-movements-count';
+const SESSION_ACTIVITY_EVENTS = [
+  'click',
+  'keydown',
+  'mousemove',
+  'scroll',
+  'touchstart',
+] as const;
+const SESSION_ACTIVITY_THROTTLE_MS = 30 * 1000;
 
 const navGroups = [
   {
@@ -153,6 +167,7 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const session = getSession();
+  const hasSession = Boolean(session?.accessToken);
 
   const [isCollapsed, setIsCollapsed] = useState(() => {
     return localStorage.getItem('sidebar-collapsed') === 'true';
@@ -203,6 +218,69 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!hasSession) {
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    let isActive = true;
+    let lastActivityRefresh = 0;
+
+    function closeExpiredSession() {
+      if (!isActive) {
+        return;
+      }
+
+      logout();
+      setIsDropdownOpen(false);
+      navigate('/login', { replace: true });
+    }
+
+    function validateSession() {
+      if (isSessionExpired() || getSessionRemainingMs() <= 0) {
+        closeExpiredSession();
+      }
+    }
+
+    function registerUserActivity() {
+      if (isSessionExpired()) {
+        closeExpiredSession();
+        return;
+      }
+
+      const now = Date.now();
+
+      if (now - lastActivityRefresh < SESSION_ACTIVITY_THROTTLE_MS) {
+        return;
+      }
+
+      lastActivityRefresh = now;
+      refreshSessionActivity();
+    }
+
+    validateSession();
+
+    const intervalId = window.setInterval(() => {
+      validateSession();
+    }, 1000);
+
+    SESSION_ACTIVITY_EVENTS.forEach((eventName) => {
+      window.addEventListener(eventName, registerUserActivity, {
+        passive: true,
+      });
+    });
+
+    return () => {
+      isActive = false;
+      window.clearInterval(intervalId);
+
+      SESSION_ACTIVITY_EVENTS.forEach((eventName) => {
+        window.removeEventListener(eventName, registerUserActivity);
+      });
+    };
+  }, [hasSession, navigate]);
+
   const totalMovements = sidebarSummary?.totalMovements ?? 0;
   const activeAlerts = sidebarSummary?.activeAlerts ?? 0;
   const newMovementsCount = Math.max(totalMovements - seenMovementsCount, 0);
@@ -232,7 +310,7 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
 
     const intervalId = window.setInterval(() => {
       void loadSidebarSummary();
-    }, 3000);
+    }, 1000);
 
     const handleWindowFocus = () => {
       void loadSidebarSummary();
@@ -257,8 +335,9 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
   }, [location.pathname, totalMovements]);
 
   const handleLogout = () => {
-    window.localStorage.removeItem('sicd-auth-session');
-    navigate('/login');
+    logout();
+    setIsDropdownOpen(false);
+    navigate('/login', { replace: true });
   };
 
   const toggleSidebar = () => {
@@ -516,7 +595,7 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
                         </span>
                       </NavLink>
 
-                      <NavLink to="/login" className="dropdown-item">
+                      <NavLink to="/login" className="dropdown-item" onClick={handleLogout}>
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                           <circle cx="9" cy="7" r="4"></circle>

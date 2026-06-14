@@ -21,12 +21,66 @@ type ProductSearchSelectProps = {
   onChange: (codigo: string) => void;
 };
 
+type MovementLike = {
+  detail?: string | null;
+};
+
+const SALE_DOCUMENT_PREFIX = 'VENT';
+
 function createSaleLine(codigo = ''): SaleLine {
   return {
     id: crypto.randomUUID(),
     codigo,
     quantity: 1,
   };
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function generateNextDocumentNumber(
+  movements: MovementLike[],
+  prefix: string,
+) {
+  const documentPattern = new RegExp(
+    `\\b${escapeRegExp(prefix)}-(\\d+)\\b`,
+    'i',
+  );
+
+  const maxDocumentNumber = movements.reduce((maxNumber, movement) => {
+    const match = String(movement.detail ?? '').match(documentPattern);
+
+    if (!match) {
+      return maxNumber;
+    }
+
+    const parsedNumber = Number(match[1]);
+
+    if (!Number.isFinite(parsedNumber)) {
+      return maxNumber;
+    }
+
+    return Math.max(maxNumber, parsedNumber);
+  }, 0);
+
+  return `${prefix}-${String(maxDocumentNumber + 1).padStart(6, '0')}`;
+}
+
+function getTodayInputValue() {
+  const today = new Date();
+  const timezoneOffset = today.getTimezoneOffset();
+  const localToday = new Date(today.getTime() - timezoneOffset * 60 * 1000);
+
+  return localToday.toISOString().slice(0, 10);
+}
+
+function isFutureDate(value: string) {
+  if (!value) {
+    return false;
+  }
+
+  return value > getTodayInputValue();
 }
 
 function getProductDisplayName(product: Product) {
@@ -67,7 +121,7 @@ function parseSaleDetail(detail: string) {
   );
 
   return {
-    document: documentPart,
+    document: documentPart || '-',
     customer,
     customerType: typeSection?.replace('Tipo: ', '') ?? '-',
     identifier: identifierSection?.replace('Id: ', '') ?? '-',
@@ -196,11 +250,17 @@ function Sales() {
   const canRegister = canManageData();
   const canRegisterSale = canRegister && products.length > 0;
   const saleMovements = movements.filter((movement) => movement.type === 'Salida');
+  const todayDate = getTodayInputValue();
+
+  const nextDocumentNumber = useMemo(
+    () => generateNextDocumentNumber(saleMovements, SALE_DOCUMENT_PREFIX),
+    [saleMovements],
+  );
 
   const [customerName, setCustomerName] = useState('B2C');
   const [customerIdentifier, setCustomerIdentifier] = useState('');
   const [documentType, setDocumentType] = useState('Boleta');
-  const [documentNumber, setDocumentNumber] = useState('');
+  const [saleDate, setSaleDate] = useState(todayDate);
   const [items, setItems] = useState<SaleLine[]>([createSaleLine()]);
   const [formMessage, setFormMessage] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
@@ -304,6 +364,16 @@ function Sales() {
                 onSubmit={(event) => {
                   event.preventDefault();
 
+                  if (!saleDate) {
+                    setFormMessage('Debes seleccionar una fecha de venta.');
+                    return;
+                  }
+
+                  if (isFutureDate(saleDate)) {
+                    setFormMessage('La fecha de venta no puede ser futura.');
+                    return;
+                  }
+
                   const normalizedItems = items.map((item) => ({
                     ...item,
                     codigo: item.codigo.trim(),
@@ -333,14 +403,15 @@ function Sales() {
                     customerType: resolvedCustomerType,
                     customerIdentifier,
                     documentType,
-                    documentNumber,
+                    documentNumber: nextDocumentNumber,
+                    date: saleDate,
                     items: normalizedItems,
                   });
 
                   setCustomerName(uniqueCustomerOptions[0] ?? 'B2C');
                   setCustomerIdentifier('');
                   setDocumentType('Boleta');
-                  setDocumentNumber('');
+                  setSaleDate(getTodayInputValue());
                   setItems([createSaleLine()]);
                   setFormMessage('');
                   setShowSuccess(true);
@@ -384,6 +455,17 @@ function Sales() {
                     </select>
                   </label>
 
+                  <label>
+                    {t('purchases.date')}
+                    <input
+                      type="date"
+                      value={saleDate}
+                      max={todayDate}
+                      onChange={(event) => setSaleDate(event.target.value)}
+                      required
+                    />
+                  </label>
+
                   <label className="purchase-document-field">
                     {t('sales.identifier')}
                     <input
@@ -401,11 +483,10 @@ function Sales() {
                   <label className="purchase-document-field">
                     {t('sales.documentNumber')}
                     <input
-                      value={documentNumber}
-                      onChange={(event) => setDocumentNumber(event.target.value)}
-                      placeholder={t('sales.documentPlaceholder')}
-                      maxLength={40}
-                      required
+                      value={nextDocumentNumber}
+                      readOnly
+                      aria-readonly="true"
+                      title="Número generado automáticamente al registrar la venta"
                     />
                   </label>
                 </div>

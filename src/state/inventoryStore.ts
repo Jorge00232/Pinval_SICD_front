@@ -26,6 +26,7 @@ export type PurchaseInput = {
 };
 
 export type SaleInput = {
+  date?: string;
   customerName: string;
   customerType: 'B2B' | 'B2C';
   customerIdentifier?: string;

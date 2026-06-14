@@ -13,6 +13,7 @@ import {
 } from './inventoryStore';
 import { fetchProducts, createProduct } from '../api/productsApi';
 import { createInventoryMovements } from '../api/inventoryMovementsApi';
+import { getCurrentUserAuditInfo } from '../api/authApi';
 
 const storageKey = 'sicd-inventory-state-v1';
 
@@ -411,6 +412,54 @@ function getDateTimeLabel() {
   });
 }
 
+function isValidDateInput(value?: string | null) {
+  if (!value) {
+    return false;
+  }
+
+  const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+
+  if (!datePattern.test(value)) {
+    return false;
+  }
+
+  const date = new Date(`${value}T00:00:00`);
+
+  return !Number.isNaN(date.getTime());
+}
+
+function isFutureDate(value?: string | null) {
+  if (!isValidDateInput(value)) {
+    return false;
+  }
+
+  const selectedDate = new Date(`${value}T00:00:00`);
+  const today = new Date();
+
+  today.setHours(0, 0, 0, 0);
+
+  return selectedDate > today;
+}
+
+function getMovementDateLabel(date?: string | null) {
+  if (!isValidDateInput(date)) {
+    return getDateTimeLabel();
+  }
+
+  return new Date(`${date}T12:00:00`).toLocaleString('es-CL', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  });
+}
+
+function getMovementCreatedAt(date?: string | null) {
+  if (!isValidDateInput(date)) {
+    return new Date().toISOString();
+  }
+
+  return new Date(`${date}T12:00:00`).toISOString();
+}
+
 function getMovementId() {
   return `${Date.now()}-${crypto.randomUUID()}`;
 }
@@ -560,7 +609,15 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        const movementDate = getDateTimeLabel();
+        if (isFutureDate(purchase.date)) {
+          return;
+        }
+
+        const movementDate = getMovementDateLabel(purchase.date);
+        const movementCreatedAt = getMovementCreatedAt(purchase.date);
+        const auditInfo = getCurrentUserAuditInfo();
+        const movementUser = auditInfo.user;
+        const movementRole = auditInfo.detail;
 
         const movements: InventoryMovement[] = filteredEntries.map(
           ([codigo, quantity]) => {
@@ -571,7 +628,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
               type: 'Entrada',
               product: getProductDisplayName(product),
               quantity,
-              user: 'Usuario local',
+              user: movementUser,
               date: movementDate,
               detail: `Factura ${purchase.documentNumber} - ${purchase.supplierName}`,
             };
@@ -589,9 +646,9 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
             unitPrice: product.prcosto,
             totalPrice: quantity * product.prcosto,
             reason: `Factura ${purchase.documentNumber} - ${purchase.supplierName}`,
-            createdAt: purchase.date
-              ? new Date(`${purchase.date}T12:00:00`).toISOString()
-              : new Date().toISOString(),
+            user: movementUser,
+            detail: movementRole,
+            createdAt: movementCreatedAt,
           };
         });
 
@@ -626,11 +683,17 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
       },
 
       recordSale(sale) {
+        const saleWithDate = sale as typeof sale & { date?: string | null };
+
         const validItems = sale.items.filter(
           (item) => item.codigo && item.quantity > 0,
         );
 
         if (validItems.length === 0) {
+          return;
+        }
+
+        if (isFutureDate(saleWithDate.date)) {
           return;
         }
 
@@ -662,7 +725,11 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        const movementDate = getDateTimeLabel();
+        const movementDate = getMovementDateLabel(saleWithDate.date);
+        const movementCreatedAt = getMovementCreatedAt(saleWithDate.date);
+        const auditInfo = getCurrentUserAuditInfo();
+        const movementUser = auditInfo.user;
+        const movementRole = auditInfo.detail;
 
         const movements: InventoryMovement[] = filteredEntries.map(
           ([codigo, quantity]) => {
@@ -677,7 +744,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
               type: 'Salida',
               product: getProductDisplayName(product),
               quantity,
-              user: 'Usuario local',
+              user: movementUser,
               date: movementDate,
               detail:
                 `${sale.documentType} ${sale.documentNumber} - ` +
@@ -703,7 +770,9 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
             reason:
               `${sale.documentType} ${sale.documentNumber} - ` +
               `${customerDetail} | Tipo: ${sale.customerType}${identifierDetail}`,
-            createdAt: new Date().toISOString(),
+            user: movementUser,
+            detail: movementRole,
+            createdAt: movementCreatedAt,
           };
         });
 
@@ -721,7 +790,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
             customer.name === sale.customerName
               ? {
                   ...customer,
-                  lastPurchase: movementDate,
+                  lastPurchase: saleWithDate.date || movementDate,
                   purchases: customer.purchases + 1,
                 }
               : customer,

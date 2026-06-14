@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import AppLayout from '../components/AppLayout';
 import { currencyFormatter, FAMILY_LABELS, type Product } from '../data/mockData';
@@ -9,6 +9,8 @@ import {
 } from '../api/inventoryMovementsApi';
 import { useInventory } from '../state/useInventory';
 import { useLanguage } from '../language/useLanguage';
+
+const INVENTORY_PRODUCTS_BATCH_SIZE = 12;
 
 function requiresAdjustment(product: Product) {
   return product.dataIssue === 'STOCK_NEGATIVO';
@@ -112,6 +114,10 @@ function Inventory() {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth);
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [selectedFamily, setSelectedFamily] = useState('all');
+  const [visibleProductCount, setVisibleProductCount] = useState(
+    INVENTORY_PRODUCTS_BATCH_SIZE,
+  );
+  const infiniteScrollTriggerRef = useRef<HTMLDivElement | null>(null);
 
   const [backendMovements, setBackendMovements] = useState<BackendInventoryMovement[]>([]);
 
@@ -228,6 +234,53 @@ function Inventory() {
         }),
     [products, searchTerm, selectedFamily],
   );
+
+  const visibleProducts = useMemo(
+    () => sortedProducts.slice(0, visibleProductCount),
+    [sortedProducts, visibleProductCount],
+  );
+
+  const hasMoreVisibleProducts = visibleProductCount < sortedProducts.length;
+
+  useEffect(() => {
+    setVisibleProductCount(INVENTORY_PRODUCTS_BATCH_SIZE);
+  }, [searchTerm, selectedFamily, products.length]);
+
+  useEffect(() => {
+    const trigger = infiniteScrollTriggerRef.current;
+
+    if (!trigger || !hasMoreVisibleProducts) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+
+        if (!entry?.isIntersecting) {
+          return;
+        }
+
+        setVisibleProductCount((currentCount) =>
+          Math.min(
+            currentCount + INVENTORY_PRODUCTS_BATCH_SIZE,
+            sortedProducts.length,
+          ),
+        );
+      },
+      {
+        root: null,
+        rootMargin: '260px 0px',
+        threshold: 0.01,
+      },
+    );
+
+    observer.observe(trigger);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasMoreVisibleProducts, sortedProducts.length]);
 
   const productByName = useMemo(
     () =>
@@ -374,7 +427,9 @@ function Inventory() {
         <div className="panel-heading">
           <h2>{t('inventory.stockByProduct')}</h2>
           <span>
-            {products.length} {t('products.productsCount')}
+            {visibleProducts.length.toLocaleString('es-CL')} de{' '}
+            {sortedProducts.length.toLocaleString('es-CL')}{' '}
+            {t('products.productsCount')}
           </span>
         </div>
 
@@ -413,7 +468,7 @@ function Inventory() {
 
         {sortedProducts.length > 0 ? (
           <div className="inventory-list">
-            {sortedProducts.slice(0, 12).map((product) => {
+            {visibleProducts.map((product) => {
               const status = getStatus(product, t);
               const family = FAMILY_LABELS[product.familia] ?? product.familia;
               const costValue = Math.max(product.stock, 0) * product.prcosto;
@@ -478,6 +533,18 @@ function Inventory() {
                 </article>
               );
             })}
+
+            <div
+              ref={infiniteScrollTriggerRef}
+              className="inventory-infinite-scroll-trigger"
+              aria-hidden={!hasMoreVisibleProducts}
+            >
+              {hasMoreVisibleProducts ? (
+                <span>Cargando más productos...</span>
+              ) : (
+                <span>Se cargaron todos los productos disponibles.</span>
+              )}
+            </div>
           </div>
         ) : (
           <div className="empty-state">{t('inventory.noProducts')}</div>

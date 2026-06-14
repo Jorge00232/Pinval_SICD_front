@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import AppLayout from '../components/AppLayout';
 import { canManageData } from '../api/authApi';
@@ -12,8 +12,7 @@ import { useInventory } from '../state/useInventory';
 import { useLanguage } from '../language/useLanguage';
 
 const BASE_FAMILIES = Object.keys(FAMILY_LABELS) as ProductFamily[];
-const INITIAL_VISIBLE_PRODUCTS = 18;
-const LOAD_MORE_STEP = 100;
+const PRODUCTS_BATCH_SIZE = 12;
 
 function normalizeSearchText(value?: string | null) {
   return (value ?? '')
@@ -159,7 +158,8 @@ function Products() {
   const [selectedSupplier, setSelectedSupplier] = useState('all');
   const [searchBatch, setSearchBatch] = useState('');
   const [selectedExpiryStatus, setSelectedExpiryStatus] = useState('all');
-  const [visibleProductsCount, setVisibleProductsCount] = useState(INITIAL_VISIBLE_PRODUCTS);
+  const [visibleProductsCount, setVisibleProductsCount] = useState(PRODUCTS_BATCH_SIZE);
+  const productInfiniteScrollTriggerRef = useRef<HTMLDivElement | null>(null);
 
   const isEditingProduct = selectedProductToEdit !== null;
 
@@ -186,7 +186,7 @@ function Products() {
     setSearchBatch('');
     setSelectedExpiryStatus('all');
     setShowAdvanced(false);
-    setVisibleProductsCount(INITIAL_VISIBLE_PRODUCTS);
+    setVisibleProductsCount(PRODUCTS_BATCH_SIZE);
   }
 
   const families = useMemo(
@@ -293,7 +293,7 @@ function Products() {
   ]);
 
   useEffect(() => {
-    setVisibleProductsCount(INITIAL_VISIBLE_PRODUCTS);
+    setVisibleProductsCount(PRODUCTS_BATCH_SIZE);
   }, [
     searchTerm,
     selectedFamily,
@@ -305,6 +305,39 @@ function Products() {
 
   const visibleProducts = filteredProducts.slice(0, visibleProductsCount);
   const hasMoreProducts = visibleProductsCount < filteredProducts.length;
+
+  useEffect(() => {
+    const trigger = productInfiniteScrollTriggerRef.current;
+
+    if (!trigger || !hasMoreProducts) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+
+        if (!entry?.isIntersecting) {
+          return;
+        }
+
+        setVisibleProductsCount((currentCount) =>
+          Math.min(currentCount + PRODUCTS_BATCH_SIZE, filteredProducts.length),
+        );
+      },
+      {
+        root: null,
+        rootMargin: '260px 0px',
+        threshold: 0.01,
+      },
+    );
+
+    observer.observe(trigger);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [filteredProducts.length, hasMoreProducts]);
 
   return (
     <AppLayout
@@ -664,45 +697,22 @@ function Products() {
                 })}
               </div>
 
-              <div className="catalog-load-more">
-                <span>
-                  Mostrando {visibleProducts.length} de {filteredProducts.length} productos
-                </span>
 
-                <div>
-                  {hasMoreProducts && (
-                    <button
-                      type="button"
-                      className="ghost-button"
-                      onClick={() =>
-                        setVisibleProductsCount((current) =>
-                          Math.min(current + LOAD_MORE_STEP, filteredProducts.length),
-                        )
-                      }
-                    >
-                      Ver {LOAD_MORE_STEP} más
-                    </button>
-                  )}
-
-                  {hasMoreProducts && (
-                    <button
-                      type="button"
-                      onClick={() => setVisibleProductsCount(filteredProducts.length)}
-                    >
-                      Ver todo
-                    </button>
-                  )}
-
-                  {visibleProductsCount > INITIAL_VISIBLE_PRODUCTS && (
-                    <button
-                      type="button"
-                      className="ghost-button"
-                      onClick={() => setVisibleProductsCount(INITIAL_VISIBLE_PRODUCTS)}
-                    >
-                      Mostrar menos
-                    </button>
-                  )}
-                </div>
+              <div
+                ref={productInfiniteScrollTriggerRef}
+                className="catalog-infinite-scroll-trigger"
+                aria-hidden={!hasMoreProducts}
+              >
+                {hasMoreProducts ? (
+                  <span>
+                    Cargando más productos... Mostrando {visibleProducts.length} de{' '}
+                    {filteredProducts.length}
+                  </span>
+                ) : (
+                  <span>
+                    Se cargaron todos los productos disponibles ({filteredProducts.length}).
+                  </span>
+                )}
               </div>
             </>
           ) : (

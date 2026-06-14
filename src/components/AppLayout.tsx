@@ -1,9 +1,8 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import '../App.css';
 import { getSession } from '../api/authApi';
 import { fetchSidebarSummary, type SidebarSummary } from '../api/sidebarApi';
-import { useTheme } from '../state/useTheme';
 import { useLanguage } from '../language/useLanguage';
 
 type AppLayoutProps = {
@@ -137,14 +136,20 @@ function getSidebarIcon(to: string) {
           <line x1="6" y1="20" x2="6" y2="14"></line>
         </svg>
       );
+    case '/settings':
+      return (
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="sidebar-svg-icon">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      );
     default:
       return null;
   }
 }
 
 function AppLayout({ title, description, children }: AppLayoutProps) {
-  const { theme, toggleTheme } = useTheme();
-  const { language, setLanguage, t } = useLanguage();
+  const { language, t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const session = getSession();
@@ -166,19 +171,37 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
     return localStorage.getItem('sicd-user-avatar') || '';
   });
 
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  // Load and apply accessibility settings (font family & scale) globally
+  useEffect(() => {
+    const applyFontSettings = () => {
+      const savedFont = localStorage.getItem('sicd-font-family') || 'Inter';
+      const savedScale = localStorage.getItem('sicd-font-scale') || '1.0';
 
-  const [emailNotif, setEmailNotif] = useState(() => {
-    return localStorage.getItem('sicd-settings-email') !== 'false';
-  });
+      const root = document.documentElement;
 
-  const [smsNotif, setSmsNotif] = useState(() => {
-    return localStorage.getItem('sicd-settings-sms') !== 'false';
-  });
+      let fontFamily = 'Inter, "Segoe UI", Roboto, sans-serif';
+      if (savedFont === 'Roboto') fontFamily = '"Roboto", sans-serif';
+      else if (savedFont === 'Outfit') fontFamily = '"Outfit", sans-serif';
+      else if (savedFont === 'Montserrat') fontFamily = '"Montserrat", sans-serif';
+      else if (savedFont === 'Georgia') fontFamily = 'Georgia, serif';
+      else if (savedFont === 'Courier') fontFamily = '"Courier New", monospace';
 
-  const [twoFactor, setTwoFactor] = useState(() => {
-    return localStorage.getItem('sicd-settings-2fa') === 'true';
-  });
+      root.style.setProperty('--global-font-family', fontFamily);
+      root.style.setProperty('--global-font-scale', savedScale);
+    };
+
+    applyFontSettings();
+
+    // Set up a listener for settings changes
+    const handleSettingsUpdate = () => applyFontSettings();
+    window.addEventListener('sicd-settings-updated', handleSettingsUpdate);
+    window.addEventListener('storage', handleSettingsUpdate);
+
+    return () => {
+      window.removeEventListener('sicd-settings-updated', handleSettingsUpdate);
+      window.removeEventListener('storage', handleSettingsUpdate);
+    };
+  }, []);
 
   const totalMovements = sidebarSummary?.totalMovements ?? 0;
   const activeAlerts = sidebarSummary?.activeAlerts ?? 0;
@@ -262,14 +285,6 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
     };
 
     reader.readAsDataURL(file);
-  };
-
-  const saveSettings = (event: FormEvent) => {
-    event.preventDefault();
-    localStorage.setItem('sicd-settings-email', String(emailNotif));
-    localStorage.setItem('sicd-settings-sms', String(smsNotif));
-    localStorage.setItem('sicd-settings-2fa', String(twoFactor));
-    setShowSettingsModal(false);
   };
 
   function getBadgeCount(path: string) {
@@ -359,6 +374,19 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
             </div>
           ))}
         </nav>
+
+        {/* Configuration link pushed to the bottom of the sidebar */}
+        <div className="side-nav" style={{ marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid var(--border-color, #dde7e2)' }}>
+          <NavLink
+            to="/settings"
+            className={({ isActive }) => isActive ? 'active' : undefined}
+          >
+            {getSidebarIcon('/settings')}
+            <span className="side-nav-label">
+              {language === 'es' ? 'Configuración' : 'Settings'}
+            </span>
+          </NavLink>
+        </div>
       </aside>
 
       <main className="content">
@@ -392,37 +420,6 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
                   : t('layout.contextDescription')}
               </p>
             </div>
-
-            <div className="language-toggle" aria-label={t('layout.languageLabel')}>
-              <button
-                type="button"
-                className={`language-toggle-button ${language === 'es' ? 'active' : ''}`}
-                onClick={() => setLanguage('es')}
-              >
-                {t('language.es')}
-              </button>
-
-              <button
-                type="button"
-                className={`language-toggle-button ${language === 'en' ? 'active' : ''}`}
-                onClick={() => setLanguage('en')}
-              >
-                {t('language.en')}
-              </button>
-            </div>
-
-            <button
-              type="button"
-              className="theme-toggle-button"
-              onClick={toggleTheme}
-              aria-label={
-                theme === 'dark'
-                  ? t('layout.changeToLight')
-                  : t('layout.changeToDark')
-              }
-            >
-              {theme === 'dark' ? t('layout.themeLight') : t('layout.themeDark')}
-            </button>
 
             <div className="profile-avatar-container">
               <button
@@ -502,13 +499,10 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
                     <div className="dropdown-divider"></div>
 
                     <div className="dropdown-options">
-                      <button
-                        type="button"
+                      <NavLink
+                        to="/settings"
                         className="dropdown-item"
-                        onClick={() => {
-                          setShowSettingsModal(true);
-                          setIsDropdownOpen(false);
-                        }}
+                        onClick={() => setIsDropdownOpen(false)}
                       >
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <circle cx="12" cy="12" r="3"></circle>
@@ -517,10 +511,10 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
 
                         <span>
                           {language === 'es'
-                            ? 'Configuración de cuenta'
-                            : 'Account Settings'}
+                            ? 'Configuración'
+                            : 'Settings'}
                         </span>
-                      </button>
+                      </NavLink>
 
                       <NavLink to="/login" className="dropdown-item">
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -559,111 +553,7 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
         <section className="page-body">{children}</section>
       </main>
 
-      {showSettingsModal ? (
-        <div className="modal-backdrop-v2" onClick={() => setShowSettingsModal(false)}>
-          <div className="modal-content-v2" onClick={(event) => event.stopPropagation()}>
-            <div className="modal-header-v2">
-              <h2>
-                {language === 'es'
-                  ? 'Configuración de la Cuenta'
-                  : 'Account Settings'}
-              </h2>
 
-              <button
-                type="button"
-                className="close-modal-btn-v2"
-                onClick={() => setShowSettingsModal(false)}
-                aria-label="Cerrar modal"
-              >
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-
-            <form onSubmit={saveSettings} className="settings-form-v2">
-              <div
-                className="settings-section-v2"
-                style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
-              >
-                <h3
-                  style={{
-                    fontSize: '15px',
-                    color: theme === 'dark' ? '#cbd5e1' : '#334155',
-                  }}
-                >
-                  {language === 'es'
-                    ? 'Preferencias del Sistema'
-                    : 'System Preferences'}
-                </h3>
-
-                <div className="form-group-v2">
-                  <label className="checkbox-container-v2">
-                    <input
-                      type="checkbox"
-                      checked={emailNotif}
-                      onChange={(event) => setEmailNotif(event.target.checked)}
-                    />
-                    <span className="checkbox-checkmark-v2"></span>
-                    <span className="checkbox-label-v2">
-                      {language === 'es'
-                        ? 'Notificaciones por Correo'
-                        : 'Email Notifications'}
-                    </span>
-                  </label>
-                </div>
-
-                <div className="form-group-v2">
-                  <label className="checkbox-container-v2">
-                    <input
-                      type="checkbox"
-                      checked={smsNotif}
-                      onChange={(event) => setSmsNotif(event.target.checked)}
-                    />
-                    <span className="checkbox-checkmark-v2"></span>
-                    <span className="checkbox-label-v2">
-                      {language === 'es'
-                        ? 'Alertas SMS de inventario bajo'
-                        : 'SMS alerts for low stock'}
-                    </span>
-                  </label>
-                </div>
-
-                <div className="form-group-v2">
-                  <label className="checkbox-container-v2">
-                    <input
-                      type="checkbox"
-                      checked={twoFactor}
-                      onChange={(event) => setTwoFactor(event.target.checked)}
-                    />
-                    <span className="checkbox-checkmark-v2"></span>
-                    <span className="checkbox-label-v2">
-                      {language === 'es'
-                        ? 'Doble factor de autenticación (2FA)'
-                        : 'Two-Factor Authentication (2FA)'}
-                    </span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="modal-footer-v2">
-                <button
-                  type="button"
-                  className="secondary-btn-v2"
-                  onClick={() => setShowSettingsModal(false)}
-                >
-                  {language === 'es' ? 'Cancelar' : 'Cancel'}
-                </button>
-
-                <button type="submit" className="submit-btn-v2" style={{ width: 'auto' }}>
-                  {language === 'es' ? 'Guardar Cambios' : 'Save Changes'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }

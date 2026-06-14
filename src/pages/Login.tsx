@@ -146,7 +146,7 @@ function Login() {
       );
 
       setTimeout(() => {
-        navigate('/home');
+        navigate('/');
       }, 800);
     } catch (loginError) {
       setError(
@@ -190,7 +190,7 @@ function Login() {
       );
 
       setTimeout(() => {
-        navigate('/home');
+        navigate('/');
       }, 800);
     } catch (googleError) {
       setError(
@@ -237,7 +237,7 @@ function Login() {
       );
 
       setTimeout(() => {
-        navigate('/home');
+        navigate('/');
       }, 800);
     } catch (verifyError) {
       setError(

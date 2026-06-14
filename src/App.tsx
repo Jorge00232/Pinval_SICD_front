@@ -12,6 +12,7 @@ import Customers from './pages/Customers';
 import Movements from './pages/Movements';
 import Alerts from './pages/Alerts';
 import Reports from './pages/Reports';
+import Settings from './pages/Settings';
 import ProtectedRoute from './components/ProtectedRoute';
 import ChatbotWidget from './components/ChatbotWidget';
 import { ThemeProvider } from './state/ThemeContext';
@@ -29,7 +30,14 @@ function App() {
         <ThemeProvider>
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Landing />} />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <Landing />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/login" element={<Login />} />
 
               <Route path="/google-login" element={<GoogleLoginMock />} />
@@ -120,6 +128,15 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Reports />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <Settings />
                   </ProtectedRoute>
                 }
               />

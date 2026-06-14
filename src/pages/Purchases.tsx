@@ -4,6 +4,7 @@ import ProductSearchSelect from '../components/ProductSearchSelect';
 import { canManageData } from '../api/authApi';
 import { useInventory } from '../state/useInventory';
 import { useLanguage } from '../language/useLanguage';
+import SuccessModal from '../components/SuccessModal';
 
 type PurchaseLine = {
   id: string;
@@ -37,6 +38,7 @@ function Purchases() {
   const [documentNumber, setDocumentNumber] = useState('');
   const [items, setItems] = useState<PurchaseLine[]>([createPurchaseLine()]);
   const [formMessage, setFormMessage] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const selectedSupplier = supplierName || suppliers[0]?.name || '';
 
@@ -159,6 +161,7 @@ function Purchases() {
                   setSupplierName('');
                   setItems([createPurchaseLine()]);
                   setFormMessage('');
+                  setShowSuccess(true);
                 }}
               >
                 <div className="grid-form purchase-header-grid">
@@ -305,6 +308,13 @@ function Purchases() {
           </details>
         ) : null}
       </section>
+
+      <SuccessModal
+        isOpen={showSuccess}
+        onClose={() => setShowSuccess(false)}
+        title={t('purchases.successTitle')}
+        message={t('purchases.successMessage')}
+      />
     </AppLayout>
   );
 }

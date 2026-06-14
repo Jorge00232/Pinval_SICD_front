@@ -4,6 +4,7 @@ import { canManageData } from '../api/authApi';
 import { useInventory } from '../state/useInventory';
 import { useLanguage } from '../language/useLanguage';
 import type { Product } from '../data/mockData';
+import SuccessModal from '../components/SuccessModal';
 
 type SaleLine = {
   id: string;
@@ -202,6 +203,7 @@ function Sales() {
   const [documentNumber, setDocumentNumber] = useState('');
   const [items, setItems] = useState<SaleLine[]>([createSaleLine()]);
   const [formMessage, setFormMessage] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const genericCustomerOptions = useMemo(() => ['B2C', 'B2B'], []);
 
@@ -341,6 +343,7 @@ function Sales() {
                   setDocumentNumber('');
                   setItems([createSaleLine()]);
                   setFormMessage('');
+                  setShowSuccess(true);
                 }}
               >
                 <div className="grid-form purchase-header-grid">
@@ -496,6 +499,13 @@ function Sales() {
           </details>
         ) : null}
       </section>
+
+      <SuccessModal
+        isOpen={showSuccess}
+        onClose={() => setShowSuccess(false)}
+        title={t('sales.successTitle')}
+        message={t('sales.successMessage')}
+      />
     </AppLayout>
   );
 }

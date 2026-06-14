@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import AppLayout from '../components/AppLayout';
+import ProductSearchSelect from '../components/ProductSearchSelect';
 import { canManageData } from '../api/authApi';
 import { useInventory } from '../state/useInventory';
 import { useLanguage } from '../language/useLanguage';
@@ -21,16 +22,22 @@ function createPurchaseLine(codigo = ''): PurchaseLine {
 function Purchases() {
   const { movements, products, recordPurchase, suppliers } = useInventory();
   const { t } = useLanguage();
+
   const canRegister = canManageData();
+
   const canRegisterPurchase =
     canRegister && products.length > 0 && suppliers.length > 0;
+
   const purchaseMovements = movements.filter(
     (movement) => movement.type === 'Entrada',
   );
+
   const [purchaseDate, setPurchaseDate] = useState('');
   const [supplierName, setSupplierName] = useState('');
   const [documentNumber, setDocumentNumber] = useState('');
   const [items, setItems] = useState<PurchaseLine[]>([createPurchaseLine()]);
+  const [formMessage, setFormMessage] = useState('');
+
   const selectedSupplier = supplierName || suppliers[0]?.name || '';
 
   return (
@@ -42,6 +49,7 @@ function Purchases() {
         <article className="panel purchase-history-panel">
           <div className="panel-heading">
             <h2>{t('purchases.history')}</h2>
+
             <span className="purchase-counter">
               {purchaseMovements.length} {t('purchases.records')}
             </span>
@@ -58,10 +66,13 @@ function Purchases() {
                   <th>{t('purchases.supplier')}</th>
                 </tr>
               </thead>
+
               <tbody>
                 {purchaseMovements.length > 0 ? (
                   purchaseMovements.map((movement) => {
-                    const [documentPart, supplierPart] = movement.detail.split(' - ');
+                    const [documentPart, supplierPart = '-'] =
+                      movement.detail.split(' - ');
+
                     const documentLabel = documentPart.replace('Factura ', '');
 
                     return (
@@ -94,174 +105,203 @@ function Purchases() {
           <details className="form-disclosure">
             <summary>
               <span>{t('purchases.registerPurchase')}</span>
+
               <strong>
                 {purchaseMovements.length} {t('purchases.linesRegistered')}
               </strong>
             </summary>
 
-          <article className="panel purchase-form-panel form-panel">
-          <form
-            className="form purchase-form"
-            onSubmit={(event) => {
-              event.preventDefault();
+            <article className="panel purchase-form-panel form-panel">
+              <form
+                className="form purchase-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
 
-              const normalizedItems = items.map((item) => ({
-                ...item,
-                codigo: item.codigo || products[0]?.codigo || '',
-              }));
+                  const normalizedItems = items.map((item) => ({
+                    ...item,
+                    codigo: item.codigo.trim(),
+                    quantity: Number(item.quantity),
+                  }));
 
-              recordPurchase({
-                date: purchaseDate,
-                supplierName: selectedSupplier,
-                documentNumber,
-                items: normalizedItems,
-              });
+                  const hasProductWithoutSelection = normalizedItems.some(
+                    (item) => !item.codigo,
+                  );
 
-              setPurchaseDate('');
-              setDocumentNumber('');
-              setSupplierName('');
-              setItems([createPurchaseLine(products[0]?.codigo ?? '')]);
-            }}
-          >
-            <div className="grid-form purchase-header-grid">
-              <label>
-                {t('purchases.date')}
-                <input
-                  type="date"
-                  value={purchaseDate}
-                  onChange={(event) => setPurchaseDate(event.target.value)}
-                  required
-                />
-              </label>
+                  const hasInvalidQuantity = normalizedItems.some(
+                    (item) =>
+                      !Number.isFinite(item.quantity) || item.quantity <= 0,
+                  );
 
-              <label>
-                {t('purchases.supplier')}
-                <select
-                  value={selectedSupplier}
-                  onChange={(event) => setSupplierName(event.target.value)}
-                  disabled={suppliers.length === 0}
-                  required
-                >
-                  {suppliers.length > 0 ? (
-                    suppliers.map((supplier) => (
-                      <option key={supplier.name} value={supplier.name}>
-                        {supplier.name}
-                      </option>
-                    ))
-                  ) : (
-                    <option value="">{t('purchases.noSuppliers')}</option>
-                  )}
-                </select>
-              </label>
+                  if (!selectedSupplier) {
+                    setFormMessage('Debes seleccionar un proveedor válido.');
+                    return;
+                  }
 
-              <label className="purchase-document-field">
-                {t('purchases.invoiceNumber')}
-                <input
-                  value={documentNumber}
-                  onChange={(event) => setDocumentNumber(event.target.value)}
-                  placeholder={t('purchases.invoicePlaceholder')}
-                  maxLength={40}
-                  required
-                />
-              </label>
-            </div>
+                  if (hasProductWithoutSelection) {
+                    setFormMessage('Debes seleccionar un producto válido en cada línea.');
+                    return;
+                  }
 
-            <div className="purchase-items">
-              {items.map((item, index) => (
-                <div key={item.id} className="purchase-item-row">
+                  if (hasInvalidQuantity) {
+                    setFormMessage('La cantidad debe ser mayor a 0 en cada producto.');
+                    return;
+                  }
+
+                  recordPurchase({
+                    date: purchaseDate,
+                    supplierName: selectedSupplier,
+                    documentNumber,
+                    items: normalizedItems,
+                  });
+
+                  setPurchaseDate('');
+                  setDocumentNumber('');
+                  setSupplierName('');
+                  setItems([createPurchaseLine()]);
+                  setFormMessage('');
+                }}
+              >
+                <div className="grid-form purchase-header-grid">
                   <label>
-                    {`${t('purchases.product')} ${index + 1}`}
-                    <select
-                      value={item.codigo || products[0]?.codigo || ''}
-                      onChange={(event) => {
-                        const codigo = event.target.value;
-                        setItems((current) =>
-                          current.map((line) =>
-                            line.id === item.id ? { ...line, codigo } : line,
-                          ),
-                        );
-                      }}
-                      disabled={products.length === 0}
-                      required
-                    >
-                      {products.length > 0 ? (
-                        products.map((product) => (
-                          <option key={product.codigo} value={product.codigo}>
-                            {product.descrip}
-                          </option>
-                        ))
-                      ) : (
-                        <option value="">{t('purchases.noProducts')}</option>
-                      )}
-                    </select>
-                  </label>
+                    {t('purchases.date')}
 
-                  <label>
-                    {t('purchases.quantity')}
                     <input
-                      type="number"
-                      min="1"
-                      value={item.quantity}
-                      onChange={(event) => {
-                        const quantity = Number(event.target.value);
-                        setItems((current) =>
-                          current.map((line) =>
-                            line.id === item.id
-                              ? {
-                                  ...line,
-                                  quantity: Number.isNaN(quantity) ? 1 : quantity,
-                                }
-                              : line,
-                          ),
-                        );
-                      }}
+                      type="date"
+                      value={purchaseDate}
+                      onChange={(event) => setPurchaseDate(event.target.value)}
                       required
                     />
                   </label>
 
+                  <label>
+                    {t('purchases.supplier')}
+
+                    <select
+                      value={selectedSupplier}
+                      onChange={(event) => setSupplierName(event.target.value)}
+                      disabled={suppliers.length === 0}
+                      required
+                    >
+                      {suppliers.length > 0 ? (
+                        suppliers.map((supplier) => (
+                          <option key={supplier.name} value={supplier.name}>
+                            {supplier.name}
+                          </option>
+                        ))
+                      ) : (
+                        <option value="">{t('purchases.noSuppliers')}</option>
+                      )}
+                    </select>
+                  </label>
+
+                  <label className="purchase-document-field">
+                    {t('purchases.invoiceNumber')}
+
+                    <input
+                      value={documentNumber}
+                      onChange={(event) => setDocumentNumber(event.target.value)}
+                      placeholder={t('purchases.invoicePlaceholder')}
+                      maxLength={40}
+                      required
+                    />
+                  </label>
+                </div>
+
+                {formMessage ? (
+                  <div className="form-message error">{formMessage}</div>
+                ) : null}
+
+                <div className="purchase-items">
+                  {items.map((item, index) => (
+                    <div key={item.id} className="purchase-item-row">
+                      <ProductSearchSelect
+                        label={`${t('purchases.product')} ${index + 1}`}
+                        products={products}
+                        value={item.codigo}
+                        disabled={products.length === 0}
+                        noProductsText={t('purchases.noProducts')}
+                        placeholder="Buscar producto por nombre o código..."
+                        onChange={(codigo) => {
+                          setItems((current) =>
+                            current.map((line) =>
+                              line.id === item.id
+                                ? {
+                                    ...line,
+                                    codigo,
+                                  }
+                                : line,
+                            ),
+                          );
+                        }}
+                      />
+
+                      <label>
+                        {t('purchases.quantity')}
+
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(event) => {
+                            const quantity = Number(event.target.value);
+
+                            setItems((current) =>
+                              current.map((line) =>
+                                line.id === item.id
+                                  ? {
+                                      ...line,
+                                      quantity: Number.isNaN(quantity)
+                                        ? 1
+                                        : quantity,
+                                    }
+                                  : line,
+                              ),
+                            );
+                          }}
+                          required
+                        />
+                      </label>
+
+                      <button
+                        type="button"
+                        className="ghost-button purchase-remove-button purchase-small-button"
+                        onClick={() => {
+                          setItems((current) =>
+                            current.length === 1
+                              ? current
+                              : current.filter((line) => line.id !== item.id),
+                          );
+                        }}
+                        disabled={items.length === 1}
+                      >
+                        {t('purchases.remove')}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="purchase-actions">
                   <button
                     type="button"
-                    className="ghost-button purchase-remove-button purchase-small-button"
-                    onClick={() => {
-                      setItems((current) =>
-                        current.length === 1
-                          ? current
-                          : current.filter((line) => line.id !== item.id),
-                      );
-                    }}
-                    disabled={items.length === 1}
+                    className="ghost-button purchase-secondary-button"
+                    onClick={() =>
+                      setItems((current) => [...current, createPurchaseLine()])
+                    }
+                    disabled={products.length === 0}
                   >
-                    {t('purchases.remove')}
+                    {t('purchases.addProduct')}
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="purchase-primary-button"
+                    disabled={!canRegisterPurchase}
+                  >
+                    {t('purchases.savePurchase')}
                   </button>
                 </div>
-              ))}
-            </div>
-
-            <div className="purchase-actions">
-              <button
-                type="button"
-                className="ghost-button purchase-secondary-button"
-                onClick={() =>
-                  setItems((current) => [
-                    ...current,
-                    createPurchaseLine(products[0]?.codigo ?? ''),
-                  ])
-                }
-                disabled={products.length === 0}
-              >
-                {t('purchases.addProduct')}
-              </button>
-
-              <button
-                type="submit"
-                className="purchase-primary-button"
-                disabled={!canRegisterPurchase}
-              >
-                {t('purchases.savePurchase')}
-              </button>
-            </div>
-          </form>
-          </article>
+              </form>
+            </article>
           </details>
         ) : null}
       </section>

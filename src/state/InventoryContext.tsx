@@ -533,164 +533,139 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
       },
 
       recordPurchase(purchase) {
-        setState((current) => {
-          const validItems = purchase.items.filter(
-            (item) => item.codigo && item.quantity > 0,
-          );
+        const validItems = purchase.items.filter(
+          (item) => item.codigo && item.quantity > 0,
+        );
 
-          if (validItems.length === 0) {
-            return current;
-          }
+        if (validItems.length === 0) {
+          return;
+        }
 
-          const quantityByCode = new Map<string, number>();
+        const quantityByCode = new Map<string, number>();
 
-          for (const item of validItems) {
-            const currentQuantity = quantityByCode.get(item.codigo) ?? 0;
-            quantityByCode.set(item.codigo, currentQuantity + item.quantity);
-          }
+        for (const item of validItems) {
+          const currentQuantity = quantityByCode.get(item.codigo) ?? 0;
+          quantityByCode.set(item.codigo, currentQuantity + item.quantity);
+        }
 
-          const existingProducts = new Map(
-            current.products.map((item) => [item.codigo, item] as const),
-          );
+        const existingProducts = new Map(
+          state.products.map((item) => [item.codigo, item] as const),
+        );
 
-          const filteredEntries = [...quantityByCode.entries()].filter(([codigo]) =>
-            existingProducts.has(codigo),
-          );
+        const filteredEntries = [...quantityByCode.entries()].filter(([codigo]) =>
+          existingProducts.has(codigo),
+        );
 
-          if (filteredEntries.length === 0) {
-            return current;
-          }
+        if (filteredEntries.length === 0) {
+          return;
+        }
 
-          const movements: InventoryMovement[] = filteredEntries.map(
-            ([codigo, quantity]) => {
-              const product = existingProducts.get(codigo)!;
+        const movementDate = getDateTimeLabel();
 
-              return {
-                id: getMovementId(),
-                type: 'Entrada',
-                product: getProductDisplayName(product),
-                quantity,
-                user: 'Usuario local',
-                date: getDateTimeLabel(),
-                detail: `Factura ${purchase.documentNumber} - ${purchase.supplierName}`,
-              };
-            },
-          );
-
-          const backendMovements = filteredEntries.map(([codigo, quantity]) => {
+        const movements: InventoryMovement[] = filteredEntries.map(
+          ([codigo, quantity]) => {
             const product = existingProducts.get(codigo)!;
 
             return {
-              codigo,
-              productName: getProductDisplayName(product),
-              type: 'ENTRADA' as const,
+              id: getMovementId(),
+              type: 'Entrada',
+              product: getProductDisplayName(product),
               quantity,
-              unitPrice: product.prcosto,
-              totalPrice: quantity * product.prcosto,
-              reason: `Factura ${purchase.documentNumber} - ${purchase.supplierName}`,
-              createdAt: purchase.date
-                ? new Date(`${purchase.date}T12:00:00`).toISOString()
-                : new Date().toISOString(),
+              user: 'Usuario local',
+              date: movementDate,
+              detail: `Factura ${purchase.documentNumber} - ${purchase.supplierName}`,
             };
-          });
+          },
+        );
 
-          createInventoryMovements(backendMovements).catch((error) => {
-            console.warn(
-              'No se pudieron sincronizar las entradas con el backend:',
-              error,
-            );
-          });
+        const backendMovements = filteredEntries.map(([codigo, quantity]) => {
+          const product = existingProducts.get(codigo)!;
 
           return {
-            ...current,
-            products: current.products.map((item) =>
-              quantityByCode.has(item.codigo)
-                ? {
-                    ...item,
-                    stock: item.stock + (quantityByCode.get(item.codigo) ?? 0),
-                    stockOriginal:
-                      (item.stockOriginal ?? item.stock) +
-                      (quantityByCode.get(item.codigo) ?? 0),
-                  }
-                : item,
-            ),
-            suppliers: current.suppliers.map((supplier) =>
-              supplier.name === purchase.supplierName
-                ? {
-                    ...supplier,
-                    lastPurchase: purchase.date || getDateTimeLabel(),
-                    totalPurchases: supplier.totalPurchases + 1,
-                  }
-                : supplier,
-            ),
-            movements: [...movements, ...current.movements],
+            codigo,
+            productName: getProductDisplayName(product),
+            type: 'ENTRADA' as const,
+            quantity,
+            unitPrice: product.prcosto,
+            totalPrice: quantity * product.prcosto,
+            reason: `Factura ${purchase.documentNumber} - ${purchase.supplierName}`,
+            createdAt: purchase.date
+              ? new Date(`${purchase.date}T12:00:00`).toISOString()
+              : new Date().toISOString(),
           };
+        });
+
+        setState((current) => ({
+          ...current,
+          products: current.products.map((item) =>
+            quantityByCode.has(item.codigo)
+              ? {
+                  ...item,
+                  stock: item.stock + (quantityByCode.get(item.codigo) ?? 0),
+                }
+              : item,
+          ),
+          suppliers: current.suppliers.map((supplier) =>
+            supplier.name === purchase.supplierName
+              ? {
+                  ...supplier,
+                  lastPurchase: purchase.date || movementDate,
+                  totalPurchases: supplier.totalPurchases + 1,
+                }
+              : supplier,
+          ),
+          movements: [...movements, ...current.movements],
+        }));
+
+        createInventoryMovements(backendMovements).catch((error) => {
+          console.warn(
+            'No se pudieron sincronizar las entradas con el backend:',
+            error,
+          );
         });
       },
 
       recordSale(sale) {
-        setState((current) => {
-          const validItems = sale.items.filter(
-            (item) => item.codigo && item.quantity > 0,
-          );
+        const validItems = sale.items.filter(
+          (item) => item.codigo && item.quantity > 0,
+        );
 
-          if (validItems.length === 0) {
-            return current;
-          }
+        if (validItems.length === 0) {
+          return;
+        }
 
-          const quantityByCode = new Map<string, number>();
+        const quantityByCode = new Map<string, number>();
 
-          for (const item of validItems) {
-            const currentQuantity = quantityByCode.get(item.codigo) ?? 0;
-            quantityByCode.set(item.codigo, currentQuantity + item.quantity);
-          }
+        for (const item of validItems) {
+          const currentQuantity = quantityByCode.get(item.codigo) ?? 0;
+          quantityByCode.set(item.codigo, currentQuantity + item.quantity);
+        }
 
-          const existingProducts = new Map(
-            current.products.map((item) => [item.codigo, item] as const),
-          );
+        const existingProducts = new Map(
+          state.products.map((item) => [item.codigo, item] as const),
+        );
 
-          const filteredEntries = [...quantityByCode.entries()].filter(([codigo]) =>
-            existingProducts.has(codigo),
-          );
+        const filteredEntries = [...quantityByCode.entries()].filter(([codigo]) =>
+          existingProducts.has(codigo),
+        );
 
-          if (filteredEntries.length === 0) {
-            return current;
-          }
+        if (filteredEntries.length === 0) {
+          return;
+        }
 
-          const hasInsufficientStock = filteredEntries.some(([codigo, quantity]) => {
-            const product = existingProducts.get(codigo)!;
-            return product.stock < quantity;
-          });
+        const hasInsufficientStock = filteredEntries.some(([codigo, quantity]) => {
+          const product = existingProducts.get(codigo)!;
+          return product.stock < quantity;
+        });
 
-          if (hasInsufficientStock) {
-            return current;
-          }
+        if (hasInsufficientStock) {
+          return;
+        }
 
-          const movementDate = getDateTimeLabel();
+        const movementDate = getDateTimeLabel();
 
-          const movements: InventoryMovement[] = filteredEntries.map(
-            ([codigo, quantity]) => {
-              const product = existingProducts.get(codigo)!;
-              const customerDetail = sale.customerName || 'Cliente sin nombre';
-              const identifierDetail = sale.customerIdentifier?.trim()
-                ? ` | Id: ${sale.customerIdentifier.trim()}`
-                : '';
-
-              return {
-                id: getMovementId(),
-                type: 'Salida',
-                product: getProductDisplayName(product),
-                quantity,
-                user: 'Usuario local',
-                date: movementDate,
-                detail:
-                  `${sale.documentType} ${sale.documentNumber} - ` +
-                  `${customerDetail} | Tipo: ${sale.customerType}${identifierDetail}`,
-              };
-            },
-          );
-
-          const backendMovements = filteredEntries.map(([codigo, quantity]) => {
+        const movements: InventoryMovement[] = filteredEntries.map(
+          ([codigo, quantity]) => {
             const product = existingProducts.get(codigo)!;
             const customerDetail = sale.customerName || 'Cliente sin nombre';
             const identifierDetail = sale.customerIdentifier?.trim()
@@ -698,50 +673,67 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
               : '';
 
             return {
-              codigo,
-              productName: getProductDisplayName(product),
-              type: 'SALIDA' as const,
+              id: getMovementId(),
+              type: 'Salida',
+              product: getProductDisplayName(product),
               quantity,
-              unitPrice: product.prventa,
-              totalPrice: quantity * product.prventa,
-              reason:
+              user: 'Usuario local',
+              date: movementDate,
+              detail:
                 `${sale.documentType} ${sale.documentNumber} - ` +
                 `${customerDetail} | Tipo: ${sale.customerType}${identifierDetail}`,
-              createdAt: new Date().toISOString(),
             };
-          });
+          },
+        );
 
-          createInventoryMovements(backendMovements).catch((error) => {
-            console.warn(
-              'No se pudieron sincronizar las salidas con el backend:',
-              error,
-            );
-          });
+        const backendMovements = filteredEntries.map(([codigo, quantity]) => {
+          const product = existingProducts.get(codigo)!;
+          const customerDetail = sale.customerName || 'Cliente sin nombre';
+          const identifierDetail = sale.customerIdentifier?.trim()
+            ? ` | Id: ${sale.customerIdentifier.trim()}`
+            : '';
 
           return {
-            ...current,
-            products: current.products.map((item) =>
-              quantityByCode.has(item.codigo)
-                ? {
-                    ...item,
-                    stock: item.stock - (quantityByCode.get(item.codigo) ?? 0),
-                    stockOriginal:
-                      (item.stockOriginal ?? item.stock) -
-                      (quantityByCode.get(item.codigo) ?? 0),
-                  }
-                : item,
-            ),
-            customers: current.customers.map((customer) =>
-              customer.name === sale.customerName
-                ? {
-                    ...customer,
-                    lastPurchase: movementDate,
-                    purchases: customer.purchases + 1,
-                  }
-                : customer,
-            ),
-            movements: [...movements, ...current.movements],
+            codigo,
+            productName: getProductDisplayName(product),
+            type: 'SALIDA' as const,
+            quantity,
+            unitPrice: product.prventa,
+            totalPrice: quantity * product.prventa,
+            reason:
+              `${sale.documentType} ${sale.documentNumber} - ` +
+              `${customerDetail} | Tipo: ${sale.customerType}${identifierDetail}`,
+            createdAt: new Date().toISOString(),
           };
+        });
+
+        setState((current) => ({
+          ...current,
+          products: current.products.map((item) =>
+            quantityByCode.has(item.codigo)
+              ? {
+                  ...item,
+                  stock: item.stock - (quantityByCode.get(item.codigo) ?? 0),
+                }
+              : item,
+          ),
+          customers: current.customers.map((customer) =>
+            customer.name === sale.customerName
+              ? {
+                  ...customer,
+                  lastPurchase: movementDate,
+                  purchases: customer.purchases + 1,
+                }
+              : customer,
+          ),
+          movements: [...movements, ...current.movements],
+        }));
+
+        createInventoryMovements(backendMovements).catch((error) => {
+          console.warn(
+            'No se pudieron sincronizar las salidas con el backend:',
+            error,
+          );
         });
       },
     }),

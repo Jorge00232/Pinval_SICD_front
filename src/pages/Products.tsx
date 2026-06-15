@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import AppLayout from '../components/AppLayout';
+import ConfirmModal from '../components/ConfirmModal';
 import { canManageData } from '../api/authApi';
 import {
   currencyFormatter,
@@ -162,6 +163,9 @@ function Products() {
   const productInfiniteScrollTriggerRef = useRef<HTMLDivElement | null>(null);
 
   const isEditingProduct = selectedProductToEdit !== null;
+
+  type PendingProduct = Parameters<typeof addProduct>[0];
+  const [pendingProduct, setPendingProduct] = useState<PendingProduct | null>(null);
 
   function openCreateProductModal() {
     setSelectedProductToEdit(null);
@@ -831,7 +835,7 @@ function Products() {
                 const displayName = toDisplayProductName(originalName);
                 const searchName = toSearchProductName(originalName);
 
-                addProduct({
+                const productData: PendingProduct = {
                   codigo: String(formData.get('codigo')).trim(),
                   descrip: originalName,
                   displayName,
@@ -847,9 +851,9 @@ function Products() {
                   lote: String(formData.get('lote')).trim() || undefined,
                   fechaCaducidad:
                     String(formData.get('fechaCaducidad')).trim() || undefined,
-                });
+                };
 
-                closeProductModal();
+                setPendingProduct(productData);
               }}
             >
               <label>
@@ -1017,6 +1021,34 @@ function Products() {
             </form>
           </section>
         </div>
+      ) : null}
+
+      {pendingProduct ? (
+        <ConfirmModal
+          isOpen={true}
+          title="¿Estás seguro?"
+          subtitle={isEditingProduct ? 'Se guardarán los cambios del producto.' : 'Se agregará el siguiente producto al catálogo.'}
+          confirmLabel={isEditingProduct ? 'Guardar cambios' : 'Agregar producto'}
+          cancelLabel="Cancelar"
+          details={[
+            { label: 'Código', value: pendingProduct.codigo },
+            { label: 'Descripción', value: pendingProduct.displayName || pendingProduct.descrip },
+            { label: 'Categoría', value: FAMILY_LABELS[pendingProduct.familia as ProductFamily] ?? pendingProduct.familia },
+            { label: 'Stock inicial', value: String(pendingProduct.stock) },
+            { label: 'Stock mínimo', value: String(pendingProduct.minStock) },
+            { label: 'Precio costo', value: currencyFormatter.format(pendingProduct.prcosto) },
+            { label: 'Precio venta', value: currencyFormatter.format(pendingProduct.prventa) },
+            ...(pendingProduct.proveedor ? [{ label: 'Proveedor', value: pendingProduct.proveedor }] : []),
+            ...(pendingProduct.ubicacion ? [{ label: 'Ubicación', value: pendingProduct.ubicacion }] : []),
+            ...(pendingProduct.lote ? [{ label: 'Lote', value: pendingProduct.lote }] : []),
+          ]}
+          onConfirm={() => {
+            addProduct(pendingProduct);
+            setPendingProduct(null);
+            closeProductModal();
+          }}
+          onCancel={() => setPendingProduct(null)}
+        />
       ) : null}
     </AppLayout>
   );

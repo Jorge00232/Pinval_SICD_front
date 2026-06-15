@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AppLayout from '../components/AppLayout';
 import type { Product } from '../data/mockData';
-import { useInventory } from '../state/useInventory';
+import { fetchProducts } from '../api/productsApi';
 import { useLanguage } from '../language/useLanguage';
 
 type AlertStatus = 'requiresAdjustment' | 'noStock' | 'belowMinimum';
@@ -48,11 +48,6 @@ function getAlertInfo(product: Product): Pick<AlertProduct, 'alertStatus' | 'ale
   const minimumStock = toNumber(product.minStock);
   const originalStock = toNumber(product.stockOriginal);
 
-  /*
-    Regla principal:
-    Si el stock actual ya supera el mínimo, el producto NO debe aparecer en Alertas,
-    aunque antes haya tenido stock bajo, stock negativo o stockOriginal distinto.
-  */
   if (currentStock > minimumStock) {
     return null;
   }
@@ -82,14 +77,57 @@ function getAlertInfo(product: Product): Pick<AlertProduct, 'alertStatus' | 'ale
 }
 
 function Alerts() {
-  const { products } = useInventory();
   const { t } = useLanguage();
+
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [backendError, setBackendError] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPriority, setSelectedPriority] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
 
+  useEffect(() => {
+    let isActive = true;
+
+    setIsLoading(true);
+    setBackendError(null);
+
+    fetchProducts()
+      .then((backendProducts) => {
+        if (!isActive) {
+          return;
+        }
+
+        setProducts(backendProducts);
+        setBackendError(null);
+      })
+      .catch(() => {
+        if (!isActive) {
+          return;
+        }
+
+        setProducts([]);
+        setBackendError(
+          'No se pudieron cargar las alertas desde el backend. No se mostrarán alertas locales.',
+        );
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
   const alerts = useMemo<AlertProduct[]>(() => {
+    if (backendError) {
+      return [];
+    }
+
     return products
       .map((product) => {
         const alertInfo = getAlertInfo(product);
@@ -111,7 +149,7 @@ function Alerts() {
 
         return toNumber(a.stock) - toNumber(b.stock);
       });
-  }, [products]);
+  }, [backendError, products]);
 
   const adjustmentAlerts = useMemo(
     () => alerts.filter((product) => product.alertStatus === 'requiresAdjustment'),
@@ -153,23 +191,23 @@ function Alerts() {
         <div className="alerts-strip-header">
           <strong>{t('alerts.title')}</strong>
           <span>
-            {alerts.length} {t('alerts.active')}
+            {isLoading ? '...' : alerts.length} {t('alerts.active')}
           </span>
         </div>
 
         <div className="alerts-summary-list single-row">
           <div>
-            <strong>{adjustmentAlerts.length}</strong>
+            <strong>{isLoading ? '...' : adjustmentAlerts.length}</strong>
             <span>{t('alerts.requiresAdjustment')}</span>
           </div>
 
           <div>
-            <strong>{criticalAlerts.length}</strong>
+            <strong>{isLoading ? '...' : criticalAlerts.length}</strong>
             <span>{t('alerts.noStock')}</span>
           </div>
 
           <div>
-            <strong>{warningAlerts.length}</strong>
+            <strong>{isLoading ? '...' : warningAlerts.length}</strong>
             <span>{t('alerts.restock')}</span>
           </div>
         </div>
@@ -179,7 +217,7 @@ function Alerts() {
         <div className="panel-heading">
           <h2>{t('alerts.productsToReview')}</h2>
           <span>
-            {filteredAlerts.length} {t('alerts.products')}
+            {isLoading ? '...' : filteredAlerts.length} {t('alerts.products')}
           </span>
         </div>
 
@@ -197,6 +235,7 @@ function Alerts() {
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder={t('products.searchPlaceholder')}
+              disabled={isLoading || Boolean(backendError)}
             />
           </label>
 
@@ -205,6 +244,7 @@ function Alerts() {
             <select
               value={selectedPriority}
               onChange={(event) => setSelectedPriority(event.target.value)}
+              disabled={isLoading || Boolean(backendError)}
             >
               <option value="all">{t('reports.all')}</option>
               <option value="high">{t('alerts.high')}</option>
@@ -217,6 +257,7 @@ function Alerts() {
             <select
               value={selectedStatus}
               onChange={(event) => setSelectedStatus(event.target.value)}
+              disabled={isLoading || Boolean(backendError)}
             >
               <option value="all">{t('reports.all')}</option>
               <option value="requiresAdjustment">{t('alerts.requiresAdjustment')}</option>
@@ -227,7 +268,11 @@ function Alerts() {
         </div>
 
         <div className="table-wrap alerts-table-wrap">
-          {filteredAlerts.length > 0 ? (
+          {isLoading ? (
+            <div className="empty-state">Cargando alertas desde el backend...</div>
+          ) : backendError ? (
+            <div className="empty-state">{backendError}</div>
+          ) : filteredAlerts.length > 0 ? (
             <table>
               <thead>
                 <tr>

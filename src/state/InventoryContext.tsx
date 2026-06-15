@@ -1,21 +1,19 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
-  type Customer,
   type InventoryMovement,
   type Product,
   type ProductFamily,
-  type Supplier,
 } from '../data/mockData';
 import {
   InventoryContext,
+  type CustomerInput,
   type InventoryContextValue,
   type InventoryState,
+  type SupplierInput,
 } from './inventoryStore';
 import { fetchProducts, createProduct } from '../api/productsApi';
 import { createInventoryMovements } from '../api/inventoryMovementsApi';
 import { getCurrentUserAuditInfo } from '../api/authApi';
-
-const storageKey = 'sicd-inventory-state-v1';
 
 function toDisplayProductName(rawName?: string | null) {
   if (!rawName) {
@@ -60,112 +58,8 @@ function getProductDisplayName(product: Product) {
 }
 
 const emptyState: InventoryState = {
-  products: [
-    {
-      codigo: '001101',
-      descrip: 'Shampoo Neutro Hidratante 400ml',
-      displayName: 'Shampoo Neutro Hidratante 400 ml',
-      searchName: 'shampoo neutro hidratante 400 ml',
-      familia: 'SHAMPOO',
-      prcosto: 1800,
-      prventa: 3200,
-      stock: 45,
-      minStock: 10,
-      fecha: '2026-05-15',
-      ubicacion: 'Bodega 1 - Estante A2',
-      proveedor: 'Distribuidora Central',
-      lote: 'SH-9921',
-      fechaCaducidad: '2027-08-20',
-    },
-    {
-      codigo: '001102',
-      descrip: 'Detergente Liquido Lavado Ropa 3L',
-      displayName: 'Detergente Liquido Lavado Ropa 3 L',
-      searchName: 'detergente liquido lavado ropa 3 l',
-      familia: 'LAV_.ROPA',
-      prcosto: 3500,
-      prventa: 6490,
-      stock: 8,
-      minStock: 15,
-      fecha: '2026-05-18',
-      ubicacion: 'Bodega 1 - Estante B5',
-      proveedor: 'Distribuidora Central',
-      lote: 'DET-4402',
-      fechaCaducidad: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split('T')[0],
-    },
-    {
-      codigo: '001103',
-      descrip: 'Cloro Tradicional Concentrado 2L',
-      displayName: 'Cloro Tradicional Concentrado 2 L',
-      searchName: 'cloro tradicional concentrado 2 l',
-      familia: 'CLORO',
-      prcosto: 850,
-      prventa: 1500,
-      stock: 2,
-      minStock: 5,
-      fecha: '2026-05-20',
-      ubicacion: 'Bodega 2 - Pasillo D',
-      proveedor: 'Quimica del Norte',
-      lote: 'CL-0018',
-      fechaCaducidad: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split('T')[0],
-    },
-    {
-      codigo: '001104',
-      descrip: 'Lavaloza Activo Limon 750ml',
-      displayName: 'Lavaloza Activo Limon 750 ml',
-      searchName: 'lavaloza activo limon 750 ml',
-      familia: 'LAVALOZA',
-      prcosto: 1100,
-      prventa: 1990,
-      stock: 60,
-      minStock: 12,
-      fecha: '2026-05-22',
-      ubicacion: 'Bodega 2 - Pasillo E',
-      proveedor: 'Quimica del Norte',
-      lote: 'LV-8871',
-      fechaCaducidad: '2028-02-10',
-    },
-    {
-      codigo: '001105',
-      descrip: 'Pasta Dental Triple Accion 150g',
-      displayName: 'Pasta Dental Triple Accion 150g',
-      searchName: 'pasta dental triple accion 150g',
-      familia: 'DENTAL',
-      prcosto: 980,
-      prventa: 1890,
-      stock: 24,
-      minStock: 8,
-      fecha: '2026-05-25',
-      ubicacion: 'Bodega 1 - Estante C1',
-      proveedor: 'Distribuidora Central',
-      lote: 'DEN-1102',
-      fechaCaducidad: '2027-11-05',
-    },
-  ],
-  suppliers: [
-    {
-      name: 'Distribuidora Central',
-      identifier: '76.452.122-3',
-      contactName: 'Carlos Gomez',
-      phone: '+56 9 7711 2233',
-      email: 'carlos@distribuidoracentral.cl',
-      lastPurchase: '2026-05-18',
-      totalPurchases: 2,
-    },
-    {
-      name: 'Quimica del Norte',
-      identifier: '77.892.110-K',
-      contactName: 'Patricia Tapia',
-      phone: '+56 9 8833 4455',
-      email: 'ventas@quimicadelnorte.cl',
-      lastPurchase: '2026-05-20',
-      totalPurchases: 1,
-    },
-  ],
+  products: [],
+  suppliers: [],
   customers: [],
   movements: [],
 };
@@ -193,26 +87,6 @@ type LegacyProduct = Partial<{
   proveedor: string;
   lote: string;
   fechaCaducidad: string;
-}>;
-
-type LegacyCustomer = Partial<{
-  name: string;
-  contact: string;
-  identifier: string;
-  customerType: 'B2B' | 'B2C';
-  lastPurchase: string;
-  purchases: number;
-}>;
-
-type LegacySupplier = Partial<{
-  name: string;
-  contact: string;
-  identifier: string;
-  contactName: string;
-  phone: string;
-  email: string;
-  lastPurchase: string;
-  totalPurchases: number;
 }>;
 
 function normalizeFamily(value: unknown): ProductFamily {
@@ -303,106 +177,10 @@ function normalizeProduct(product: LegacyProduct): Product | null {
   };
 }
 
-function normalizeCustomer(customer: LegacyCustomer): Customer | null {
-  const name = typeof customer.name === 'string' ? customer.name.trim() : '';
-  const contact =
-    typeof customer.contact === 'string' ? customer.contact.trim() : '';
-
-  if (!name) {
-    return null;
-  }
-
-  return {
-    name,
-    contact,
-    identifier:
-      typeof customer.identifier === 'string' ? customer.identifier.trim() : '',
-    customerType: customer.customerType === 'B2C' ? 'B2C' : 'B2B',
-    lastPurchase:
-      typeof customer.lastPurchase === 'string'
-        ? customer.lastPurchase
-        : 'Sin compras',
-    purchases: Number(customer.purchases ?? 0),
-  };
-}
-
-function normalizeSupplier(supplier: LegacySupplier): Supplier | null {
-  const name = typeof supplier.name === 'string' ? supplier.name.trim() : '';
-
-  if (!name) {
-    return null;
-  }
-
-  const legacyContact =
-    typeof supplier.contact === 'string' ? supplier.contact.trim() : '';
-
-  return {
-    name,
-    identifier:
-      typeof supplier.identifier === 'string' ? supplier.identifier.trim() : '',
-    contactName:
-      typeof supplier.contactName === 'string'
-        ? supplier.contactName.trim()
-        : legacyContact,
-    phone: typeof supplier.phone === 'string' ? supplier.phone.trim() : '',
-    email: typeof supplier.email === 'string' ? supplier.email.trim() : '',
-    lastPurchase:
-      typeof supplier.lastPurchase === 'string'
-        ? supplier.lastPurchase
-        : 'Sin compras',
-    totalPurchases: Number(supplier.totalPurchases ?? 0),
-  };
-}
-
-function normalizeState(state: unknown): InventoryState {
-  if (!state || typeof state !== 'object') {
-    return emptyState;
-  }
-
-  const candidate = state as Partial<InventoryState> & {
-    products?: LegacyProduct[];
-    customers?: LegacyCustomer[];
-    suppliers?: LegacySupplier[];
-  };
-
-  return {
-    products: Array.isArray(candidate.products)
-      ? candidate.products
-          .map((product) => normalizeProduct(product))
-          .filter((product): product is Product => product !== null)
-      : [],
-    suppliers: Array.isArray(candidate.suppliers)
-      ? candidate.suppliers
-          .map((supplier) => normalizeSupplier(supplier))
-          .filter((supplier): supplier is Supplier => supplier !== null)
-      : [],
-    customers: Array.isArray(candidate.customers)
-      ? candidate.customers
-          .map((customer) => normalizeCustomer(customer))
-          .filter((customer): customer is Customer => customer !== null)
-      : [],
-    movements: Array.isArray(candidate.movements) ? candidate.movements : [],
-  };
-}
-
-function getInitialState() {
-  const savedState = window.localStorage.getItem(storageKey);
-
-  if (!savedState) {
-    return emptyState;
-  }
-
-  try {
-    const parsed = normalizeState(JSON.parse(savedState));
-
-    if (parsed.products.length === 0) {
-      return emptyState;
-    }
-
-    return parsed;
-  } catch {
-    return emptyState;
-  }
+function normalizeBackendProducts(products: Product[]) {
+  return products
+    .map((product) => normalizeProduct(product))
+    .filter((product): product is Product => product !== null);
 }
 
 function getDateTimeLabel() {
@@ -464,52 +242,66 @@ function getMovementId() {
   return `${Date.now()}-${crypto.randomUUID()}`;
 }
 
-function mergeProducts(currentProducts: Product[], backendProducts: Product[]) {
-  const normalizedBackendProducts = backendProducts
-    .map((product) => normalizeProduct(product))
-    .filter((product): product is Product => product !== null);
-
-  const backendCodes = new Set(
-    normalizedBackendProducts.map((product) => product.codigo.toLowerCase()),
+function upsertProduct(products: Product[], product: Product) {
+  const exists = products.some(
+    (item) => item.codigo.toLowerCase() === product.codigo.toLowerCase(),
   );
 
-  return [
-    ...normalizedBackendProducts,
-    ...currentProducts.filter(
-      (product) => !backendCodes.has(product.codigo.toLowerCase()),
-    ),
-  ];
+  if (!exists) {
+    return [...products, product];
+  }
+
+  return products.map((item) =>
+    item.codigo.toLowerCase() === product.codigo.toLowerCase() ? product : item,
+  );
 }
 
 export function InventoryProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<InventoryState>(getInitialState);
+  const [state, setState] = useState<InventoryState>(emptyState);
+
+  function reloadProductsFromBackend() {
+    return fetchProducts().then((backendProducts) => {
+      setState((current) => ({
+        ...current,
+        products: normalizeBackendProducts(backendProducts),
+      }));
+    });
+  }
 
   useEffect(() => {
     let isActive = true;
 
     fetchProducts()
       .then((backendProducts) => {
-        if (!isActive || backendProducts.length === 0) {
+        if (!isActive) {
           return;
         }
 
         setState((current) => ({
           ...current,
-          products: mergeProducts(current.products, backendProducts),
+          products: normalizeBackendProducts(backendProducts),
         }));
       })
-      .catch(() => {
-        // El frontend puede seguir operando con datos locales si la API no está levantada.
+      .catch((error) => {
+        if (!isActive) {
+          return;
+        }
+
+        console.warn(
+          'No se pudieron cargar productos desde el backend. No se usarán datos locales.',
+          error,
+        );
+
+        setState((current) => ({
+          ...current,
+          products: [],
+        }));
       });
 
     return () => {
       isActive = false;
     };
   }, []);
-
-  useEffect(() => {
-    window.localStorage.setItem(storageKey, JSON.stringify(state));
-  }, [state]);
 
   const value = useMemo<InventoryContextValue>(
     () => ({
@@ -522,38 +314,34 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        setState((current) => {
-          const exists = current.products.some(
-            (item) =>
-              item.codigo.toLowerCase() === normalizedProduct.codigo.toLowerCase(),
-          );
+        createProduct(normalizedProduct)
+          .then((savedProduct) => {
+            if (!savedProduct) {
+              return reloadProductsFromBackend();
+            }
 
-          if (exists) {
-            return {
+            const normalizedSavedProduct = normalizeProduct(savedProduct);
+
+            if (!normalizedSavedProduct) {
+              return reloadProductsFromBackend();
+            }
+
+            setState((current) => ({
               ...current,
-              products: current.products.map((item) =>
-                item.codigo.toLowerCase() === normalizedProduct.codigo.toLowerCase()
-                  ? normalizedProduct
-                  : item,
-              ),
-            };
-          }
+              products: upsertProduct(current.products, normalizedSavedProduct),
+            }));
 
-          return {
-            ...current,
-            products: [...current.products, normalizedProduct],
-          };
-        });
-
-        createProduct(normalizedProduct).catch((err) => {
-          console.warn(
-            'No se pudo sincronizar el nuevo producto con el backend:',
-            err,
-          );
-        });
+            return undefined;
+          })
+          .catch((error) => {
+            console.warn(
+              'No se pudo guardar el producto en el backend. No se agregará localmente.',
+              error,
+            );
+          });
       },
 
-      addSupplier(supplier) {
+      addSupplier(supplier: SupplierInput) {
         setState((current) => ({
           ...current,
           suppliers: [
@@ -567,7 +355,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
         }));
       },
 
-      addCustomer(customer) {
+      addCustomer(customer: CustomerInput) {
         setState((current) => ({
           ...current,
           customers: [
@@ -590,6 +378,10 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
           return;
         }
 
+        if (isFutureDate(purchase.date)) {
+          return;
+        }
+
         const quantityByCode = new Map<string, number>();
 
         for (const item of validItems) {
@@ -606,10 +398,6 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
         );
 
         if (filteredEntries.length === 0) {
-          return;
-        }
-
-        if (isFutureDate(purchase.date)) {
           return;
         }
 
@@ -652,39 +440,32 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
           };
         });
 
-        setState((current) => ({
-          ...current,
-          products: current.products.map((item) =>
-            quantityByCode.has(item.codigo)
-              ? {
-                  ...item,
-                  stock: item.stock + (quantityByCode.get(item.codigo) ?? 0),
-                }
-              : item,
-          ),
-          suppliers: current.suppliers.map((supplier) =>
-            supplier.name === purchase.supplierName
-              ? {
-                  ...supplier,
-                  lastPurchase: purchase.date || movementDate,
-                  totalPurchases: supplier.totalPurchases + 1,
-                }
-              : supplier,
-          ),
-          movements: [...movements, ...current.movements],
-        }));
-
-        createInventoryMovements(backendMovements).catch((error) => {
-          console.warn(
-            'No se pudieron sincronizar las entradas con el backend:',
-            error,
-          );
-        });
+        createInventoryMovements(backendMovements)
+          .then(() => reloadProductsFromBackend())
+          .then(() => {
+            setState((current) => ({
+              ...current,
+              suppliers: current.suppliers.map((supplier) =>
+                supplier.name === purchase.supplierName
+                  ? {
+                      ...supplier,
+                      lastPurchase: purchase.date || movementDate,
+                      totalPurchases: supplier.totalPurchases + 1,
+                    }
+                  : supplier,
+              ),
+              movements: [...movements, ...current.movements],
+            }));
+          })
+          .catch((error) => {
+            console.warn(
+              'No se pudieron registrar las entradas en el backend. No se actualizará el estado local.',
+              error,
+            );
+          });
       },
 
       recordSale(sale) {
-        const saleWithDate = sale as typeof sale & { date?: string | null };
-
         const validItems = sale.items.filter(
           (item) => item.codigo && item.quantity > 0,
         );
@@ -693,7 +474,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        if (isFutureDate(saleWithDate.date)) {
+        if (isFutureDate(sale.date)) {
           return;
         }
 
@@ -725,8 +506,8 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        const movementDate = getMovementDateLabel(saleWithDate.date);
-        const movementCreatedAt = getMovementCreatedAt(saleWithDate.date);
+        const movementDate = getMovementDateLabel(sale.date);
+        const movementCreatedAt = getMovementCreatedAt(sale.date);
         const auditInfo = getCurrentUserAuditInfo();
         const movementUser = auditInfo.user;
         const movementRole = auditInfo.detail;
@@ -776,34 +557,29 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
           };
         });
 
-        setState((current) => ({
-          ...current,
-          products: current.products.map((item) =>
-            quantityByCode.has(item.codigo)
-              ? {
-                  ...item,
-                  stock: item.stock - (quantityByCode.get(item.codigo) ?? 0),
-                }
-              : item,
-          ),
-          customers: current.customers.map((customer) =>
-            customer.name === sale.customerName
-              ? {
-                  ...customer,
-                  lastPurchase: saleWithDate.date || movementDate,
-                  purchases: customer.purchases + 1,
-                }
-              : customer,
-          ),
-          movements: [...movements, ...current.movements],
-        }));
-
-        createInventoryMovements(backendMovements).catch((error) => {
-          console.warn(
-            'No se pudieron sincronizar las salidas con el backend:',
-            error,
-          );
-        });
+        createInventoryMovements(backendMovements)
+          .then(() => reloadProductsFromBackend())
+          .then(() => {
+            setState((current) => ({
+              ...current,
+              customers: current.customers.map((customer) =>
+                customer.name === sale.customerName
+                  ? {
+                      ...customer,
+                      lastPurchase: sale.date || movementDate,
+                      purchases: customer.purchases + 1,
+                    }
+                  : customer,
+              ),
+              movements: [...movements, ...current.movements],
+            }));
+          })
+          .catch((error) => {
+            console.warn(
+              'No se pudieron registrar las salidas en el backend. No se actualizará el estado local.',
+              error,
+            );
+          });
       },
     }),
     [state],

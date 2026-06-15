@@ -5,6 +5,7 @@ import { useInventory } from '../state/useInventory';
 import { useLanguage } from '../language/useLanguage';
 import type { Product } from '../data/mockData';
 import SuccessModal from '../components/SuccessModal';
+import ConfirmModal from '../components/ConfirmModal';
 
 type SaleLine = {
   id: string;
@@ -265,6 +266,9 @@ function Sales() {
   const [formMessage, setFormMessage] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
 
+  type PendingSale = Parameters<typeof recordSale>[0];
+  const [pendingSale, setPendingSale] = useState<PendingSale | null>(null);
+
   const genericCustomerOptions = useMemo(() => ['B2C', 'B2B'], []);
 
   const registeredCustomerOptions = useMemo(
@@ -398,7 +402,7 @@ function Sales() {
                     return;
                   }
 
-                  recordSale({
+                  setPendingSale({
                     customerName: selectedCustomer,
                     customerType: resolvedCustomerType,
                     customerIdentifier,
@@ -407,14 +411,6 @@ function Sales() {
                     date: saleDate,
                     items: normalizedItems,
                   });
-
-                  setCustomerName(uniqueCustomerOptions[0] ?? 'B2C');
-                  setCustomerIdentifier('');
-                  setDocumentType('Boleta');
-                  setSaleDate(getTodayInputValue());
-                  setItems([createSaleLine()]);
-                  setFormMessage('');
-                  setShowSuccess(true);
                 }}
               >
                 <div className="grid-form purchase-header-grid">
@@ -587,6 +583,44 @@ function Sales() {
         title={t('sales.successTitle')}
         message={t('sales.successMessage')}
       />
+
+      {pendingSale ? (
+        <ConfirmModal
+          isOpen={true}
+          title="¿Estás seguro?"
+          subtitle="Se registrará la siguiente venta en el sistema."
+          confirmLabel="Registrar venta"
+          cancelLabel="Cancelar"
+          details={[
+            { label: 'Cliente', value: pendingSale.customerName },
+            { label: 'Tipo cliente', value: pendingSale.customerType },
+            { label: 'Documento', value: pendingSale.documentType },
+            { label: 'Número doc.', value: pendingSale.documentNumber },
+            { label: 'Fecha', value: pendingSale.date },
+            ...(pendingSale.customerIdentifier ? [{ label: 'Identificador', value: pendingSale.customerIdentifier }] : []),
+            ...pendingSale.items.map((item, i) => {
+              const found = products.find((p) => p.codigo === item.codigo);
+              const productName = found?.displayName?.trim() || found?.descrip?.trim() || item.codigo;
+              return {
+                label: `Producto ${i + 1}`,
+                value: `${productName} (${item.codigo}) × ${item.quantity}`,
+              };
+            }),
+          ]}
+          onConfirm={() => {
+            recordSale(pendingSale);
+            setPendingSale(null);
+            setCustomerName(uniqueCustomerOptions[0] ?? 'B2C');
+            setCustomerIdentifier('');
+            setDocumentType('Boleta');
+            setSaleDate(getTodayInputValue());
+            setItems([createSaleLine()]);
+            setFormMessage('');
+            setShowSuccess(true);
+          }}
+          onCancel={() => setPendingSale(null)}
+        />
+      ) : null}
     </AppLayout>
   );
 }

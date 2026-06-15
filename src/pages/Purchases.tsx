@@ -5,6 +5,7 @@ import { canManageData } from '../api/authApi';
 import { useInventory } from '../state/useInventory';
 import { useLanguage } from '../language/useLanguage';
 import SuccessModal from '../components/SuccessModal';
+import ConfirmModal from '../components/ConfirmModal';
 
 type PurchaseLine = {
   id: string;
@@ -115,6 +116,9 @@ function Purchases() {
   const [items, setItems] = useState<PurchaseLine[]>([createPurchaseLine()]);
   const [formMessage, setFormMessage] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
+
+  type PendingPurchase = Parameters<typeof recordPurchase>[0];
+  const [pendingPurchase, setPendingPurchase] = useState<PendingPurchase | null>(null);
 
   const selectedSupplier = supplierName || suppliers[0]?.name || '';
 
@@ -228,18 +232,12 @@ function Purchases() {
                     return;
                   }
 
-                  recordPurchase({
+                  setPendingPurchase({
                     date: purchaseDate,
                     supplierName: selectedSupplier,
                     documentNumber: nextDocumentNumber,
                     items: normalizedItems,
                   });
-
-                  setPurchaseDate(todayDate);
-                  setSupplierName('');
-                  setItems([createPurchaseLine()]);
-                  setFormMessage('');
-                  setShowSuccess(true);
                 }}
               >
                 <div className="grid-form purchase-header-grid">
@@ -393,6 +391,39 @@ function Purchases() {
         title={t('purchases.successTitle')}
         message={t('purchases.successMessage')}
       />
+
+      {pendingPurchase ? (
+        <ConfirmModal
+          isOpen={true}
+          title="¿Estás seguro?"
+          subtitle="Se registrará la siguiente compra en el sistema."
+          confirmLabel="Registrar compra"
+          cancelLabel="Cancelar"
+          details={[
+            { label: 'Proveedor', value: pendingPurchase.supplierName },
+            { label: 'Fecha', value: pendingPurchase.date },
+            { label: 'Número doc.', value: pendingPurchase.documentNumber },
+            ...pendingPurchase.items.map((item, i) => {
+              const found = products.find((p) => p.codigo === item.codigo);
+              const productName = found?.displayName?.trim() || found?.descrip?.trim() || item.codigo;
+              return {
+                label: `Producto ${i + 1}`,
+                value: `${productName} (${item.codigo}) × ${item.quantity}`,
+              };
+            }),
+          ]}
+          onConfirm={() => {
+            recordPurchase(pendingPurchase);
+            setPendingPurchase(null);
+            setPurchaseDate(todayDate);
+            setSupplierName('');
+            setItems([createPurchaseLine()]);
+            setFormMessage('');
+            setShowSuccess(true);
+          }}
+          onCancel={() => setPendingPurchase(null)}
+        />
+      ) : null}
     </AppLayout>
   );
 }

@@ -400,6 +400,7 @@ function Inventory() {
             <input
               type="month"
               value={selectedMonth}
+              max={getCurrentMonth()}
               onChange={(event) => setSelectedMonth(event.target.value)}
             />
           </label>

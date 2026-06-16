@@ -1,8 +1,16 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
+import {
+  type Customer,
   type InventoryMovement,
   type Product,
   type ProductFamily,
+  type Supplier,
 } from '../data/mockData';
 import {
   InventoryContext,
@@ -11,9 +19,16 @@ import {
   type InventoryState,
   type SupplierInput,
 } from './inventoryStore';
+import { getAccessToken, subscribeToSessionChanges } from '../api/authApi';
 import { fetchProducts, createProduct } from '../api/productsApi';
-import { createInventoryMovements } from '../api/inventoryMovementsApi';
-import { getCurrentUserAuditInfo } from '../api/authApi';
+import {
+  fetchInventoryMovements,
+  type ApiInventoryMovement,
+} from '../api/inventoryMovementsApi';
+import { fetchCustomers, createCustomer } from '../api/customersApi';
+import { fetchSuppliers, createSupplier } from '../api/suppliersApi';
+import { createPurchase } from '../api/purchasesApi';
+import { createSale } from '../api/salesApi';
 
 function toDisplayProductName(rawName?: string | null) {
   if (!rawName) {
@@ -51,10 +66,6 @@ function toSearchProductName(rawName?: string | null) {
     .replace(/[^\w\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-}
-
-function getProductDisplayName(product: Product) {
-  return product.displayName?.trim() || product.descrip?.trim() || 'Producto sin nombre';
 }
 
 const emptyState: InventoryState = {
@@ -144,13 +155,13 @@ function normalizeProduct(product: LegacyProduct): Product | null {
         : Number(product.salePrice ?? 0),
     stock,
     stockOriginal:
-      typeof product.stockOriginal === 'number'
-        ? product.stockOriginal
-        : stock,
+      typeof product.stockOriginal === 'number' ? product.stockOriginal : stock,
     dataIssue: product.dataIssue === 'STOCK_NEGATIVO' ? 'STOCK_NEGATIVO' : null,
     minStock: Number(product.minStock ?? 5),
     salesHistory: Array.isArray(product.salesHistory)
-      ? product.salesHistory.filter((value): value is number => typeof value === 'number')
+      ? product.salesHistory.filter(
+          (value): value is number => typeof value === 'number',
+        )
       : undefined,
     fecha:
       typeof product.fecha === 'string'
@@ -171,7 +182,8 @@ function normalizeProduct(product: LegacyProduct): Product | null {
         ? product.lote.trim()
         : undefined,
     fechaCaducidad:
-      typeof product.fechaCaducidad === 'string' && product.fechaCaducidad.trim()
+      typeof product.fechaCaducidad === 'string' &&
+      product.fechaCaducidad.trim()
         ? product.fechaCaducidad.trim()
         : undefined,
   };
@@ -183,63 +195,36 @@ function normalizeBackendProducts(products: Product[]) {
     .filter((product): product is Product => product !== null);
 }
 
-function getDateTimeLabel() {
-  return new Date().toLocaleString('es-CL', {
+function normalizeMovementDate(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString('es-CL', {
     dateStyle: 'short',
     timeStyle: 'short',
   });
 }
 
-function isValidDateInput(value?: string | null) {
-  if (!value) {
-    return false;
-  }
-
-  const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-
-  if (!datePattern.test(value)) {
-    return false;
-  }
-
-  const date = new Date(`${value}T00:00:00`);
-
-  return !Number.isNaN(date.getTime());
-}
-
-function isFutureDate(value?: string | null) {
-  if (!isValidDateInput(value)) {
-    return false;
-  }
-
-  const selectedDate = new Date(`${value}T00:00:00`);
-  const today = new Date();
-
-  today.setHours(0, 0, 0, 0);
-
-  return selectedDate > today;
-}
-
-function getMovementDateLabel(date?: string | null) {
-  if (!isValidDateInput(date)) {
-    return getDateTimeLabel();
-  }
-
-  return new Date(`${date}T12:00:00`).toLocaleString('es-CL', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  });
-}
-
-function getMovementCreatedAt(date?: string | null) {
-  if (!isValidDateInput(date)) {
-    return new Date().toISOString();
-  }
-
-  return new Date(`${date}T12:00:00`).toISOString();
-}
-
-function getMovementId() {
-  return `${Date.now()}-${crypto.randomUUID()}`;
+function normalizeApiMovement(
+  movement: ApiInventoryMovement,
+): InventoryMovement {
+  return {
+    id: String(movement.id),
+    type:
+      movement.type === 'SALIDA'
+        ? 'Salida'
+        : movement.type === 'AJUSTE'
+          ? 'Ajuste'
+          : 'Entrada',
+    product: movement.productName || movement.codigo,
+    quantity: movement.quantity,
+    user: movement.user || 'Usuario no identificado',
+    date: normalizeMovementDate(movement.createdAt),
+    detail: movement.reason || movement.detail || 'Movimiento registrado',
+  };
 }
 
 function upsertProduct(products: Product[], product: Product) {
@@ -256,333 +241,314 @@ function upsertProduct(products: Product[], product: Product) {
   );
 }
 
+function normalizeSupplierForState(supplier: Supplier): Supplier {
+  return {
+    id: supplier.id,
+    name: supplier.name,
+    identifier: supplier.identifier ?? null,
+    contactName: supplier.contactName || '',
+    phone: supplier.phone ?? '',
+    email: supplier.email ?? '',
+    lastPurchase: supplier.lastPurchase || 'Sin compras',
+    totalPurchases: Number(supplier.totalPurchases ?? 0),
+    isActive: supplier.isActive !== false,
+    isRestricted: supplier.isRestricted === true,
+  };
+}
+
+function normalizeCustomerForState(customer: Customer): Customer {
+  return {
+    id: customer.id,
+    name: customer.name,
+    contact: customer.contact || '',
+    identifier: customer.identifier ?? null,
+    customerType: customer.customerType === 'B2C' ? 'B2C' : 'B2B',
+    lastPurchase: customer.lastPurchase || 'Sin compras',
+    purchases: Number(customer.purchases ?? 0),
+    isActive: customer.isActive !== false,
+    isRestricted: customer.isRestricted === true,
+  };
+}
+
+function hasAccessToken() {
+  return Boolean(getAccessToken());
+}
+
+function ensureAuthenticated() {
+  if (!hasAccessToken()) {
+    throw new Error('Debes iniciar sesión para realizar esta acción.');
+  }
+}
+
 export function InventoryProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<InventoryState>(emptyState);
 
-  function reloadProductsFromBackend() {
-    return fetchProducts().then((backendProducts) => {
+  const clearInventoryData = useCallback(() => {
+    setState({
+      products: [],
+      suppliers: [],
+      customers: [],
+      movements: [],
+    });
+  }, []);
+
+  const reloadProductsFromBackend = useCallback(async () => {
+    if (!hasAccessToken()) {
       setState((current) => ({
         ...current,
-        products: normalizeBackendProducts(backendProducts),
+        products: [],
       }));
-    });
-  }
+
+      return;
+    }
+
+    const backendProducts = await fetchProducts();
+
+    setState((current) => ({
+      ...current,
+      products: normalizeBackendProducts(backendProducts),
+    }));
+  }, []);
+
+  const reloadSuppliersFromBackend = useCallback(async () => {
+    if (!hasAccessToken()) {
+      setState((current) => ({
+        ...current,
+        suppliers: [],
+      }));
+
+      return;
+    }
+
+    const backendSuppliers = await fetchSuppliers();
+
+    setState((current) => ({
+      ...current,
+      suppliers: backendSuppliers.map(normalizeSupplierForState),
+    }));
+  }, []);
+
+  const reloadCustomersFromBackend = useCallback(async () => {
+    if (!hasAccessToken()) {
+      setState((current) => ({
+        ...current,
+        customers: [],
+      }));
+
+      return;
+    }
+
+    const backendCustomers = await fetchCustomers();
+
+    setState((current) => ({
+      ...current,
+      customers: backendCustomers.map(normalizeCustomerForState),
+    }));
+  }, []);
+
+  const reloadMovementsFromBackend = useCallback(async () => {
+    if (!hasAccessToken()) {
+      setState((current) => ({
+        ...current,
+        movements: [],
+      }));
+
+      return;
+    }
+
+    const backendMovements = await fetchInventoryMovements();
+
+    setState((current) => ({
+      ...current,
+      movements: backendMovements.map(normalizeApiMovement),
+    }));
+  }, []);
+
+  const reloadInventoryData = useCallback(async () => {
+    if (!hasAccessToken()) {
+      clearInventoryData();
+      return;
+    }
+
+    const [productsResult, suppliersResult, customersResult, movementsResult] =
+      await Promise.allSettled([
+        fetchProducts(),
+        fetchSuppliers(),
+        fetchCustomers(),
+        fetchInventoryMovements(),
+      ]);
+
+    if (!hasAccessToken()) {
+      clearInventoryData();
+      return;
+    }
+
+    setState((current) => ({
+      ...current,
+      products:
+        productsResult.status === 'fulfilled'
+          ? normalizeBackendProducts(productsResult.value)
+          : [],
+      suppliers:
+        suppliersResult.status === 'fulfilled'
+          ? suppliersResult.value.map(normalizeSupplierForState)
+          : [],
+      customers:
+        customersResult.status === 'fulfilled'
+          ? customersResult.value.map(normalizeCustomerForState)
+          : [],
+      movements:
+        movementsResult.status === 'fulfilled'
+          ? movementsResult.value.map(normalizeApiMovement)
+          : [],
+    }));
+
+    if (productsResult.status === 'rejected') {
+      console.warn(
+        'No se pudieron cargar productos desde el backend. No se usarán datos locales.',
+        productsResult.reason,
+      );
+    }
+
+    if (suppliersResult.status === 'rejected') {
+      console.warn(
+        'No se pudieron cargar proveedores desde el backend.',
+        suppliersResult.reason,
+      );
+    }
+
+    if (customersResult.status === 'rejected') {
+      console.warn(
+        'No se pudieron cargar clientes desde el backend.',
+        customersResult.reason,
+      );
+    }
+
+    if (movementsResult.status === 'rejected') {
+      console.warn(
+        'No se pudieron cargar movimientos desde el backend.',
+        movementsResult.reason,
+      );
+    }
+  }, [clearInventoryData]);
 
   useEffect(() => {
-    let isActive = true;
+    let isMounted = true;
 
-    fetchProducts()
-      .then((backendProducts) => {
-        if (!isActive) {
-          return;
-        }
+    const syncData = () => {
+      if (!isMounted) {
+        return;
+      }
 
-        setState((current) => ({
-          ...current,
-          products: normalizeBackendProducts(backendProducts),
-        }));
-      })
-      .catch((error) => {
-        if (!isActive) {
-          return;
-        }
+      if (hasAccessToken()) {
+        void reloadInventoryData();
+      } else {
+        clearInventoryData();
+      }
+    };
 
-        console.warn(
-          'No se pudieron cargar productos desde el backend. No se usarán datos locales.',
-          error,
-        );
+    syncData();
 
-        setState((current) => ({
-          ...current,
-          products: [],
-        }));
-      });
+    const unsubscribe = subscribeToSessionChanges(syncData);
+    const intervalId = window.setInterval(syncData, 1000);
 
     return () => {
-      isActive = false;
+      isMounted = false;
+      unsubscribe();
+      window.clearInterval(intervalId);
     };
-  }, []);
+  }, [clearInventoryData, reloadInventoryData]);
 
   const value = useMemo<InventoryContextValue>(
     () => ({
       ...state,
 
-      addProduct(product) {
+      reloadInventoryData,
+
+      async addProduct(product) {
+        ensureAuthenticated();
+
         const normalizedProduct = normalizeProduct(product);
 
         if (!normalizedProduct) {
           return;
         }
 
-        createProduct(normalizedProduct)
-          .then((savedProduct) => {
-            if (!savedProduct) {
-              return reloadProductsFromBackend();
-            }
+        const savedProduct = await createProduct(normalizedProduct);
+        const normalizedSavedProduct = normalizeProduct(
+          savedProduct ?? normalizedProduct,
+        );
 
-            const normalizedSavedProduct = normalizeProduct(savedProduct);
+        if (!normalizedSavedProduct) {
+          await reloadProductsFromBackend();
+          return;
+        }
 
-            if (!normalizedSavedProduct) {
-              return reloadProductsFromBackend();
-            }
-
-            setState((current) => ({
-              ...current,
-              products: upsertProduct(current.products, normalizedSavedProduct),
-            }));
-
-            return undefined;
-          })
-          .catch((error) => {
-            console.warn(
-              'No se pudo guardar el producto en el backend. No se agregará localmente.',
-              error,
-            );
-          });
-      },
-
-      addSupplier(supplier: SupplierInput) {
         setState((current) => ({
           ...current,
-          suppliers: [
-            ...current.suppliers,
-            {
-              ...supplier,
-              lastPurchase: 'Sin compras',
-              totalPurchases: 0,
-            },
-          ],
+          products: upsertProduct(current.products, normalizedSavedProduct),
         }));
       },
 
-      addCustomer(customer: CustomerInput) {
-        setState((current) => ({
-          ...current,
-          customers: [
-            ...current.customers,
-            {
-              ...customer,
-              lastPurchase: 'Sin compras',
-              purchases: 0,
-            },
-          ],
-        }));
+      async addSupplier(supplier: SupplierInput) {
+        ensureAuthenticated();
+
+        await createSupplier({
+          name: supplier.name,
+          identifier: supplier.identifier ?? null,
+          contactName: supplier.contactName ?? null,
+          phone: supplier.phone ?? null,
+          email: supplier.email ?? null,
+        });
+
+        await reloadSuppliersFromBackend();
       },
 
-      recordPurchase(purchase) {
-        const validItems = purchase.items.filter(
-          (item) => item.codigo && item.quantity > 0,
-        );
+      async addCustomer(customer: CustomerInput) {
+        ensureAuthenticated();
 
-        if (validItems.length === 0) {
-          return;
-        }
-
-        if (isFutureDate(purchase.date)) {
-          return;
-        }
-
-        const quantityByCode = new Map<string, number>();
-
-        for (const item of validItems) {
-          const currentQuantity = quantityByCode.get(item.codigo) ?? 0;
-          quantityByCode.set(item.codigo, currentQuantity + item.quantity);
-        }
-
-        const existingProducts = new Map(
-          state.products.map((item) => [item.codigo, item] as const),
-        );
-
-        const filteredEntries = [...quantityByCode.entries()].filter(([codigo]) =>
-          existingProducts.has(codigo),
-        );
-
-        if (filteredEntries.length === 0) {
-          return;
-        }
-
-        const movementDate = getMovementDateLabel(purchase.date);
-        const movementCreatedAt = getMovementCreatedAt(purchase.date);
-        const auditInfo = getCurrentUserAuditInfo();
-        const movementUser = auditInfo.user;
-        const movementRole = auditInfo.detail;
-
-        const movements: InventoryMovement[] = filteredEntries.map(
-          ([codigo, quantity]) => {
-            const product = existingProducts.get(codigo)!;
-
-            return {
-              id: getMovementId(),
-              type: 'Entrada',
-              product: getProductDisplayName(product),
-              quantity,
-              user: movementUser,
-              date: movementDate,
-              detail: `Factura ${purchase.documentNumber} - ${purchase.supplierName}`,
-            };
-          },
-        );
-
-        const backendMovements = filteredEntries.map(([codigo, quantity]) => {
-          const product = existingProducts.get(codigo)!;
-
-          return {
-            codigo,
-            productName: getProductDisplayName(product),
-            type: 'ENTRADA' as const,
-            quantity,
-            unitPrice: product.prcosto,
-            totalPrice: quantity * product.prcosto,
-            reason: `Factura ${purchase.documentNumber} - ${purchase.supplierName}`,
-            user: movementUser,
-            detail: movementRole,
-            createdAt: movementCreatedAt,
-          };
+        await createCustomer({
+          name: customer.name,
+          contact: customer.contact,
+          identifier: customer.identifier ?? null,
+          customerType: customer.customerType,
         });
 
-        createInventoryMovements(backendMovements)
-          .then(() => reloadProductsFromBackend())
-          .then(() => {
-            setState((current) => ({
-              ...current,
-              suppliers: current.suppliers.map((supplier) =>
-                supplier.name === purchase.supplierName
-                  ? {
-                      ...supplier,
-                      lastPurchase: purchase.date || movementDate,
-                      totalPurchases: supplier.totalPurchases + 1,
-                    }
-                  : supplier,
-              ),
-              movements: [...movements, ...current.movements],
-            }));
-          })
-          .catch((error) => {
-            console.warn(
-              'No se pudieron registrar las entradas en el backend. No se actualizará el estado local.',
-              error,
-            );
-          });
+        await reloadCustomersFromBackend();
       },
 
-      recordSale(sale) {
-        const validItems = sale.items.filter(
-          (item) => item.codigo && item.quantity > 0,
-        );
+      async recordPurchase(purchase) {
+        ensureAuthenticated();
 
-        if (validItems.length === 0) {
-          return;
-        }
+        await createPurchase(purchase);
 
-        if (isFutureDate(sale.date)) {
-          return;
-        }
+        await Promise.all([
+          reloadProductsFromBackend(),
+          reloadSuppliersFromBackend(),
+          reloadMovementsFromBackend(),
+        ]);
+      },
 
-        const quantityByCode = new Map<string, number>();
+      async recordSale(sale) {
+        ensureAuthenticated();
 
-        for (const item of validItems) {
-          const currentQuantity = quantityByCode.get(item.codigo) ?? 0;
-          quantityByCode.set(item.codigo, currentQuantity + item.quantity);
-        }
+        await createSale(sale);
 
-        const existingProducts = new Map(
-          state.products.map((item) => [item.codigo, item] as const),
-        );
-
-        const filteredEntries = [...quantityByCode.entries()].filter(([codigo]) =>
-          existingProducts.has(codigo),
-        );
-
-        if (filteredEntries.length === 0) {
-          return;
-        }
-
-        const hasInsufficientStock = filteredEntries.some(([codigo, quantity]) => {
-          const product = existingProducts.get(codigo)!;
-          return product.stock < quantity;
-        });
-
-        if (hasInsufficientStock) {
-          return;
-        }
-
-        const movementDate = getMovementDateLabel(sale.date);
-        const movementCreatedAt = getMovementCreatedAt(sale.date);
-        const auditInfo = getCurrentUserAuditInfo();
-        const movementUser = auditInfo.user;
-        const movementRole = auditInfo.detail;
-
-        const movements: InventoryMovement[] = filteredEntries.map(
-          ([codigo, quantity]) => {
-            const product = existingProducts.get(codigo)!;
-            const customerDetail = sale.customerName || 'Cliente sin nombre';
-            const identifierDetail = sale.customerIdentifier?.trim()
-              ? ` | Id: ${sale.customerIdentifier.trim()}`
-              : '';
-
-            return {
-              id: getMovementId(),
-              type: 'Salida',
-              product: getProductDisplayName(product),
-              quantity,
-              user: movementUser,
-              date: movementDate,
-              detail:
-                `${sale.documentType} ${sale.documentNumber} - ` +
-                `${customerDetail} | Tipo: ${sale.customerType}${identifierDetail}`,
-            };
-          },
-        );
-
-        const backendMovements = filteredEntries.map(([codigo, quantity]) => {
-          const product = existingProducts.get(codigo)!;
-          const customerDetail = sale.customerName || 'Cliente sin nombre';
-          const identifierDetail = sale.customerIdentifier?.trim()
-            ? ` | Id: ${sale.customerIdentifier.trim()}`
-            : '';
-
-          return {
-            codigo,
-            productName: getProductDisplayName(product),
-            type: 'SALIDA' as const,
-            quantity,
-            unitPrice: product.prventa,
-            totalPrice: quantity * product.prventa,
-            reason:
-              `${sale.documentType} ${sale.documentNumber} - ` +
-              `${customerDetail} | Tipo: ${sale.customerType}${identifierDetail}`,
-            user: movementUser,
-            detail: movementRole,
-            createdAt: movementCreatedAt,
-          };
-        });
-
-        createInventoryMovements(backendMovements)
-          .then(() => reloadProductsFromBackend())
-          .then(() => {
-            setState((current) => ({
-              ...current,
-              customers: current.customers.map((customer) =>
-                customer.name === sale.customerName
-                  ? {
-                      ...customer,
-                      lastPurchase: sale.date || movementDate,
-                      purchases: customer.purchases + 1,
-                    }
-                  : customer,
-              ),
-              movements: [...movements, ...current.movements],
-            }));
-          })
-          .catch((error) => {
-            console.warn(
-              'No se pudieron registrar las salidas en el backend. No se actualizará el estado local.',
-              error,
-            );
-          });
+        await Promise.all([
+          reloadProductsFromBackend(),
+          reloadCustomersFromBackend(),
+          reloadMovementsFromBackend(),
+        ]);
       },
     }),
-    [state],
+    [
+      state,
+      reloadInventoryData,
+      reloadProductsFromBackend,
+      reloadSuppliersFromBackend,
+      reloadCustomersFromBackend,
+      reloadMovementsFromBackend,
+    ],
   );
 
   return (

@@ -1,8 +1,9 @@
 const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 const sessionStorageKey = 'sicd-auth-session';
+const sessionChangeEventName = 'sicd-auth-session-changed';
 
-export const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
+export const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
 
 export type UserRole = 'ADMIN' | 'STOCK' | 'VIEWER';
 
@@ -68,6 +69,10 @@ function normalizeSession(session: AuthSession): AuthSession {
   };
 }
 
+function notifySessionChange() {
+  window.dispatchEvent(new Event(sessionChangeEventName));
+}
+
 function createStoredSession(session: AuthSession): StoredAuthSession {
   const now = Date.now();
   const normalizedSession = normalizeSession(session);
@@ -94,7 +99,7 @@ function isStoredSession(value: unknown): value is StoredAuthSession {
 }
 
 function readStoredSession(): StoredAuthSession | null {
-  const savedSession = window.localStorage.getItem(sessionStorageKey);
+  const savedSession = window.sessionStorage.getItem(sessionStorageKey);
 
   if (!savedSession) {
     return null;
@@ -116,7 +121,7 @@ function readStoredSession(): StoredAuthSession | null {
       expiresAt: parsedSession.expiresAt,
     };
 
-    if (Date.now() >= normalizedSession.expiresAt) {
+    if (!normalizedSession.accessToken || Date.now() >= normalizedSession.expiresAt) {
       logout();
       return null;
     }
@@ -213,10 +218,12 @@ export async function verifyTOTP(
 }
 
 export function saveSession(session: AuthSession) {
-  window.localStorage.setItem(
+  window.localStorage.removeItem(sessionStorageKey);
+  window.sessionStorage.setItem(
     sessionStorageKey,
     JSON.stringify(createStoredSession(session)),
   );
+  notifySessionChange();
 }
 
 export function getSession(): AuthSession | null {
@@ -243,15 +250,12 @@ export function refreshSessionActivity() {
     return null;
   }
 
-  const now = Date.now();
-
   const updatedSession: StoredAuthSession = {
     ...storedSession,
-    lastActivityAt: now,
-    expiresAt: now + SESSION_TIMEOUT_MS,
+    lastActivityAt: Date.now(),
   };
 
-  window.localStorage.setItem(
+  window.sessionStorage.setItem(
     sessionStorageKey,
     JSON.stringify(updatedSession),
   );
@@ -260,7 +264,7 @@ export function refreshSessionActivity() {
 }
 
 export function isSessionExpired(): boolean {
-  const savedSession = window.localStorage.getItem(sessionStorageKey);
+  const savedSession = window.sessionStorage.getItem(sessionStorageKey);
 
   if (!savedSession) {
     return true;
@@ -334,7 +338,21 @@ export function canManageData(): boolean {
 }
 
 export function logout() {
+  window.sessionStorage.removeItem(sessionStorageKey);
   window.localStorage.removeItem(sessionStorageKey);
+  notifySessionChange();
+}
+
+export function subscribeToSessionChanges(callback: () => void) {
+  const handleChange = () => callback();
+
+  window.addEventListener(sessionChangeEventName, handleChange);
+  window.addEventListener('storage', handleChange);
+
+  return () => {
+    window.removeEventListener(sessionChangeEventName, handleChange);
+    window.removeEventListener('storage', handleChange);
+  };
 }
 
 export function isTwoFactorRequired(

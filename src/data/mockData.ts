@@ -105,22 +105,28 @@ export type Product = {
 };
 
 export type Supplier = {
+  id?: string;
   name: string;
-  identifier?: string;
+  identifier?: string | null;
   contactName: string;
-  phone?: string;
-  email?: string;
+  phone?: string | null;
+  email?: string | null;
   lastPurchase: string;
   totalPurchases: number;
+  isActive?: boolean;
+  isRestricted?: boolean;
 };
 
 export type Customer = {
+  id?: string;
   name: string;
   contact: string;
-  identifier?: string;
+  identifier?: string | null;
   customerType: 'B2B' | 'B2C';
   lastPurchase: string;
   purchases: number;
+  isActive?: boolean;
+  isRestricted?: boolean;
 };
 
 export type InventoryMovement = {

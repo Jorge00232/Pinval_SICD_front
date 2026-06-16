@@ -43,6 +43,7 @@ const navGroups = [
       { to: '/products', labelKey: 'nav.products', viewer: true },
       { to: '/customers', labelKey: 'nav.customers', viewer: true },
       { to: '/suppliers', labelKey: 'nav.suppliers', viewer: true },
+      { to: '/bulk-upload', labelKey: 'nav.bulkUpload', viewer: false },
     ],
   },
   {
@@ -125,6 +126,14 @@ function getSidebarIcon(to: string) {
           <circle cx="18.5" cy="18.5" r="2.5"></circle>
         </svg>
       );
+    case '/bulk-upload':
+      return (
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="sidebar-svg-icon">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+      );
     case '/movements':
       return (
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="sidebar-svg-icon">
@@ -148,6 +157,15 @@ function getSidebarIcon(to: string) {
           <line x1="18" y1="20" x2="18" y2="10"></line>
           <line x1="12" y1="20" x2="12" y2="4"></line>
           <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+      );
+    case '/users':
+      return (
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="sidebar-svg-icon">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
         </svg>
       );
     case '/settings':
@@ -454,11 +472,30 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
           ))}
         </nav>
 
-        {/* Configuration link pushed to the bottom of the sidebar */}
-        <div className="side-nav" style={{ marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid var(--border-color, #dde7e2)' }}>
+        {/* Administrative links pushed to the bottom of the sidebar */}
+        <div
+          className="side-nav"
+          style={{
+            marginTop: 'auto',
+            paddingTop: '10px',
+            borderTop: '1px solid var(--border-color, #dde7e2)',
+          }}
+        >
+          {session?.user.role === 'ADMIN' ? (
+            <NavLink
+              to="/users"
+              className={({ isActive }) => (isActive ? 'active' : undefined)}
+            >
+              {getSidebarIcon('/users')}
+              <span className="side-nav-label">
+                {language === 'es' ? 'Usuarios' : 'Users'}
+              </span>
+            </NavLink>
+          ) : null}
+
           <NavLink
             to="/settings"
-            className={({ isActive }) => isActive ? 'active' : undefined}
+            className={({ isActive }) => (isActive ? 'active' : undefined)}
           >
             {getSidebarIcon('/settings')}
             <span className="side-nav-label">
@@ -578,6 +615,17 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
                     <div className="dropdown-divider"></div>
 
                     <div className="dropdown-options">
+                      {session?.user.role === 'ADMIN' ? (
+                        <NavLink
+                          to="/users"
+                          className="dropdown-item"
+                          onClick={() => setIsDropdownOpen(false)}
+                        >
+                          {getSidebarIcon('/users')}
+                          <span>{language === 'es' ? 'Usuarios' : 'Users'}</span>
+                        </NavLink>
+                      ) : null}
+
                       <NavLink
                         to="/settings"
                         className="dropdown-item"

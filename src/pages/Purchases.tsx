@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import AppLayout from '../components/AppLayout';
 import ProductSearchSelect from '../components/ProductSearchSelect';
 import { canManageData } from '../api/authApi';
@@ -6,15 +6,16 @@ import { useInventory } from '../state/useInventory';
 import { useLanguage } from '../language/useLanguage';
 import SuccessModal from '../components/SuccessModal';
 import ConfirmModal from '../components/ConfirmModal';
+import {
+  fetchPurchases,
+  type Purchase,
+  type CreatePurchaseInput,
+} from '../api/purchasesApi';
 
 type PurchaseLine = {
   id: string;
   codigo: string;
   quantity: number;
-};
-
-type MovementLike = {
-  detail?: string | null;
 };
 
 const PURCHASE_DOCUMENT_PREFIX = 'COMP';
@@ -31,17 +32,14 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function generateNextDocumentNumber(
-  movements: MovementLike[],
-  prefix: string,
-) {
+function generateNextDocumentNumber(purchases: Purchase[], prefix: string) {
   const documentPattern = new RegExp(
     `\\b${escapeRegExp(prefix)}-(\\d+)\\b`,
     'i',
   );
 
-  const maxDocumentNumber = movements.reduce((maxNumber, movement) => {
-    const match = String(movement.detail ?? '').match(documentPattern);
+  const maxDocumentNumber = purchases.reduce((maxNumber, purchase) => {
+    const match = String(purchase.documentNumber ?? '').match(documentPattern);
 
     if (!match) {
       return maxNumber;
@@ -49,14 +47,12 @@ function generateNextDocumentNumber(
 
     const parsedNumber = Number(match[1]);
 
-    if (!Number.isFinite(parsedNumber)) {
-      return maxNumber;
-    }
-
-    return Math.max(maxNumber, parsedNumber);
+    return Number.isFinite(parsedNumber)
+      ? Math.max(maxNumber, parsedNumber)
+      : maxNumber;
   }, 0);
 
-  return `${prefix}-${String(maxDocumentNumber + 1).padStart(6, '0')}`;
+  return `${prefix}-${String(maxDocumentNumber + 1).padStart(4, '0')}`;
 }
 
 function getTodayInputValue() {
@@ -81,46 +77,83 @@ function isFutureDate(value: string) {
   return selectedDate > today;
 }
 
-function getPurchaseDocumentLabel(detail: string) {
-  const [documentPart = '-'] = detail.split(' - ');
-  return documentPart.replace(/^Factura\s+/i, '').trim() || '-';
+function formatDate(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value || '-';
+  }
+
+  return date.toLocaleDateString('es-CL');
 }
 
-function getPurchaseSupplierLabel(detail: string) {
-  const [, supplierPart = '-'] = detail.split(' - ');
-  return supplierPart.trim() || '-';
+function getPurchaseRows(purchases: Purchase[]) {
+  return purchases.flatMap((purchase) =>
+    purchase.items.map((item) => ({
+      id: `${purchase.id}-${item.id}`,
+      date: purchase.date,
+      supplierName: purchase.supplierName,
+      documentNumber: purchase.documentNumber,
+      productName: item.productName || item.codigo,
+      quantity: item.quantity,
+    })),
+  );
 }
 
 function Purchases() {
-  const { movements, products, recordPurchase, suppliers } = useInventory();
+  const { products, recordPurchase, reloadInventoryData, suppliers } = useInventory();
   const { t } = useLanguage();
 
   const canRegister = canManageData();
-
   const canRegisterPurchase =
     canRegister && products.length > 0 && suppliers.length > 0;
 
-  const purchaseMovements = movements.filter(
-    (movement) => movement.type === 'Entrada',
-  );
-
-  const nextDocumentNumber = useMemo(
-    () => generateNextDocumentNumber(purchaseMovements, PURCHASE_DOCUMENT_PREFIX),
-    [purchaseMovements],
-  );
-
   const todayDate = useMemo(() => getTodayInputValue(), []);
 
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [purchaseDate, setPurchaseDate] = useState(todayDate);
   const [supplierName, setSupplierName] = useState('');
   const [items, setItems] = useState<PurchaseLine[]>([createPurchaseLine()]);
   const [formMessage, setFormMessage] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingPurchase, setPendingPurchase] =
+    useState<CreatePurchaseInput | null>(null);
 
-  type PendingPurchase = Parameters<typeof recordPurchase>[0];
-  const [pendingPurchase, setPendingPurchase] = useState<PendingPurchase | null>(null);
+  const purchaseRows = useMemo(() => getPurchaseRows(purchases), [purchases]);
+
+  const nextDocumentNumber = useMemo(
+    () => generateNextDocumentNumber(purchases, PURCHASE_DOCUMENT_PREFIX),
+    [purchases],
+  );
 
   const selectedSupplier = supplierName || suppliers[0]?.name || '';
+
+  async function reloadPurchases() {
+    setIsLoading(true);
+
+    try {
+      const backendPurchases = await fetchPurchases();
+      setPurchases(backendPurchases);
+    } catch (error) {
+      console.warn('No se pudieron cargar las compras desde el backend.', error);
+      setPurchases([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void reloadPurchases();
+  }, []);
+
+  function resetForm() {
+    setPurchaseDate(todayDate);
+    setSupplierName('');
+    setItems([createPurchaseLine()]);
+    setFormMessage('');
+  }
 
   return (
     <AppLayout
@@ -133,7 +166,7 @@ function Purchases() {
             <h2>{t('purchases.history')}</h2>
 
             <span className="purchase-counter">
-              {purchaseMovements.length} {t('purchases.records')}
+              {purchaseRows.length} {t('purchases.records')}
             </span>
           </div>
 
@@ -150,24 +183,26 @@ function Purchases() {
               </thead>
 
               <tbody>
-                {purchaseMovements.length > 0 ? (
-                  purchaseMovements.map((movement) => (
-                    <tr key={movement.id}>
-                      <td>{movement.date}</td>
-                      <td>{movement.product}</td>
-                      <td className="numeric-cell">{movement.quantity}</td>
-                      <td>{getPurchaseDocumentLabel(movement.detail)}</td>
-                      <td>{getPurchaseSupplierLabel(movement.detail)}</td>
+                {purchaseRows.length > 0 ? (
+                  purchaseRows.map((row) => (
+                    <tr key={row.id}>
+                      <td>{formatDate(row.date)}</td>
+                      <td>{row.productName}</td>
+                      <td className="numeric-cell">{row.quantity}</td>
+                      <td>{row.documentNumber}</td>
+                      <td>{row.supplierName}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
                     <td colSpan={5}>
-                      {canRegisterPurchase
-                        ? t('purchases.noPurchases')
-                        : canRegister
-                          ? t('purchases.addSuppliersProductsFirst')
-                          : t('purchases.noPurchases')}
+                      {isLoading
+                        ? 'Cargando compras...'
+                        : canRegisterPurchase
+                          ? t('purchases.noPurchases')
+                          : canRegister
+                            ? t('purchases.addSuppliersProductsFirst')
+                            : t('purchases.noPurchases')}
                     </td>
                   </tr>
                 )}
@@ -182,7 +217,7 @@ function Purchases() {
               <span>{t('purchases.registerPurchase')}</span>
 
               <strong>
-                {purchaseMovements.length} {t('purchases.linesRegistered')}
+                {purchaseRows.length} {t('purchases.linesRegistered')}
               </strong>
             </summary>
 
@@ -193,7 +228,6 @@ function Purchases() {
                   event.preventDefault();
 
                   const normalizedItems = items.map((item) => ({
-                    ...item,
                     codigo: item.codigo.trim(),
                     quantity: Number(item.quantity),
                   }));
@@ -264,7 +298,7 @@ function Purchases() {
                     >
                       {suppliers.length > 0 ? (
                         suppliers.map((supplier) => (
-                          <option key={supplier.name} value={supplier.name}>
+                          <option key={supplier.id || supplier.name} value={supplier.name}>
                             {supplier.name}
                           </option>
                         ))
@@ -374,9 +408,9 @@ function Purchases() {
                   <button
                     type="submit"
                     className="purchase-primary-button"
-                    disabled={!canRegisterPurchase}
+                    disabled={!canRegisterPurchase || isSubmitting}
                   >
-                    {t('purchases.savePurchase')}
+                    {isSubmitting ? 'Guardando...' : t('purchases.savePurchase')}
                   </button>
                 </div>
               </form>
@@ -397,7 +431,7 @@ function Purchases() {
           isOpen={true}
           title="¿Estás seguro?"
           subtitle="Se registrará la siguiente compra en el sistema."
-          confirmLabel="Registrar compra"
+          confirmLabel={isSubmitting ? 'Registrando...' : 'Registrar compra'}
           cancelLabel="Cancelar"
           details={[
             { label: 'Proveedor', value: pendingPurchase.supplierName },
@@ -405,7 +439,11 @@ function Purchases() {
             { label: 'Número doc.', value: pendingPurchase.documentNumber },
             ...pendingPurchase.items.map((item, i) => {
               const found = products.find((p) => p.codigo === item.codigo);
-              const productName = found?.displayName?.trim() || found?.descrip?.trim() || item.codigo;
+              const productName =
+                found?.displayName?.trim() ||
+                found?.descrip?.trim() ||
+                item.codigo;
+
               return {
                 label: `Producto ${i + 1}`,
                 value: `${productName} (${item.codigo}) × ${item.quantity}`,
@@ -413,13 +451,31 @@ function Purchases() {
             }),
           ]}
           onConfirm={() => {
-            recordPurchase(pendingPurchase);
-            setPendingPurchase(null);
-            setPurchaseDate(todayDate);
-            setSupplierName('');
-            setItems([createPurchaseLine()]);
-            setFormMessage('');
-            setShowSuccess(true);
+            if (isSubmitting) {
+              return;
+            }
+
+            setIsSubmitting(true);
+
+            recordPurchase(pendingPurchase)
+              .then(() => reloadPurchases())
+              .then(() => reloadInventoryData())
+              .then(() => {
+                setPendingPurchase(null);
+                resetForm();
+                setShowSuccess(true);
+              })
+              .catch((error) => {
+                setFormMessage(
+                  error instanceof Error
+                    ? error.message
+                    : 'No se pudo registrar la compra.',
+                );
+                setPendingPurchase(null);
+              })
+              .finally(() => {
+                setIsSubmitting(false);
+              });
           }}
           onCancel={() => setPendingPurchase(null)}
         />

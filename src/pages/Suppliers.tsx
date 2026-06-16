@@ -1,12 +1,50 @@
+import { useEffect, useState } from 'react';
 import AppLayout from '../components/AppLayout';
 import { canManageData } from '../api/authApi';
-import { useInventory } from '../state/useInventory';
+import {
+  createSupplier,
+  fetchSuppliers,
+  type Supplier,
+} from '../api/suppliersApi';
 import { useLanguage } from '../language/useLanguage';
 
 function Suppliers() {
-  const { addSupplier, suppliers } = useInventory();
   const { t } = useLanguage();
   const canManage = canManageData();
+
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(
+    null,
+  );
+
+  function loadSuppliers() {
+    setIsLoading(true);
+    setMessage(null);
+
+    fetchSuppliers()
+      .then((data) => {
+        setSuppliers(data);
+      })
+      .catch((error) => {
+        setSuppliers([]);
+        setMessage({
+          type: 'error',
+          text:
+            error instanceof Error
+              ? error.message
+              : 'No se pudieron cargar los proveedores desde el backend.',
+        });
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }
+
+  useEffect(() => {
+    loadSuppliers();
+  }, []);
 
   return (
     <AppLayout
@@ -17,8 +55,16 @@ function Suppliers() {
         <article className="panel">
           <div className="panel-heading">
             <h2>{t('suppliers.list')}</h2>
-            <span>{suppliers.length} {t('suppliers.active')}</span>
+            <span>
+              {isLoading
+                ? 'Cargando...'
+                : `${suppliers.length} ${t('suppliers.active')}`}
+            </span>
           </div>
+
+          {message ? (
+            <p className={`form-message ${message.type}`}>{message.text}</p>
+          ) : null}
 
           <div className="table-wrap products-table-wrap">
             <table>
@@ -33,15 +79,20 @@ function Suppliers() {
                   <th>{t('suppliers.purchases')}</th>
                 </tr>
               </thead>
+
               <tbody>
-                {suppliers.length > 0 ? (
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={7}>Cargando proveedores desde el backend...</td>
+                  </tr>
+                ) : suppliers.length > 0 ? (
                   suppliers.map((supplier) => (
-                    <tr key={supplier.name}>
+                    <tr key={supplier.id}>
                       <td className="description-cell">{supplier.name}</td>
                       <td>{supplier.identifier || '-'}</td>
                       <td>{supplier.contactName}</td>
-                      <td>{supplier.phone || '-'}</td>
-                      <td>{supplier.email || '-'}</td>
+                      <td>{supplier.phone}</td>
+                      <td>{supplier.email}</td>
                       <td>{supplier.lastPurchase}</td>
                       <td className="numeric-cell">{supplier.totalPurchases}</td>
                     </tr>
@@ -70,18 +121,39 @@ function Suppliers() {
                 className="grid-form products-form"
                 onSubmit={(event) => {
                   event.preventDefault();
+                  setIsSaving(true);
+                  setMessage(null);
 
-                  const formData = new FormData(event.currentTarget);
+                  const form = event.currentTarget;
+                  const formData = new FormData(form);
 
-                  addSupplier({
+                  createSupplier({
                     name: String(formData.get('name')).trim(),
                     identifier: String(formData.get('identifier')).trim(),
                     contactName: String(formData.get('contactName')).trim(),
                     phone: String(formData.get('phone')).trim(),
                     email: String(formData.get('email')).trim(),
-                  });
-
-                  event.currentTarget.reset();
+                  })
+                    .then((createdSupplier) => {
+                      setSuppliers((current) => [createdSupplier, ...current]);
+                      setMessage({
+                        type: 'success',
+                        text: 'Proveedor registrado correctamente en el backend.',
+                      });
+                      form.reset();
+                    })
+                    .catch((error) => {
+                      setMessage({
+                        type: 'error',
+                        text:
+                          error instanceof Error
+                            ? error.message
+                            : 'No se pudo registrar el proveedor.',
+                      });
+                    })
+                    .finally(() => {
+                      setIsSaving(false);
+                    });
                 }}
               >
                 <label>
@@ -132,7 +204,9 @@ function Suppliers() {
                   />
                 </label>
 
-                <button type="submit">{t('suppliers.addSupplier')}</button>
+                <button type="submit" disabled={isSaving}>
+                  {isSaving ? 'Guardando...' : t('suppliers.addSupplier')}
+                </button>
               </form>
             </article>
           </details>

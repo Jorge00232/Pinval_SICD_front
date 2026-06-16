@@ -1,11 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import AppLayout from '../components/AppLayout';
 import { canManageData } from '../api/authApi';
+import {
+  createSale,
+  fetchSales,
+  type CreateSaleInput,
+  type Sale,
+} from '../api/salesApi';
 import { useInventory } from '../state/useInventory';
 import { useLanguage } from '../language/useLanguage';
 import type { Product } from '../data/mockData';
 import SuccessModal from '../components/SuccessModal';
 import ConfirmModal from '../components/ConfirmModal';
+import {
+  formatRut,
+  formatRutIfPossible,
+  normalizeRutForSubmit,
+} from '../utils/rut';
 
 type SaleLine = {
   id: string;
@@ -19,11 +30,19 @@ type ProductSearchSelectProps = {
   value: string;
   disabled?: boolean;
   noProductsText: string;
+  placeholder?: string;
   onChange: (codigo: string) => void;
 };
 
-type MovementLike = {
-  detail?: string | null;
+type SaleRow = {
+  id: string;
+  date: string;
+  productName: string;
+  quantity: number;
+  document: string;
+  customerName: string;
+  customerType: 'B2B' | 'B2C';
+  customerIdentifier: string;
 };
 
 const SALE_DOCUMENT_PREFIX = 'VENT';
@@ -40,17 +59,14 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function generateNextDocumentNumber(
-  movements: MovementLike[],
-  prefix: string,
-) {
+function generateNextDocumentNumber(sales: Sale[], prefix: string) {
   const documentPattern = new RegExp(
     `\\b${escapeRegExp(prefix)}-(\\d+)\\b`,
     'i',
   );
 
-  const maxDocumentNumber = movements.reduce((maxNumber, movement) => {
-    const match = String(movement.detail ?? '').match(documentPattern);
+  const maxDocumentNumber = sales.reduce((maxNumber, sale) => {
+    const match = String(sale.documentNumber ?? '').match(documentPattern);
 
     if (!match) {
       return maxNumber;
@@ -65,7 +81,7 @@ function generateNextDocumentNumber(
     return Math.max(maxNumber, parsedNumber);
   }, 0);
 
-  return `${prefix}-${String(maxDocumentNumber + 1).padStart(6, '0')}`;
+  return `${prefix}-${String(maxDocumentNumber + 1).padStart(4, '0')}`;
 }
 
 function getTodayInputValue() {
@@ -84,8 +100,26 @@ function isFutureDate(value: string) {
   return value > getTodayInputValue();
 }
 
+function formatDate(value: string) {
+  if (!value) {
+    return '-';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString('es-CL');
+}
+
 function getProductDisplayName(product: Product) {
-  return product.displayName?.trim() || product.descrip?.trim() || 'Producto sin nombre';
+  return (
+    product.displayName?.trim() ||
+    product.descrip?.trim() ||
+    'Producto sin nombre'
+  );
 }
 
 function normalizeSearchText(value: string) {
@@ -110,23 +144,19 @@ function getProductSearchText(product: Product) {
   );
 }
 
-function parseSaleDetail(detail: string) {
-  const [documentPart, metadataPart = ''] = detail.split(' - ');
-  const metadataSections = metadataPart.split(' | ');
-  const customer = metadataSections[0] || '-';
-  const typeSection = metadataSections.find((section) =>
-    section.startsWith('Tipo: '),
+function getSaleRows(sales: Sale[]): SaleRow[] {
+  return sales.flatMap((sale) =>
+    sale.items.map((item) => ({
+      id: `${sale.id}-${item.id}`,
+      date: sale.date,
+      productName: item.productName || item.codigo,
+      quantity: item.quantity,
+      document: `${sale.documentType} ${sale.documentNumber}`,
+      customerName: sale.customerName,
+      customerType: sale.customerType,
+      customerIdentifier: formatRutIfPossible(sale.customerIdentifier) || '-',
+    })),
   );
-  const identifierSection = metadataSections.find((section) =>
-    section.startsWith('Id: '),
-  );
-
-  return {
-    document: documentPart || '-',
-    customer,
-    customerType: typeSection?.replace('Tipo: ', '') ?? '-',
-    identifier: identifierSection?.replace('Id: ', '') ?? '-',
-  };
 }
 
 function ProductSearchSelect({
@@ -135,6 +165,7 @@ function ProductSearchSelect({
   value,
   disabled = false,
   noProductsText,
+  placeholder = 'Buscar producto por nombre o código...',
   onChange,
 }: ProductSearchSelectProps) {
   const selectedProduct = useMemo(
@@ -190,7 +221,10 @@ function ProductSearchSelect({
         onBlur={(event) => {
           const nextTarget = event.relatedTarget;
 
-          if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) {
+          if (
+            !(nextTarget instanceof Node) ||
+            !event.currentTarget.contains(nextTarget)
+          ) {
             setIsOpen(false);
 
             if (selectedProduct) {
@@ -203,11 +237,7 @@ function ProductSearchSelect({
           type="text"
           value={searchTerm}
           disabled={disabled}
-          placeholder={
-            products.length > 0
-              ? 'Buscar producto por nombre o código...'
-              : noProductsText
-          }
+          placeholder={products.length > 0 ? placeholder : noProductsText}
           onFocus={() => setIsOpen(true)}
           onChange={(event) => handleInputChange(event.target.value)}
           autoComplete="off"
@@ -229,7 +259,8 @@ function ProductSearchSelect({
                 >
                   <strong>{getProductDisplayName(product)}</strong>
                   <span>
-                    Código {product.codigo} · Stock {product.stock.toLocaleString('es-CL')}
+                    Código {product.codigo} · Stock{' '}
+                    {product.stock.toLocaleString('es-CL')}
                   </span>
                 </button>
               ))
@@ -246,18 +277,14 @@ function ProductSearchSelect({
 }
 
 function Sales() {
-  const { customers, movements, products, recordSale } = useInventory();
+  const { customers, products, reloadInventoryData } = useInventory();
   const { t } = useLanguage();
   const canRegister = canManageData();
   const canRegisterSale = canRegister && products.length > 0;
-  const saleMovements = movements.filter((movement) => movement.type === 'Salida');
-  const todayDate = getTodayInputValue();
+  const todayDate = useMemo(() => getTodayInputValue(), []);
 
-  const nextDocumentNumber = useMemo(
-    () => generateNextDocumentNumber(saleMovements, SALE_DOCUMENT_PREFIX),
-    [saleMovements],
-  );
-
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [customerName, setCustomerName] = useState('B2C');
   const [customerIdentifier, setCustomerIdentifier] = useState('');
   const [documentType, setDocumentType] = useState('Boleta');
@@ -265,9 +292,15 @@ function Sales() {
   const [items, setItems] = useState<SaleLine[]>([createSaleLine()]);
   const [formMessage, setFormMessage] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingSale, setPendingSale] = useState<CreateSaleInput | null>(null);
 
-  type PendingSale = Parameters<typeof recordSale>[0];
-  const [pendingSale, setPendingSale] = useState<PendingSale | null>(null);
+  const saleRows = useMemo(() => getSaleRows(sales), [sales]);
+
+  const nextDocumentNumber = useMemo(
+    () => generateNextDocumentNumber(sales, SALE_DOCUMENT_PREFIX),
+    [sales],
+  );
 
   const genericCustomerOptions = useMemo(() => ['B2C', 'B2B'], []);
 
@@ -276,9 +309,10 @@ function Sales() {
     [customers],
   );
 
-  const uniqueCustomerOptions = [
-    ...new Set([...genericCustomerOptions, ...registeredCustomerOptions]),
-  ];
+  const uniqueCustomerOptions = useMemo(
+    () => [...new Set([...genericCustomerOptions, ...registeredCustomerOptions])],
+    [genericCustomerOptions, registeredCustomerOptions],
+  );
 
   const selectedCustomer = uniqueCustomerOptions.includes(customerName)
     ? customerName
@@ -292,6 +326,46 @@ function Sales() {
     selectedRegisteredCustomer?.customerType ??
     (selectedCustomer === 'B2B' ? 'B2B' : 'B2C');
 
+  async function reloadSales() {
+    setIsLoading(true);
+
+    try {
+      const backendSales = await fetchSales();
+      setSales(backendSales);
+    } catch (error) {
+      console.warn('No se pudieron cargar las ventas desde el backend.', error);
+      setSales([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void reloadSales();
+  }, []);
+
+  function resetForm() {
+    setCustomerName(uniqueCustomerOptions[0] ?? 'B2C');
+    setCustomerIdentifier('');
+    setDocumentType('Boleta');
+    setSaleDate(getTodayInputValue());
+    setItems([createSaleLine()]);
+    setFormMessage('');
+  }
+
+  function handleCustomerChange(value: string) {
+    setCustomerName(value);
+
+    const matchedCustomer = customers.find((customer) => customer.name === value);
+
+    if (matchedCustomer?.identifier) {
+      setCustomerIdentifier(formatRut(matchedCustomer.identifier));
+      return;
+    }
+
+    setCustomerIdentifier('');
+  }
+
   return (
     <AppLayout
       title={t('page.sales.title')}
@@ -302,7 +376,7 @@ function Sales() {
           <div className="panel-heading">
             <h2>{t('sales.registeredSales')}</h2>
             <span className="purchase-counter">
-              {saleMovements.length} {t('purchases.records')}
+              {saleRows.length} {t('purchases.records')}
             </span>
           </div>
 
@@ -321,30 +395,28 @@ function Sales() {
               </thead>
 
               <tbody>
-                {saleMovements.length > 0 ? (
-                  saleMovements.map((movement) => {
-                    const detail = parseSaleDetail(movement.detail);
-
-                    return (
-                      <tr key={movement.id}>
-                        <td>{movement.date}</td>
-                        <td>{movement.product}</td>
-                        <td className="numeric-cell">{movement.quantity}</td>
-                        <td>{detail.document}</td>
-                        <td>{detail.customer}</td>
-                        <td>{detail.customerType}</td>
-                        <td>{detail.identifier}</td>
-                      </tr>
-                    );
-                  })
+                {saleRows.length > 0 ? (
+                  saleRows.map((row) => (
+                    <tr key={row.id}>
+                      <td>{formatDate(row.date)}</td>
+                      <td>{row.productName}</td>
+                      <td className="numeric-cell">{row.quantity}</td>
+                      <td>{row.document}</td>
+                      <td>{row.customerName}</td>
+                      <td>{row.customerType}</td>
+                      <td>{row.customerIdentifier}</td>
+                    </tr>
+                  ))
                 ) : (
                   <tr>
                     <td colSpan={7}>
-                      {canRegisterSale
-                        ? t('sales.noSales')
-                        : canRegister
-                          ? t('sales.addProductsFirst')
-                          : t('sales.noSales')}
+                      {isLoading
+                        ? 'Cargando ventas...'
+                        : canRegisterSale
+                          ? t('sales.noSales')
+                          : canRegister
+                            ? t('sales.addProductsFirst')
+                            : t('sales.noSales')}
                     </td>
                   </tr>
                 )}
@@ -358,7 +430,7 @@ function Sales() {
             <summary>
               <span>{t('sales.registerSale')}</span>
               <strong>
-                {saleMovements.length} {t('sales.linesRegistered')}
+                {saleRows.length} {t('sales.linesRegistered')}
               </strong>
             </summary>
 
@@ -379,7 +451,6 @@ function Sales() {
                   }
 
                   const normalizedItems = items.map((item) => ({
-                    ...item,
                     codigo: item.codigo.trim(),
                     quantity: Number(item.quantity),
                   }));
@@ -389,23 +460,28 @@ function Sales() {
                   );
 
                   const hasInvalidQuantity = normalizedItems.some(
-                    (item) => !Number.isFinite(item.quantity) || item.quantity <= 0,
+                    (item) =>
+                      !Number.isFinite(item.quantity) || item.quantity <= 0,
                   );
 
                   if (hasProductWithoutSelection) {
-                    setFormMessage('Debes seleccionar un producto válido en cada línea.');
+                    setFormMessage(
+                      'Debes seleccionar un producto válido en cada línea.',
+                    );
                     return;
                   }
 
                   if (hasInvalidQuantity) {
-                    setFormMessage('La cantidad debe ser mayor a 0 en cada producto.');
+                    setFormMessage(
+                      'La cantidad debe ser mayor a 0 en cada producto.',
+                    );
                     return;
                   }
 
                   setPendingSale({
                     customerName: selectedCustomer,
                     customerType: resolvedCustomerType,
-                    customerIdentifier,
+                    customerIdentifier: normalizeRutForSubmit(customerIdentifier),
                     documentType,
                     documentNumber: nextDocumentNumber,
                     date: saleDate,
@@ -418,7 +494,7 @@ function Sales() {
                     {t('sales.customerOrType')}
                     <select
                       value={selectedCustomer}
-                      onChange={(event) => setCustomerName(event.target.value)}
+                      onChange={(event) => handleCustomerChange(event.target.value)}
                     >
                       <optgroup label={t('sales.customerTypeGroup')}>
                         {genericCustomerOptions.map((option) => (
@@ -466,13 +542,16 @@ function Sales() {
                     {t('sales.identifier')}
                     <input
                       value={customerIdentifier}
-                      onChange={(event) => setCustomerIdentifier(event.target.value)}
+                      onChange={(event) => {
+                        setCustomerIdentifier(formatRut(event.target.value));
+                      }}
                       placeholder={
-                        selectedRegisteredCustomer?.identifier ||
-                        selectedRegisteredCustomer?.contact ||
-                        t('sales.identifierPlaceholder')
+                        selectedRegisteredCustomer?.identifier
+                          ? formatRut(selectedRegisteredCustomer.identifier)
+                          : selectedRegisteredCustomer?.contact ||
+                            t('sales.identifierPlaceholder')
                       }
-                      maxLength={60}
+                      maxLength={12}
                     />
                   </label>
 
@@ -500,6 +579,7 @@ function Sales() {
                         value={item.codigo}
                         disabled={products.length === 0}
                         noProductsText={t('sales.noProducts')}
+                        placeholder="Buscar producto por nombre o código..."
                         onChange={(codigo) => {
                           setItems((current) =>
                             current.map((line) =>
@@ -523,7 +603,9 @@ function Sales() {
                                 line.id === item.id
                                   ? {
                                       ...line,
-                                      quantity: Number.isNaN(quantity) ? 1 : quantity,
+                                      quantity: Number.isNaN(quantity)
+                                        ? 1
+                                        : quantity,
                                     }
                                   : line,
                               ),
@@ -566,9 +648,9 @@ function Sales() {
                   <button
                     type="submit"
                     className="purchase-primary-button"
-                    disabled={!canRegisterSale}
+                    disabled={!canRegisterSale || isSubmitting}
                   >
-                    {t('sales.saveSale')}
+                    {isSubmitting ? 'Guardando...' : t('sales.saveSale')}
                   </button>
                 </div>
               </form>
@@ -589,7 +671,7 @@ function Sales() {
           isOpen={true}
           title="¿Estás seguro?"
           subtitle="Se registrará la siguiente venta en el sistema."
-          confirmLabel="Registrar venta"
+          confirmLabel={isSubmitting ? 'Registrando...' : 'Registrar venta'}
           cancelLabel="Cancelar"
           details={[
             { label: 'Cliente', value: pendingSale.customerName },
@@ -597,26 +679,53 @@ function Sales() {
             { label: 'Documento', value: pendingSale.documentType },
             { label: 'Número doc.', value: pendingSale.documentNumber },
             { label: 'Fecha', value: pendingSale.date },
-            ...(pendingSale.customerIdentifier ? [{ label: 'Identificador', value: pendingSale.customerIdentifier }] : []),
-            ...pendingSale.items.map((item, i) => {
-              const found = products.find((p) => p.codigo === item.codigo);
-              const productName = found?.displayName?.trim() || found?.descrip?.trim() || item.codigo;
+            ...(pendingSale.customerIdentifier
+              ? [
+                  {
+                    label: 'Identificador',
+                    value: formatRutIfPossible(pendingSale.customerIdentifier) || '-',
+                  },
+                ]
+              : []),
+            ...pendingSale.items.map((item, index) => {
+              const found = products.find((product) => product.codigo === item.codigo);
+              const productName =
+                found?.displayName?.trim() ||
+                found?.descrip?.trim() ||
+                item.codigo;
+
               return {
-                label: `Producto ${i + 1}`,
+                label: `Producto ${index + 1}`,
                 value: `${productName} (${item.codigo}) × ${item.quantity}`,
               };
             }),
           ]}
           onConfirm={() => {
-            recordSale(pendingSale);
-            setPendingSale(null);
-            setCustomerName(uniqueCustomerOptions[0] ?? 'B2C');
-            setCustomerIdentifier('');
-            setDocumentType('Boleta');
-            setSaleDate(getTodayInputValue());
-            setItems([createSaleLine()]);
-            setFormMessage('');
-            setShowSuccess(true);
+            if (isSubmitting) {
+              return;
+            }
+
+            setIsSubmitting(true);
+
+            createSale(pendingSale)
+              .then(() => reloadSales())
+              .then(() => reloadInventoryData())
+              .then(() => {
+                setPendingSale(null);
+                resetForm();
+                setShowSuccess(true);
+              })
+              .catch((error) => {
+                setFormMessage(
+                  error instanceof Error
+                    ? error.message
+                    : 'No se pudo registrar la venta.',
+                );
+                setPendingSale(null);
+              })
+              .finally(() => {
+                setIsSubmitting(false);
+              });
           }}
           onCancel={() => setPendingSale(null)}
         />

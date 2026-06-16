@@ -26,10 +26,10 @@ export type PurchaseInput = {
 };
 
 export type SaleInput = {
-  date?: string;
+  date: string;
   customerName: string;
   customerType: 'B2B' | 'B2C';
-  customerIdentifier?: string;
+  customerIdentifier?: string | null;
   documentType: string;
   documentNumber: string;
   items: Array<{
@@ -49,11 +49,12 @@ export type CustomerInput = Pick<
 >;
 
 export type InventoryContextValue = InventoryState & {
-  addProduct: (product: ProductInput) => void;
-  addSupplier: (supplier: SupplierInput) => void;
-  addCustomer: (customer: CustomerInput) => void;
-  recordPurchase: (purchase: PurchaseInput) => void;
-  recordSale: (sale: SaleInput) => void;
+  reloadInventoryData: () => Promise<void>;
+  addProduct: (product: ProductInput) => Promise<void>;
+  addSupplier: (supplier: SupplierInput) => Promise<void>;
+  addCustomer: (customer: CustomerInput) => Promise<void>;
+  recordPurchase: (purchase: PurchaseInput) => Promise<void>;
+  recordSale: (sale: SaleInput) => Promise<void>;
 };
 
 export const InventoryContext = createContext<InventoryContextValue | null>(

@@ -1,41 +1,78 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import AppLayout from '../components/AppLayout';
 import { canManageData } from '../api/authApi';
-import { useInventory } from '../state/useInventory';
+import {
+  createCustomer,
+  fetchCustomers,
+  type Customer,
+} from '../api/customersApi';
 import { useLanguage } from '../language/useLanguage';
 
 function Customers() {
-  const { addCustomer, customers } = useInventory();
   const { t } = useLanguage();
   const canManage = canManageData();
 
-  // Filter States
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedType, setSelectedType] = useState('all');
+  const [selectedType, setSelectedType] = useState<'ALL' | 'B2B' | 'B2C'>('ALL');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState<{
+    type: 'error' | 'success';
+    text: string;
+  } | null>(null);
 
   const totalB2B = customers.filter(
     (customer) => customer.customerType === 'B2B',
   ).length;
+
   const totalB2C = customers.filter(
     (customer) => customer.customerType === 'B2C',
   ).length;
 
-  // Reactive Multi-attribute filter
   const filteredCustomers = useMemo(() => {
-    const query = searchTerm.trim().toLowerCase();
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
     return customers.filter((customer) => {
       const matchesSearch =
-        !query ||
-        customer.name.toLowerCase().includes(query) ||
-        (customer.identifier && customer.identifier.toLowerCase().includes(query)) ||
-        customer.contact.toLowerCase().includes(query);
+        !normalizedSearch ||
+        customer.name.toLowerCase().includes(normalizedSearch) ||
+        customer.identifier?.toLowerCase().includes(normalizedSearch) ||
+        customer.contact?.toLowerCase().includes(normalizedSearch);
 
       const matchesType =
-        selectedType === 'all' || customer.customerType === selectedType;
+        selectedType === 'ALL' || customer.customerType === selectedType;
 
       return matchesSearch && matchesType;
     });
   }, [customers, searchTerm, selectedType]);
+
+  function loadCustomers() {
+    setIsLoading(true);
+    setMessage(null);
+
+    fetchCustomers()
+      .then((data) => {
+        setCustomers(data);
+      })
+      .catch((error) => {
+        setCustomers([]);
+        setMessage({
+          type: 'error',
+          text:
+            error instanceof Error
+              ? error.message
+              : 'No se pudieron cargar los clientes desde el backend.',
+        });
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }
+
+  useEffect(() => {
+    loadCustomers();
+  }, []);
 
   return (
     <AppLayout
@@ -47,31 +84,49 @@ function Customers() {
           <div className="panel-heading">
             <h2>{t('customers.registry')}</h2>
             <span>
-              {totalB2B} B2B / {totalB2C} B2C
+              {isLoading
+                ? 'Cargando...'
+                : `${filteredCustomers.length} ${t('customers.records')}`}
             </span>
           </div>
 
-          {/* Dynamic Filters Toolbar */}
-          <div className="catalog-toolbar" style={{ borderBottom: '1px dashed #e2e8f0', paddingBottom: '14px', marginBottom: '16px' }}>
+          {message ? (
+            <p className={`form-message ${message.type}`}>{message.text}</p>
+          ) : null}
+
+          <div className="filters-row">
             <label>
-              {t('products.search')}
+              Buscar
               <input
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder={t('customers.namePlaceholder') || 'Buscar cliente...'}
               />
             </label>
+
             <label>
               {t('customers.type')}
               <select
                 value={selectedType}
-                onChange={(event) => setSelectedType(event.target.value)}
+                onChange={(event) =>
+                  setSelectedType(event.target.value as 'ALL' | 'B2B' | 'B2C')
+                }
               >
-                <option value="all">{t('reports.all')}</option>
+                <option value="ALL">Todos</option>
                 <option value="B2B">B2B</option>
                 <option value="B2C">B2C</option>
               </select>
             </label>
+
+            <div className="summary-pill">
+              <strong>{totalB2B}</strong>
+              <span>B2B</span>
+            </div>
+
+            <div className="summary-pill">
+              <strong>{totalB2C}</strong>
+              <span>B2C</span>
+            </div>
           </div>
 
           <div className="table-wrap products-table-wrap">
@@ -86,29 +141,28 @@ function Customers() {
                   <th>{t('customers.purchases')}</th>
                 </tr>
               </thead>
+
               <tbody>
-                {filteredCustomers.length > 0 ? (
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={6}>Cargando clientes desde el backend...</td>
+                  </tr>
+                ) : filteredCustomers.length > 0 ? (
                   filteredCustomers.map((customer) => (
-                    <tr key={customer.name}>
+                    <tr key={customer.id}>
                       <td className="description-cell">{customer.name}</td>
-                      <td>
-                        <span
-                          className={`customer-type-badge ${
-                            customer.customerType === 'B2B' ? 'b2b' : 'b2c'
-                          }`}
-                        >
-                          {customer.customerType}
-                        </span>
-                      </td>
+                      <td>{customer.customerType}</td>
                       <td>{customer.identifier || '-'}</td>
-                      <td>{customer.contact}</td>
-                      <td>{customer.lastPurchase}</td>
-                      <td className="numeric-cell">{customer.purchases}</td>
+                      <td>{customer.contact || '-'}</td>
+                      <td>{customer.lastPurchase || 'Sin compras'}</td>
+                      <td className="numeric-cell">{customer.purchases ?? 0}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6}>{t('customers.noCustomers') || 'Sin clientes registrados'}</td>
+                    <td colSpan={6}>
+                      {t('customers.noCustomers') || 'Sin clientes registrados'}
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -130,17 +184,40 @@ function Customers() {
                 className="grid-form products-form"
                 onSubmit={(event) => {
                   event.preventDefault();
+                  setIsSaving(true);
+                  setMessage(null);
 
-                  const formData = new FormData(event.currentTarget);
+                  const form = event.currentTarget;
+                  const formData = new FormData(form);
 
-                  addCustomer({
+                  createCustomer({
                     name: String(formData.get('name')).trim(),
-                    contact: String(formData.get('contact')).trim(),
+                    customerType: String(formData.get('customerType')) as
+                      | 'B2B'
+                      | 'B2C',
                     identifier: String(formData.get('identifier')).trim(),
-                    customerType: String(formData.get('customerType')) as 'B2B' | 'B2C',
-                  });
-
-                  event.currentTarget.reset();
+                    contact: String(formData.get('contact')).trim(),
+                  })
+                    .then((createdCustomer) => {
+                      setCustomers((current) => [createdCustomer, ...current]);
+                      setMessage({
+                        type: 'success',
+                        text: 'Cliente registrado correctamente en el backend.',
+                      });
+                      form.reset();
+                    })
+                    .catch((error) => {
+                      setMessage({
+                        type: 'error',
+                        text:
+                          error instanceof Error
+                            ? error.message
+                            : 'No se pudo registrar el cliente.',
+                      });
+                    })
+                    .finally(() => {
+                      setIsSaving(false);
+                    });
                 }}
               >
                 <label>
@@ -176,11 +253,12 @@ function Customers() {
                     name="contact"
                     placeholder={t('customers.contactPlaceholder')}
                     maxLength={120}
-                    required
                   />
                 </label>
 
-                <button type="submit">{t('customers.addCustomer')}</button>
+                <button type="submit" disabled={isSaving}>
+                  {isSaving ? 'Guardando...' : t('customers.addCustomer')}
+                </button>
               </form>
             </article>
           </details>

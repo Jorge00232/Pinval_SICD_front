@@ -591,11 +591,6 @@ function Login() {
                 />
               </div>
             </div>
-
-            <p className="login-help-v2">
-              <strong>Usuarios backend:</strong>{' '}
-              admin/admin123 · inventario/stock123 · consulta/consulta123
-            </p>
           </>
         )}
 

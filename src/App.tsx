@@ -8,11 +8,13 @@ import Products from './pages/Products';
 import Purchases from './pages/Purchases';
 import Sales from './pages/Sales';
 import Suppliers from './pages/Suppliers';
+import BulkUpload from './pages/BulkUpload';
 import Customers from './pages/Customers';
 import Movements from './pages/Movements';
 import Alerts from './pages/Alerts';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import Users from './pages/users';
 import ProtectedRoute from './components/ProtectedRoute';
 import ChatbotWidget from './components/ChatbotWidget';
 import { ThemeProvider } from './state/ThemeContext';
@@ -105,6 +107,16 @@ function App() {
                 }
               />
 
+
+              <Route
+                path="/bulk-upload"
+                element={
+                  <ProtectedRoute allowedRoles={['ADMIN', 'STOCK']}>
+                    <BulkUpload />
+                  </ProtectedRoute>
+                }
+              />
+
               <Route
                 path="/movements"
                 element={
@@ -137,6 +149,15 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Settings />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/users"
+                element={
+                  <ProtectedRoute allowedRoles={['ADMIN']}>
+                    <Users />
                   </ProtectedRoute>
                 }
               />

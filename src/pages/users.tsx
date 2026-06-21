@@ -514,7 +514,7 @@ function Users() {
                 <input
                   value={form.name}
                   onChange={(event) => updateForm('name', event.target.value)}
-                  placeholder="Ej: Juan Perez"
+                  placeholder="Ej: Constanza Arce"
                   required
                 />
               </label>
@@ -535,7 +535,7 @@ function Users() {
                 <input
                   value={form.username}
                   onChange={(event) => updateForm('username', event.target.value)}
-                  placeholder="Ej: ju.perez"
+                  placeholder="Ej: co.arce"
                 />
               </label>
 

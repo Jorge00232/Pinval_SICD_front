@@ -27,31 +27,62 @@ const SESSION_ACTIVITY_EVENTS = [
 ] as const;
 const SESSION_ACTIVITY_THROTTLE_MS = 30 * 1000;
 
-const navGroups = [
+type SidebarNavItem = {
+  to: string;
+  labelKey: string;
+  viewer: boolean;
+  adminOnly?: boolean;
+  fallbackEs: string;
+  fallbackEn: string;
+};
+
+type SidebarNavGroup = {
+  labelKey: string;
+  fallbackEs: string;
+  fallbackEn: string;
+  items: SidebarNavItem[];
+};
+
+const navGroups: SidebarNavGroup[] = [
   {
     labelKey: 'nav.group.operation',
+    fallbackEs: 'Operación',
+    fallbackEn: 'Operation',
     items: [
-      { to: '/home', labelKey: 'nav.dashboard', viewer: true },
-      { to: '/sales', labelKey: 'nav.sales', viewer: true },
-      { to: '/purchases', labelKey: 'nav.purchases', viewer: true },
-      { to: '/inventory', labelKey: 'nav.inventory', viewer: true },
+      { to: '/home', labelKey: 'nav.dashboard', viewer: true, fallbackEs: 'Dashboard', fallbackEn: 'Dashboard' },
+      { to: '/sales', labelKey: 'nav.sales', viewer: true, fallbackEs: 'Ventas', fallbackEn: 'Sales' },
+      { to: '/purchases', labelKey: 'nav.purchases', viewer: true, fallbackEs: 'Compras', fallbackEn: 'Purchases' },
+      { to: '/inventory', labelKey: 'nav.inventory', viewer: true, fallbackEs: 'Inventario', fallbackEn: 'Inventory' },
     ],
   },
   {
     labelKey: 'nav.group.management',
+    fallbackEs: 'Gestión',
+    fallbackEn: 'Management',
     items: [
-      { to: '/products', labelKey: 'nav.products', viewer: true },
-      { to: '/customers', labelKey: 'nav.customers', viewer: true },
-      { to: '/suppliers', labelKey: 'nav.suppliers', viewer: true },
-      { to: '/bulk-upload', labelKey: 'nav.bulkUpload', viewer: false },
+      { to: '/products', labelKey: 'nav.products', viewer: true, fallbackEs: 'Productos', fallbackEn: 'Products' },
+      { to: '/customers', labelKey: 'nav.customers', viewer: true, fallbackEs: 'Clientes', fallbackEn: 'Customers' },
+      { to: '/suppliers', labelKey: 'nav.suppliers', viewer: true, fallbackEs: 'Proveedores', fallbackEn: 'Suppliers' },
+      { to: '/bulk-upload', labelKey: 'nav.bulkUpload', viewer: false, fallbackEs: 'Carga masiva', fallbackEn: 'Bulk upload' },
     ],
   },
   {
     labelKey: 'nav.group.control',
+    fallbackEs: 'Control',
+    fallbackEn: 'Control',
     items: [
-      { to: '/movements', labelKey: 'nav.movements', viewer: true },
-      { to: '/alerts', labelKey: 'nav.alerts', viewer: true },
-      { to: '/reports', labelKey: 'nav.reports', viewer: true },
+      { to: '/movements', labelKey: 'nav.movements', viewer: true, fallbackEs: 'Movimientos', fallbackEn: 'Movements' },
+      { to: '/alerts', labelKey: 'nav.alerts', viewer: true, fallbackEs: 'Alertas', fallbackEn: 'Alerts' },
+      { to: '/reports', labelKey: 'nav.reports', viewer: true, fallbackEs: 'Reportes', fallbackEn: 'Reports' },
+    ],
+  },
+  {
+    labelKey: 'nav.group.admin',
+    fallbackEs: 'Admin',
+    fallbackEn: 'Admin',
+    items: [
+      { to: '/users', labelKey: 'nav.users', viewer: false, adminOnly: true, fallbackEs: 'Usuarios', fallbackEn: 'Users' },
+      { to: '/settings', labelKey: 'nav.settings', viewer: true, fallbackEs: 'Configuración', fallbackEn: 'Settings' },
     ],
   },
 ];
@@ -441,15 +472,38 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
             <span className="side-nav-label">{t('nav.landing')}</span>
           </NavLink>
 
-          {navGroups.map((group) => (
-            <div className="side-nav-group" key={group.labelKey}>
-              <span className="side-nav-heading">{t(group.labelKey)}</span>
+          {navGroups.map((group) => {
+            const groupLabel = t(group.labelKey);
+            const visibleItems = group.items.filter((item) => {
+              if (item.adminOnly && session?.user.role !== 'ADMIN') {
+                return false;
+              }
 
-              {group.items
-                .filter((item) => session?.user.role !== 'VIEWER' || item.viewer)
-                .map((item) => {
+              if (session?.user.role === 'VIEWER') {
+                return item.viewer;
+              }
+
+              return true;
+            });
+
+            if (visibleItems.length === 0) {
+              return null;
+            }
+
+            return (
+              <div className="side-nav-group" key={group.labelKey}>
+                <span className="side-nav-heading">
+                  {groupLabel === group.labelKey
+                    ? language === 'es'
+                      ? group.fallbackEs
+                      : group.fallbackEn
+                    : groupLabel}
+                </span>
+
+                {visibleItems.map((item) => {
                   const badgeCount = getBadgeCount(item.to);
                   const badgeTone = getBadgeTone(item.to);
+                  const itemLabel = t(item.labelKey);
 
                   return (
                     <NavLink
@@ -458,7 +512,13 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
                       className={({ isActive }) => (isActive ? 'active' : undefined)}
                     >
                       {getSidebarIcon(item.to)}
-                      <span className="side-nav-label">{t(item.labelKey)}</span>
+                      <span className="side-nav-label">
+                        {itemLabel === item.labelKey
+                          ? language === 'es'
+                            ? item.fallbackEs
+                            : item.fallbackEn
+                          : itemLabel}
+                      </span>
 
                       {badgeCount > 0 ? (
                         <span className={`side-nav-badge ${badgeTone}`}>
@@ -468,34 +528,10 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
                     </NavLink>
                   );
                 })}
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </nav>
-
-        {/* Administrative links pushed to the bottom of the sidebar */}
-        <div className="side-nav sidebar-admin-nav" style={{ marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid var(--border-color, #dde7e2)' }}>
-          {session?.user.role === 'ADMIN' ? (
-            <NavLink
-              to="/users"
-              className={({ isActive }) => (isActive ? 'active' : undefined)}
-            >
-              {getSidebarIcon('/users')}
-              <span className="side-nav-label">
-                {language === 'es' ? 'Usuarios' : 'Users'}
-              </span>
-            </NavLink>
-          ) : null}
-
-          <NavLink
-            to="/settings"
-            className={({ isActive }) => (isActive ? 'active' : undefined)}
-          >
-            {getSidebarIcon('/settings')}
-            <span className="side-nav-label">
-              {language === 'es' ? 'Configuración' : 'Settings'}
-            </span>
-          </NavLink>
-        </div>
       </aside>
 
       <main className="content">

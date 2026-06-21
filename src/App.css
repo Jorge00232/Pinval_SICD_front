@@ -8728,3 +8728,135 @@ body.theme-dark .form-message.success {
     justify-content: space-between;
   }
 }
+
+/* ───────────────────────────────────────────────
+   Fix final: Usuarios sin scroll horizontal
+   Esta regla se deja al final para sobrescribir mínimos globales de tablas.
+   ─────────────────────────────────────────────── */
+
+.users-admin-table-wrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+  border-radius: 10px;
+}
+
+.users-admin-table-wrap table {
+  width: 100% !important;
+  min-width: 0 !important;
+  table-layout: fixed !important;
+}
+
+.users-admin-table-wrap th,
+.users-admin-table-wrap td {
+  padding: 12px 10px !important;
+  vertical-align: middle;
+  overflow: hidden;
+}
+
+.users-admin-table-wrap th:nth-child(1),
+.users-admin-table-wrap td:nth-child(1) {
+  width: 28% !important;
+}
+
+.users-admin-table-wrap th:nth-child(2),
+.users-admin-table-wrap td:nth-child(2) {
+  width: 12% !important;
+}
+
+.users-admin-table-wrap th:nth-child(3),
+.users-admin-table-wrap td:nth-child(3),
+.users-admin-table-wrap th:nth-child(4),
+.users-admin-table-wrap td:nth-child(4),
+.users-admin-table-wrap th:nth-child(5),
+.users-admin-table-wrap td:nth-child(5) {
+  width: 10% !important;
+}
+
+.users-admin-table-wrap th:nth-child(6),
+.users-admin-table-wrap td:nth-child(6) {
+  width: 12% !important;
+}
+
+.users-admin-table-wrap th:nth-child(7),
+.users-admin-table-wrap td:nth-child(7) {
+  width: 18% !important;
+}
+
+.users-admin-user-cell,
+.users-admin-user-cell strong,
+.users-admin-user-cell span,
+.users-admin-user-cell small {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.users-admin-user-cell strong,
+.users-admin-user-cell span,
+.users-admin-user-cell small {
+  display: block;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.users-admin-table-wrap .status,
+.users-admin-table-wrap .users-role-admin,
+.users-admin-table-wrap .users-role-stock,
+.users-admin-table-wrap .users-role-viewer {
+  max-width: 100%;
+  justify-content: center;
+  padding: 6px 9px;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.users-admin-actions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  width: 100%;
+  max-width: 100%;
+  align-items: stretch;
+}
+
+.users-admin-actions button {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 34px;
+  padding: 7px 8px !important;
+  white-space: normal !important;
+  text-align: center;
+  font-size: 11.5px !important;
+  line-height: 1.1;
+}
+
+.users-admin-actions .danger-button {
+  grid-column: span 2;
+}
+
+@media (max-width: 1180px) {
+  .users-admin-table-wrap th,
+  .users-admin-table-wrap td {
+    padding: 10px 8px !important;
+  }
+
+  .users-admin-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .users-admin-actions .danger-button {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 900px) {
+  .users-admin-table-wrap {
+    overflow-x: auto !important;
+  }
+
+  .users-admin-table-wrap table {
+    min-width: 820px !important;
+  }
+}

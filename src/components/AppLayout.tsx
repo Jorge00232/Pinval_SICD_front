@@ -159,15 +159,6 @@ function getSidebarIcon(to: string) {
           <line x1="6" y1="20" x2="6" y2="14"></line>
         </svg>
       );
-    case '/users':
-      return (
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="sidebar-svg-icon">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-          <circle cx="9" cy="7" r="4"></circle>
-          <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-        </svg>
-      );
     case '/settings':
       return (
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="sidebar-svg-icon">
@@ -472,30 +463,11 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
           ))}
         </nav>
 
-        {/* Administrative links pushed to the bottom of the sidebar */}
-        <div
-          className="side-nav"
-          style={{
-            marginTop: 'auto',
-            paddingTop: '10px',
-            borderTop: '1px solid var(--border-color, #dde7e2)',
-          }}
-        >
-          {session?.user.role === 'ADMIN' ? (
-            <NavLink
-              to="/users"
-              className={({ isActive }) => (isActive ? 'active' : undefined)}
-            >
-              {getSidebarIcon('/users')}
-              <span className="side-nav-label">
-                {language === 'es' ? 'Usuarios' : 'Users'}
-              </span>
-            </NavLink>
-          ) : null}
-
+        {/* Configuration link pushed to the bottom of the sidebar */}
+        <div className="side-nav" style={{ marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid var(--border-color, #dde7e2)' }}>
           <NavLink
             to="/settings"
-            className={({ isActive }) => (isActive ? 'active' : undefined)}
+            className={({ isActive }) => isActive ? 'active' : undefined}
           >
             {getSidebarIcon('/settings')}
             <span className="side-nav-label">
@@ -615,17 +587,6 @@ function AppLayout({ title, description, children }: AppLayoutProps) {
                     <div className="dropdown-divider"></div>
 
                     <div className="dropdown-options">
-                      {session?.user.role === 'ADMIN' ? (
-                        <NavLink
-                          to="/users"
-                          className="dropdown-item"
-                          onClick={() => setIsDropdownOpen(false)}
-                        >
-                          {getSidebarIcon('/users')}
-                          <span>{language === 'es' ? 'Usuarios' : 'Users'}</span>
-                        </NavLink>
-                      ) : null}
-
                       <NavLink
                         to="/settings"
                         className="dropdown-item"

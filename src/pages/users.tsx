@@ -81,8 +81,8 @@ function Users() {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const [isUsersListOpen, setIsUsersListOpen] = useState(true);
-  const [isUserFormOpen, setIsUserFormOpen] = useState(false);
+  const [isUsersListOpen, setIsUsersListOpen] = useState(false);
+  const [isUserFormOpen, setIsUserFormOpen] = useState(true);
 
   const editingUser = useMemo(() => {
     if (!editingUserId) {
@@ -192,7 +192,8 @@ function Users() {
         setMessage('Usuario creado correctamente.');
       }
 
-      resetForm({ collapse: true });
+      resetForm();
+      setIsUserFormOpen(true);
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -341,137 +342,6 @@ function Users() {
         ) : null}
 
         <details
-          className="panel users-admin-disclosure users-admin-list-panel"
-          open={isUsersListOpen}
-          onToggle={(event) => setIsUsersListOpen(event.currentTarget.open)}
-        >
-          <summary className="users-admin-disclosure-summary">
-            <div className="users-admin-summary-main">
-              <h2>Usuarios autorizados</h2>
-              <span>
-                Correos habilitados para ingresar a SICD según rol y estado.
-              </span>
-            </div>
-
-            <div className="users-admin-summary-actions">
-              <button
-                type="button"
-                className="ghost-button"
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  void loadUsers();
-                }}
-              >
-                Actualizar
-              </button>
-
-              <span className="users-admin-toggle-indicator" aria-hidden="true">
-                {isUsersListOpen ? '−' : '+'}
-              </span>
-            </div>
-          </summary>
-
-          <div className="users-admin-disclosure-body">
-            {isLoading ? (
-              <p className="empty-state">Cargando usuarios...</p>
-            ) : users.length === 0 ? (
-              <p className="empty-state">
-                No hay usuarios registrados. Agrega el primer usuario desde el formulario.
-              </p>
-            ) : (
-              <div className="table-wrap users-admin-table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Usuario</th>
-                      <th>Rol</th>
-                      <th>Estado</th>
-                      <th>Google</th>
-                      <th>2FA</th>
-                      <th>Actualizado</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {users.map((user) => (
-                      <tr key={user.id}>
-                        <td>
-                          <div className="users-admin-user-cell">
-                            <strong>{user.name}</strong>
-                            <span>{user.email}</span>
-                            <small>@{user.username ?? 'sin_usuario'}</small>
-                          </div>
-                        </td>
-
-                        <td>
-                          <span className={`status users-role-${user.role.toLowerCase()}`}>
-                            {getRoleLabel(user.role)}
-                          </span>
-                        </td>
-
-                        <td>
-                          <span className={user.isActive ? 'status ok' : 'status danger'}>
-                            {getUserStatusLabel(user)}
-                          </span>
-                        </td>
-
-                        <td>
-                          <span className={user.allowGoogle ? 'status ok' : 'status warning'}>
-                            {user.allowGoogle ? 'Permitido' : 'Bloqueado'}
-                          </span>
-                        </td>
-
-                        <td>
-                          <span className={user.hasTwoFactor ? 'status ok' : 'status warning'}>
-                            {user.hasTwoFactor ? 'Configurado' : 'Pendiente'}
-                          </span>
-                        </td>
-
-                        <td>{formatDate(user.updatedAt)}</td>
-
-                        <td>
-                          <div className="table-actions users-admin-actions">
-                            <button type="button" onClick={() => startEdit(user)}>
-                              Editar
-                            </button>
-
-                            <button
-                              type="button"
-                              className="ghost-button"
-                              onClick={() => void handleToggleStatus(user)}
-                            >
-                              {user.isActive ? 'Desactivar' : 'Activar'}
-                            </button>
-
-                            <button
-                              type="button"
-                              className="ghost-button"
-                              onClick={() => void handleToggleGoogle(user)}
-                            >
-                              {user.allowGoogle ? 'Bloquear Google' : 'Permitir Google'}
-                            </button>
-
-                            <button
-                              type="button"
-                              className="danger-button"
-                              onClick={() => void handleResetTwoFactor(user)}
-                            >
-                              Reset 2FA
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </details>
-
-        <details
           className="panel users-admin-disclosure users-admin-form-panel"
           open={isUserFormOpen}
           onToggle={(event) => setIsUserFormOpen(event.currentTarget.open)}
@@ -603,6 +473,138 @@ function Users() {
             </form>
           </div>
         </details>
+
+        <details
+          className="panel users-admin-disclosure users-admin-list-panel"
+          open={isUsersListOpen}
+          onToggle={(event) => setIsUsersListOpen(event.currentTarget.open)}
+        >
+          <summary className="users-admin-disclosure-summary">
+            <div className="users-admin-summary-main">
+              <h2>Usuarios autorizados</h2>
+              <span>
+                Correos habilitados para ingresar a SICD según rol y estado.
+              </span>
+            </div>
+
+            <div className="users-admin-summary-actions">
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  void loadUsers();
+                }}
+              >
+                Actualizar
+              </button>
+
+              <span className="users-admin-toggle-indicator" aria-hidden="true">
+                {isUsersListOpen ? '−' : '+'}
+              </span>
+            </div>
+          </summary>
+
+          <div className="users-admin-disclosure-body">
+            {isLoading ? (
+              <p className="empty-state">Cargando usuarios...</p>
+            ) : users.length === 0 ? (
+              <p className="empty-state">
+                No hay usuarios registrados. Agrega el primer usuario desde el formulario.
+              </p>
+            ) : (
+              <div className="table-wrap users-admin-table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Usuario</th>
+                      <th>Rol</th>
+                      <th>Estado</th>
+                      <th>Google</th>
+                      <th>2FA</th>
+                      <th>Actualizado</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {users.map((user) => (
+                      <tr key={user.id}>
+                        <td>
+                          <div className="users-admin-user-cell">
+                            <strong>{user.name}</strong>
+                            <span>{user.email}</span>
+                            <small>@{user.username ?? 'sin_usuario'}</small>
+                          </div>
+                        </td>
+
+                        <td>
+                          <span className={`status users-role-${user.role.toLowerCase()}`}>
+                            {getRoleLabel(user.role)}
+                          </span>
+                        </td>
+
+                        <td>
+                          <span className={user.isActive ? 'status ok' : 'status danger'}>
+                            {getUserStatusLabel(user)}
+                          </span>
+                        </td>
+
+                        <td>
+                          <span className={user.allowGoogle ? 'status ok' : 'status warning'}>
+                            {user.allowGoogle ? 'Permitido' : 'Bloqueado'}
+                          </span>
+                        </td>
+
+                        <td>
+                          <span className={user.hasTwoFactor ? 'status ok' : 'status warning'}>
+                            {user.hasTwoFactor ? 'Configurado' : 'Pendiente'}
+                          </span>
+                        </td>
+
+                        <td>{formatDate(user.updatedAt)}</td>
+
+                        <td>
+                          <div className="table-actions users-admin-actions">
+                            <button type="button" onClick={() => startEdit(user)}>
+                              Editar
+                            </button>
+
+                            <button
+                              type="button"
+                              className="ghost-button"
+                              onClick={() => void handleToggleStatus(user)}
+                            >
+                              {user.isActive ? 'Desactivar' : 'Activar'}
+                            </button>
+
+                            <button
+                              type="button"
+                              className="ghost-button"
+                              onClick={() => void handleToggleGoogle(user)}
+                            >
+                              {user.allowGoogle ? 'Bloquear Google' : 'Permitir Google'}
+                            </button>
+
+                            <button
+                              type="button"
+                              className="danger-button"
+                              onClick={() => void handleResetTwoFactor(user)}
+                            >
+                              Reset 2FA
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </details>
+
       </div>
     </AppLayout>
   );

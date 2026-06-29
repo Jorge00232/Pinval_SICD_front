@@ -161,64 +161,12 @@ function Purchases() {
       description={t('page.purchases.description')}
     >
       <section className="stacked-management-layout">
-        <article className="panel purchase-history-panel">
-          <div className="panel-heading">
-            <h2>{t('purchases.history')}</h2>
-
-            <span className="purchase-counter">
-              {purchaseRows.length} {t('purchases.records')}
-            </span>
-          </div>
-
-          <div className="table-wrap purchase-history-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>{t('purchases.date')}</th>
-                  <th>{t('purchases.product')}</th>
-                  <th>{t('purchases.quantity')}</th>
-                  <th>{t('sales.invoice')}</th>
-                  <th>{t('purchases.supplier')}</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {purchaseRows.length > 0 ? (
-                  purchaseRows.map((row) => (
-                    <tr key={row.id}>
-                      <td>{formatDate(row.date)}</td>
-                      <td>{row.productName}</td>
-                      <td className="numeric-cell">{row.quantity}</td>
-                      <td>{row.documentNumber}</td>
-                      <td>{row.supplierName}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={5}>
-                      {isLoading
-                        ? 'Cargando compras...'
-                        : canRegisterPurchase
-                          ? t('purchases.noPurchases')
-                          : canRegister
-                            ? t('purchases.addSuppliersProductsFirst')
-                            : t('purchases.noPurchases')}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </article>
-
         {canRegister ? (
-          <details className="form-disclosure">
+          <details className="form-disclosure" open>
             <summary>
               <span>{t('purchases.registerPurchase')}</span>
 
-              <strong>
-                {purchaseRows.length} {t('purchases.linesRegistered')}
-              </strong>
+              <strong>Formulario desplegado</strong>
             </summary>
 
             <article className="panel purchase-form-panel form-panel">
@@ -417,6 +365,58 @@ function Purchases() {
             </article>
           </details>
         ) : null}
+
+        <details className="records-disclosure purchase-records-disclosure">
+          <summary>
+            <span>{t('purchases.history')}</span>
+            <strong>
+              {purchaseRows.length} {t('purchases.records')}
+            </strong>
+          </summary>
+
+          <article className="panel purchase-history-panel records-panel">
+          <div className="table-wrap purchase-history-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>{t('purchases.date')}</th>
+                  <th>{t('purchases.product')}</th>
+                  <th>{t('purchases.quantity')}</th>
+                  <th>{t('sales.invoice')}</th>
+                  <th>{t('purchases.supplier')}</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {purchaseRows.length > 0 ? (
+                  purchaseRows.map((row) => (
+                    <tr key={row.id}>
+                      <td>{formatDate(row.date)}</td>
+                      <td>{row.productName}</td>
+                      <td className="numeric-cell">{row.quantity}</td>
+                      <td>{row.documentNumber}</td>
+                      <td>{row.supplierName}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5}>
+                      {isLoading
+                        ? 'Cargando compras...'
+                        : canRegisterPurchase
+                          ? t('purchases.noPurchases')
+                          : canRegister
+                            ? t('purchases.addSuppliersProductsFirst')
+                            : t('purchases.noPurchases')}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          </article>
+        </details>
       </section>
 
       <SuccessModal

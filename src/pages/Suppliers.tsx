@@ -52,68 +52,11 @@ function Suppliers() {
       description={t('page.suppliers.description')}
     >
       <section className="stacked-management-layout">
-        <article className="panel">
-          <div className="panel-heading">
-            <h2>{t('suppliers.list')}</h2>
-            <span>
-              {isLoading
-                ? 'Cargando...'
-                : `${suppliers.length} ${t('suppliers.active')}`}
-            </span>
-          </div>
-
-          {message ? (
-            <p className={`form-message ${message.type}`}>{message.text}</p>
-          ) : null}
-
-          <div className="table-wrap products-table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>{t('page.suppliers.title')}</th>
-                  <th>{t('suppliers.identifier')}</th>
-                  <th>{t('suppliers.contactPerson')}</th>
-                  <th>{t('suppliers.phone')}</th>
-                  <th>{t('suppliers.email')}</th>
-                  <th>{t('suppliers.lastPurchase')}</th>
-                  <th>{t('suppliers.purchases')}</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={7}>Cargando proveedores desde el backend...</td>
-                  </tr>
-                ) : suppliers.length > 0 ? (
-                  suppliers.map((supplier) => (
-                    <tr key={supplier.id}>
-                      <td className="description-cell">{supplier.name}</td>
-                      <td>{supplier.identifier || '-'}</td>
-                      <td>{supplier.contactName}</td>
-                      <td>{supplier.phone}</td>
-                      <td>{supplier.email}</td>
-                      <td>{supplier.lastPurchase}</td>
-                      <td className="numeric-cell">{supplier.totalPurchases}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={7}>{t('suppliers.noSuppliers')}</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </article>
-
         {canManage ? (
-          <details className="form-disclosure">
+          <details className="form-disclosure" open>
             <summary>
               <span>{t('suppliers.newSupplier')}</span>
-              <strong>
-                {suppliers.length} {t('suppliers.records')}
-              </strong>
+              <strong>Formulario desplegado</strong>
             </summary>
 
             <article className="panel products-form-panel form-panel">
@@ -211,6 +154,64 @@ function Suppliers() {
             </article>
           </details>
         ) : null}
+
+        {message ? (
+          <p className={`form-message ${message.type}`}>{message.text}</p>
+        ) : null}
+
+        <details className="records-disclosure supplier-records-disclosure">
+          <summary>
+            <span>{t('suppliers.list')}</span>
+            <strong>
+              {isLoading
+                ? 'Cargando...'
+                : `${suppliers.length} ${t('suppliers.active')}`}
+            </strong>
+          </summary>
+
+          <article className="panel records-panel">
+          <div className="table-wrap products-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>{t('page.suppliers.title')}</th>
+                  <th>{t('suppliers.identifier')}</th>
+                  <th>{t('suppliers.contactPerson')}</th>
+                  <th>{t('suppliers.phone')}</th>
+                  <th>{t('suppliers.email')}</th>
+                  <th>{t('suppliers.lastPurchase')}</th>
+                  <th>{t('suppliers.purchases')}</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={7}>Cargando proveedores desde el backend...</td>
+                  </tr>
+                ) : suppliers.length > 0 ? (
+                  suppliers.map((supplier) => (
+                    <tr key={supplier.id}>
+                      <td className="description-cell">{supplier.name}</td>
+                      <td>{supplier.identifier || '-'}</td>
+                      <td>{supplier.contactName}</td>
+                      <td>{supplier.phone}</td>
+                      <td>{supplier.email}</td>
+                      <td>{supplier.lastPurchase}</td>
+                      <td className="numeric-cell">{supplier.totalPurchases}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={7}>{t('suppliers.noSuppliers')}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          </article>
+        </details>
       </section>
     </AppLayout>
   );

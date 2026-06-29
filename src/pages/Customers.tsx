@@ -80,103 +80,11 @@ function Customers() {
       description={t('page.customers.description')}
     >
       <section className="stacked-management-layout">
-        <article className="panel">
-          <div className="panel-heading">
-            <h2>{t('customers.registry')}</h2>
-            <span>
-              {isLoading
-                ? 'Cargando...'
-                : `${filteredCustomers.length} ${t('customers.records')}`}
-            </span>
-          </div>
-
-          {message ? (
-            <p className={`form-message ${message.type}`}>{message.text}</p>
-          ) : null}
-
-          <div className="filters-row">
-            <label>
-              Buscar
-              <input
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder={t('customers.namePlaceholder') || 'Buscar cliente...'}
-              />
-            </label>
-
-            <label>
-              {t('customers.type')}
-              <select
-                value={selectedType}
-                onChange={(event) =>
-                  setSelectedType(event.target.value as 'ALL' | 'B2B' | 'B2C')
-                }
-              >
-                <option value="ALL">Todos</option>
-                <option value="B2B">B2B</option>
-                <option value="B2C">B2C</option>
-              </select>
-            </label>
-
-            <div className="summary-pill">
-              <strong>{totalB2B}</strong>
-              <span>B2B</span>
-            </div>
-
-            <div className="summary-pill">
-              <strong>{totalB2C}</strong>
-              <span>B2C</span>
-            </div>
-          </div>
-
-          <div className="table-wrap products-table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>{t('page.customers.title')}</th>
-                  <th>{t('customers.type')}</th>
-                  <th>{t('customers.identifier')}</th>
-                  <th>{t('customers.contact')}</th>
-                  <th>{t('customers.lastPurchase')}</th>
-                  <th>{t('customers.purchases')}</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={6}>Cargando clientes desde el backend...</td>
-                  </tr>
-                ) : filteredCustomers.length > 0 ? (
-                  filteredCustomers.map((customer) => (
-                    <tr key={customer.id}>
-                      <td className="description-cell">{customer.name}</td>
-                      <td>{customer.customerType}</td>
-                      <td>{customer.identifier || '-'}</td>
-                      <td>{customer.contact || '-'}</td>
-                      <td>{customer.lastPurchase || 'Sin compras'}</td>
-                      <td className="numeric-cell">{customer.purchases ?? 0}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={6}>
-                      {t('customers.noCustomers') || 'Sin clientes registrados'}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </article>
-
         {canManage ? (
-          <details className="form-disclosure">
+          <details className="form-disclosure" open>
             <summary>
               <span>{t('customers.newCustomer')}</span>
-              <strong>
-                {customers.length} {t('customers.records')}
-              </strong>
+              <strong>Formulario desplegado</strong>
             </summary>
 
             <article className="panel products-form-panel form-panel">
@@ -263,6 +171,99 @@ function Customers() {
             </article>
           </details>
         ) : null}
+
+        {message ? (
+          <p className={`form-message ${message.type}`}>{message.text}</p>
+        ) : null}
+
+        <details className="records-disclosure customer-records-disclosure">
+          <summary>
+            <span>{t('customers.registry')}</span>
+            <strong>
+              {isLoading
+                ? 'Cargando...'
+                : `${filteredCustomers.length} ${t('customers.records')}`}
+            </strong>
+          </summary>
+
+          <article className="panel records-panel">
+          <div className="filters-row">
+            <label>
+              Buscar
+              <input
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder={t('customers.namePlaceholder') || 'Buscar cliente...'}
+              />
+            </label>
+
+            <label>
+              {t('customers.type')}
+              <select
+                value={selectedType}
+                onChange={(event) =>
+                  setSelectedType(event.target.value as 'ALL' | 'B2B' | 'B2C')
+                }
+              >
+                <option value="ALL">Todos</option>
+                <option value="B2B">B2B</option>
+                <option value="B2C">B2C</option>
+              </select>
+            </label>
+
+            <div className="summary-pill">
+              <strong>{totalB2B}</strong>
+              <span>B2B</span>
+            </div>
+
+            <div className="summary-pill">
+              <strong>{totalB2C}</strong>
+              <span>B2C</span>
+            </div>
+          </div>
+
+          <div className="table-wrap products-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>{t('page.customers.title')}</th>
+                  <th>{t('customers.type')}</th>
+                  <th>{t('customers.identifier')}</th>
+                  <th>{t('customers.contact')}</th>
+                  <th>{t('customers.lastPurchase')}</th>
+                  <th>{t('customers.purchases')}</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={6}>Cargando clientes desde el backend...</td>
+                  </tr>
+                ) : filteredCustomers.length > 0 ? (
+                  filteredCustomers.map((customer) => (
+                    <tr key={customer.id}>
+                      <td className="description-cell">{customer.name}</td>
+                      <td>{customer.customerType}</td>
+                      <td>{customer.identifier || '-'}</td>
+                      <td>{customer.contact || '-'}</td>
+                      <td>{customer.lastPurchase || 'Sin compras'}</td>
+                      <td className="numeric-cell">{customer.purchases ?? 0}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6}>
+                      {t('customers.noCustomers') || 'Sin clientes registrados'}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          </article>
+        </details>
       </section>
     </AppLayout>
   );

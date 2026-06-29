@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AppLayout from '../components/AppLayout';
+import ConfirmModal from '../components/ConfirmModal';
 import { canManageData } from '../api/authApi';
 import {
   createSupplier,
@@ -8,13 +9,17 @@ import {
 } from '../api/suppliersApi';
 import { useLanguage } from '../language/useLanguage';
 
+type PendingSupplier = Parameters<typeof createSupplier>[0];
+
 function Suppliers() {
   const { t } = useLanguage();
   const canManage = canManageData();
+  const supplierFormRef = useRef<HTMLFormElement | null>(null);
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [pendingSupplier, setPendingSupplier] = useState<PendingSupplier | null>(null);
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(
     null,
   );
@@ -42,6 +47,38 @@ function Suppliers() {
       });
   }
 
+  function handleConfirmCreateSupplier() {
+    if (!pendingSupplier || isSaving) {
+      return;
+    }
+
+    setIsSaving(true);
+    setMessage(null);
+
+    createSupplier(pendingSupplier)
+      .then((createdSupplier) => {
+        setSuppliers((current) => [createdSupplier, ...current]);
+        setMessage({
+          type: 'success',
+          text: 'Proveedor registrado correctamente en el backend.',
+        });
+        setPendingSupplier(null);
+        supplierFormRef.current?.reset();
+      })
+      .catch((error) => {
+        setMessage({
+          type: 'error',
+          text:
+            error instanceof Error
+              ? error.message
+              : 'No se pudo registrar el proveedor.',
+        });
+      })
+      .finally(() => {
+        setIsSaving(false);
+      });
+  }
+
   useEffect(() => {
     loadSuppliers();
   }, []);
@@ -61,42 +98,22 @@ function Suppliers() {
 
             <article className="panel products-form-panel form-panel">
               <form
+                ref={supplierFormRef}
                 className="grid-form products-form"
                 onSubmit={(event) => {
                   event.preventDefault();
-                  setIsSaving(true);
                   setMessage(null);
 
-                  const form = event.currentTarget;
-                  const formData = new FormData(form);
-
-                  createSupplier({
+                  const formData = new FormData(event.currentTarget);
+                  const supplier: PendingSupplier = {
                     name: String(formData.get('name')).trim(),
                     identifier: String(formData.get('identifier')).trim(),
                     contactName: String(formData.get('contactName')).trim(),
                     phone: String(formData.get('phone')).trim(),
                     email: String(formData.get('email')).trim(),
-                  })
-                    .then((createdSupplier) => {
-                      setSuppliers((current) => [createdSupplier, ...current]);
-                      setMessage({
-                        type: 'success',
-                        text: 'Proveedor registrado correctamente en el backend.',
-                      });
-                      form.reset();
-                    })
-                    .catch((error) => {
-                      setMessage({
-                        type: 'error',
-                        text:
-                          error instanceof Error
-                            ? error.message
-                            : 'No se pudo registrar el proveedor.',
-                      });
-                    })
-                    .finally(() => {
-                      setIsSaving(false);
-                    });
+                  };
+
+                  setPendingSupplier(supplier);
                 }}
               >
                 <label>
@@ -170,49 +187,71 @@ function Suppliers() {
           </summary>
 
           <article className="panel records-panel">
-          <div className="table-wrap products-table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>{t('page.suppliers.title')}</th>
-                  <th>{t('suppliers.identifier')}</th>
-                  <th>{t('suppliers.contactPerson')}</th>
-                  <th>{t('suppliers.phone')}</th>
-                  <th>{t('suppliers.email')}</th>
-                  <th>{t('suppliers.lastPurchase')}</th>
-                  <th>{t('suppliers.purchases')}</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {isLoading ? (
+            <div className="table-wrap products-table-wrap">
+              <table>
+                <thead>
                   <tr>
-                    <td colSpan={7}>Cargando proveedores desde el backend...</td>
+                    <th>{t('page.suppliers.title')}</th>
+                    <th>{t('suppliers.identifier')}</th>
+                    <th>{t('suppliers.contactPerson')}</th>
+                    <th>{t('suppliers.phone')}</th>
+                    <th>{t('suppliers.email')}</th>
+                    <th>{t('suppliers.lastPurchase')}</th>
+                    <th>{t('suppliers.purchases')}</th>
                   </tr>
-                ) : suppliers.length > 0 ? (
-                  suppliers.map((supplier) => (
-                    <tr key={supplier.id}>
-                      <td className="description-cell">{supplier.name}</td>
-                      <td>{supplier.identifier || '-'}</td>
-                      <td>{supplier.contactName}</td>
-                      <td>{supplier.phone}</td>
-                      <td>{supplier.email}</td>
-                      <td>{supplier.lastPurchase}</td>
-                      <td className="numeric-cell">{supplier.totalPurchases}</td>
+                </thead>
+
+                <tbody>
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={7}>Cargando proveedores desde el backend...</td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={7}>{t('suppliers.noSuppliers')}</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
+                  ) : suppliers.length > 0 ? (
+                    suppliers.map((supplier) => (
+                      <tr key={supplier.id}>
+                        <td className="description-cell">{supplier.name}</td>
+                        <td>{supplier.identifier || '-'}</td>
+                        <td>{supplier.contactName}</td>
+                        <td>{supplier.phone}</td>
+                        <td>{supplier.email}</td>
+                        <td>{supplier.lastPurchase}</td>
+                        <td className="numeric-cell">{supplier.totalPurchases}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={7}>{t('suppliers.noSuppliers')}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </article>
         </details>
       </section>
+
+      {pendingSupplier ? (
+        <ConfirmModal
+          isOpen={true}
+          title="¿Confirmar registro?"
+          subtitle="Se registrará el siguiente proveedor en el sistema."
+          confirmLabel={isSaving ? 'Registrando...' : 'Registrar proveedor'}
+          cancelLabel="Cancelar"
+          details={[
+            { label: 'Proveedor', value: pendingSupplier.name },
+            { label: 'Identificador', value: pendingSupplier.identifier || '-' },
+            { label: 'Contacto', value: pendingSupplier.contactName },
+            { label: 'Teléfono', value: pendingSupplier.phone || '-' },
+            { label: 'Correo', value: pendingSupplier.email || '-' },
+          ]}
+          onConfirm={handleConfirmCreateSupplier}
+          onCancel={() => {
+            if (!isSaving) {
+              setPendingSupplier(null);
+            }
+          }}
+        />
+      ) : null}
     </AppLayout>
   );
 }

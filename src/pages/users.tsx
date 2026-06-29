@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import AppLayout from '../components/AppLayout';
+import ConfirmModal from '../components/ConfirmModal';
 import {
   createUser,
   fetchUsers,
@@ -83,6 +84,7 @@ function Users() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isUsersListOpen, setIsUsersListOpen] = useState(false);
   const [isUserFormOpen, setIsUserFormOpen] = useState(true);
+  const [pendingCreateUser, setPendingCreateUser] = useState<CreateUserInput | null>(null);
 
   const editingUser = useMemo(() => {
     if (!editingUserId) {
@@ -173,25 +175,50 @@ function Users() {
       return;
     }
 
+    const payload = toCreatePayload(form);
+
+    if (!editingUser) {
+      setPendingCreateUser(payload);
+      return;
+    }
+
     setIsSaving(true);
 
     try {
-      if (editingUser) {
-        const payload = toCreatePayload(form);
-        const updatedUser = await updateUser(editingUser.id, payload);
+      const updatedUser = await updateUser(editingUser.id, payload);
 
-        setUsers((current) =>
-          current.map((user) =>
-            user.id === updatedUser.id ? updatedUser : user,
-          ),
-        );
-        setMessage('Usuario actualizado correctamente.');
-      } else {
-        const createdUser = await createUser(toCreatePayload(form));
-        setUsers((current) => [createdUser, ...current]);
-        setMessage('Usuario creado correctamente.');
-      }
+      setUsers((current) =>
+        current.map((user) =>
+          user.id === updatedUser.id ? updatedUser : user,
+        ),
+      );
+      setMessage('Usuario actualizado correctamente.');
+      resetForm();
+      setIsUserFormOpen(true);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo guardar el usuario.',
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
+  async function handleConfirmCreateUser() {
+    if (!pendingCreateUser || isSaving) {
+      return;
+    }
+
+    clearFeedback();
+    setIsSaving(true);
+
+    try {
+      const createdUser = await createUser(pendingCreateUser);
+      setUsers((current) => [createdUser, ...current]);
+      setMessage('Usuario creado correctamente.');
+      setPendingCreateUser(null);
       resetForm();
       setIsUserFormOpen(true);
     } catch (error) {
@@ -604,8 +631,41 @@ function Users() {
             )}
           </div>
         </details>
-
       </div>
+
+      {pendingCreateUser ? (
+        <ConfirmModal
+          isOpen={true}
+          title="¿Confirmar creación de usuario?"
+          subtitle="Se registrará el siguiente usuario autorizado en el sistema."
+          confirmLabel={isSaving ? 'Creando...' : 'Crear usuario'}
+          cancelLabel="Cancelar"
+          details={[
+            { label: 'Nombre', value: pendingCreateUser.name },
+            { label: 'Correo', value: pendingCreateUser.email },
+            { label: 'Usuario', value: pendingCreateUser.username || '-' },
+            { label: 'Rol', value: pendingCreateUser.role },
+            {
+              label: 'Google',
+              value: pendingCreateUser.allowGoogle ? 'Permitido' : 'No permitido',
+            },
+            {
+              label: 'Estado',
+              value: pendingCreateUser.isActive ? 'Activo' : 'Inactivo',
+            },
+            {
+              label: 'Contraseña inicial',
+              value: pendingCreateUser.password ? 'Definida' : 'Sin contraseña inicial',
+            },
+          ]}
+          onConfirm={() => void handleConfirmCreateUser()}
+          onCancel={() => {
+            if (!isSaving) {
+              setPendingCreateUser(null);
+            }
+          }}
+        />
+      ) : null}
     </AppLayout>
   );
 }

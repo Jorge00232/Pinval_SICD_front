@@ -376,7 +376,7 @@ function Sales() {
           <details className="sales-form-disclosure" open>
             <summary>
               <span>{t('sales.registerSale')}</span>
-              <strong>Formulario desplegado</strong>
+              <strong>Formulario</strong>
             </summary>
 
             <article className="panel purchase-form-panel sales-form-panel">

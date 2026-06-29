@@ -13,6 +13,7 @@ type ImportOption = {
   titleKey: string;
   descriptionKey: string;
   columnsKey: string;
+  icon: string;
 };
 
 const importOptions: ImportOption[] = [
@@ -21,18 +22,21 @@ const importOptions: ImportOption[] = [
     titleKey: 'bulkUpload.productsTitle',
     descriptionKey: 'bulkUpload.productsDescription',
     columnsKey: 'bulkUpload.productsColumns',
+    icon: 'PR',
   },
   {
     type: 'customers',
     titleKey: 'bulkUpload.customersTitle',
     descriptionKey: 'bulkUpload.customersDescription',
     columnsKey: 'bulkUpload.customersColumns',
+    icon: 'CL',
   },
   {
     type: 'suppliers',
     titleKey: 'bulkUpload.suppliersTitle',
     descriptionKey: 'bulkUpload.suppliersDescription',
     columnsKey: 'bulkUpload.suppliersColumns',
+    icon: 'PV',
   },
 ];
 
@@ -77,6 +81,14 @@ function BulkUpload() {
     setMessageTone('');
   };
 
+  const resetSelectedFile = () => {
+    setSelectedFile(null);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -96,11 +108,7 @@ function BulkUpload() {
       setSummary(result);
       setMessage(t('bulkUpload.uploadSuccess'));
       setMessageTone('success');
-      setSelectedFile(null);
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      resetSelectedFile();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : t('bulkUpload.uploadError'));
       setMessageTone('error');
@@ -126,14 +134,16 @@ function BulkUpload() {
         ) : (
           <>
             <article className="panel bulk-upload-intro-panel">
-              <div className="panel-heading">
-                <h2>{t('bulkUpload.sectionTitle')}</h2>
-                <span>{t('bulkUpload.allowedFormats')}</span>
+              <div className="bulk-upload-panel-header">
+                <div>
+                  <span className="bulk-upload-eyebrow">Excel</span>
+                  <h2>{t('bulkUpload.sectionTitle')}</h2>
+                  <p>{t('bulkUpload.transitionNote')}</p>
+                </div>
+                <span className="bulk-upload-format-pill">{t('bulkUpload.allowedFormats')}</span>
               </div>
 
-              <p className="panel-note">{t('bulkUpload.transitionNote')}</p>
-
-              <div className="bulk-upload-type-grid">
+              <div className="bulk-upload-type-grid" role="tablist" aria-label="Tipo de carga masiva">
                 {importOptions.map((option) => (
                   <button
                     key={option.type}
@@ -146,22 +156,27 @@ function BulkUpload() {
                       setMessageTone('');
                     }}
                   >
-                    <span>{t(option.titleKey)}</span>
-                    <strong>{t(option.descriptionKey)}</strong>
-                    <small>{t(option.columnsKey)}</small>
+                    <span className="bulk-upload-type-icon">{option.icon}</span>
+                    <span className="bulk-upload-type-content">
+                      <strong>{t(option.titleKey)}</strong>
+                      <span>{t(option.descriptionKey)}</span>
+                      <small>{t(option.columnsKey)}</small>
+                    </span>
                   </button>
                 ))}
               </div>
             </article>
 
             <article className="panel bulk-upload-card">
-              <div className="panel-heading">
-                <h2>{t(selectedOption.titleKey)}</h2>
-                <span>{t('bulkUpload.backendValidation')}</span>
+              <div className="bulk-upload-panel-header compact">
+                <div>
+                  <span className="bulk-upload-eyebrow">{t('bulkUpload.backendValidation')}</span>
+                  <h2>{t(selectedOption.titleKey)}</h2>
+                </div>
               </div>
 
               <form className="bulk-upload-form" onSubmit={handleSubmit}>
-                <label className="bulk-upload-zone">
+                <label className={`bulk-upload-zone ${selectedFile ? 'has-file' : ''}`}>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -171,8 +186,10 @@ function BulkUpload() {
                   />
 
                   <span className="bulk-upload-zone-icon">XLS</span>
-                  <strong>{t('bulkUpload.selectExcel')}</strong>
-                  <small>{t('bulkUpload.dragHelp')}</small>
+                  <span className="bulk-upload-zone-copy">
+                    <strong>{t('bulkUpload.selectExcel')}</strong>
+                    <small>{t('bulkUpload.dragHelp')}</small>
+                  </span>
                 </label>
 
                 {selectedFile ? (
@@ -184,13 +201,7 @@ function BulkUpload() {
                     <button
                       type="button"
                       className="ghost-button"
-                      onClick={() => {
-                        setSelectedFile(null);
-
-                        if (fileInputRef.current) {
-                          fileInputRef.current.value = '';
-                        }
-                      }}
+                      onClick={resetSelectedFile}
                       disabled={isUploading}
                     >
                       {t('bulkUpload.removeFile')}
@@ -214,9 +225,11 @@ function BulkUpload() {
 
             {summary ? (
               <article className="panel bulk-upload-result-panel">
-                <div className="panel-heading">
-                  <h2>{t('bulkUpload.resultTitle')}</h2>
-                  <span>{summary.fileName || t(selectedOption.titleKey)}</span>
+                <div className="bulk-upload-panel-header compact">
+                  <div>
+                    <span className="bulk-upload-eyebrow">{summary.fileName || t(selectedOption.titleKey)}</span>
+                    <h2>{t('bulkUpload.resultTitle')}</h2>
+                  </div>
                 </div>
 
                 <div className="bulk-upload-summary-grid">

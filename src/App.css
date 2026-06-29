@@ -8797,3 +8797,415 @@ body.theme-dark .form-message.success {
     justify-content: space-between;
   }
 }
+
+
+/* ─────────────────────────────────────────────── */
+/* Carga masiva de datos - diseño limpio           */
+/* ─────────────────────────────────────────────── */
+
+.bulk-upload-layout {
+  display: grid;
+  gap: 16px;
+}
+
+.bulk-upload-intro-panel,
+.bulk-upload-card,
+.bulk-upload-result-panel,
+.bulk-upload-access-panel {
+  align-self: start;
+}
+
+.bulk-upload-panel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.bulk-upload-panel-header.compact {
+  margin-bottom: 14px;
+}
+
+.bulk-upload-panel-header h2 {
+  margin: 2px 0 6px;
+  color: #0f172a;
+  font-size: 21px;
+  font-weight: 760;
+  line-height: 1.2;
+}
+
+.bulk-upload-panel-header p {
+  margin: 0;
+  max-width: 920px;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 440;
+  line-height: 1.45;
+}
+
+.bulk-upload-eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  color: #64748b;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bulk-upload-format-pill {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  white-space: nowrap;
+}
+
+.bulk-upload-type-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.bulk-upload-type-card {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  min-height: 132px;
+  width: 100%;
+  padding: 16px !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  color: #22302d !important;
+  text-align: left;
+  box-shadow: none;
+}
+
+.bulk-upload-type-card:hover,
+.bulk-upload-type-card:focus-visible {
+  border-color: #bfdbfe !important;
+  background: #f8fbff !important;
+  outline: 3px solid rgba(47, 128, 237, 0.1) !important;
+}
+
+.bulk-upload-type-card.active {
+  border-color: #2f80ed !important;
+  background: #eff6ff !important;
+  box-shadow: 0 0 0 3px rgba(47, 128, 237, 0.1);
+}
+
+.bulk-upload-type-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #2563eb !important;
+  font-size: 12px !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.04em;
+}
+
+.bulk-upload-type-card.active .bulk-upload-type-icon {
+  background: #2f80ed;
+  color: #ffffff !important;
+}
+
+.bulk-upload-type-content {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.bulk-upload-type-content strong {
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 760;
+  line-height: 1.25;
+}
+
+.bulk-upload-type-content > span {
+  color: #475569 !important;
+  font-size: 13px !important;
+  font-weight: 560 !important;
+  line-height: 1.4;
+}
+
+.bulk-upload-type-content small {
+  color: #64748b;
+  font-size: 11.5px;
+  font-weight: 560;
+  line-height: 1.4;
+}
+
+.bulk-upload-form {
+  display: grid;
+  gap: 14px;
+}
+
+.bulk-upload-zone {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  min-height: 118px;
+  padding: 18px;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 14px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.bulk-upload-zone:hover,
+.bulk-upload-zone:focus-within,
+.bulk-upload-zone.has-file {
+  border-color: #2f80ed;
+  background: #eff6ff;
+  transform: translateY(-1px);
+}
+
+.bulk-upload-zone input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.bulk-upload-zone-icon {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border-radius: 12px;
+  background: #2f80ed;
+  color: #ffffff;
+  font-size: 13px !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.04em;
+}
+
+.bulk-upload-zone-copy {
+  display: grid;
+  gap: 5px;
+}
+
+.bulk-upload-zone-copy strong {
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 760;
+}
+
+.bulk-upload-zone-copy small {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 540;
+  line-height: 1.45;
+}
+
+.bulk-upload-file-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.bulk-upload-file-card div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.bulk-upload-file-card strong {
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 760;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bulk-upload-file-card span {
+  color: #64748b;
+  font-size: 12px !important;
+  font-weight: 650 !important;
+}
+
+.bulk-upload-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.bulk-upload-actions button {
+  min-width: 160px;
+  min-height: 42px;
+  font-weight: 760;
+}
+
+.bulk-upload-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.bulk-upload-summary-grid div {
+  display: grid;
+  gap: 4px;
+  padding: 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.bulk-upload-summary-grid span {
+  color: #64748b;
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bulk-upload-summary-grid strong {
+  color: #0f172a;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.bulk-upload-summary-grid div.success strong {
+  color: #16a34a;
+}
+
+.bulk-upload-summary-grid div.danger strong {
+  color: #dc2626;
+}
+
+.bulk-upload-errors {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.bulk-upload-errors h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 760;
+}
+
+.bulk-upload-errors table {
+  min-width: 0;
+}
+
+.bulk-upload-success-note {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+body.theme-dark .bulk-upload-panel-header h2,
+body.theme-dark .bulk-upload-type-content strong,
+body.theme-dark .bulk-upload-zone-copy strong,
+body.theme-dark .bulk-upload-file-card strong,
+body.theme-dark .bulk-upload-summary-grid strong,
+body.theme-dark .bulk-upload-errors h3 {
+  color: #f8fafc;
+}
+
+body.theme-dark .bulk-upload-panel-header p,
+body.theme-dark .bulk-upload-eyebrow,
+body.theme-dark .bulk-upload-type-content > span,
+body.theme-dark .bulk-upload-type-content small,
+body.theme-dark .bulk-upload-zone-copy small,
+body.theme-dark .bulk-upload-file-card span,
+body.theme-dark .bulk-upload-summary-grid span {
+  color: #94a3b8 !important;
+}
+
+body.theme-dark .bulk-upload-format-pill,
+body.theme-dark .bulk-upload-type-card,
+body.theme-dark .bulk-upload-file-card,
+body.theme-dark .bulk-upload-summary-grid div {
+  border-color: #263247 !important;
+  background: #111827 !important;
+}
+
+body.theme-dark .bulk-upload-type-card:hover,
+body.theme-dark .bulk-upload-type-card:focus-visible,
+body.theme-dark .bulk-upload-type-card.active {
+  border-color: #3b82f6 !important;
+  background: #172554 !important;
+}
+
+body.theme-dark .bulk-upload-type-icon {
+  background: #172554;
+  color: #bfdbfe !important;
+}
+
+body.theme-dark .bulk-upload-type-card.active .bulk-upload-type-icon,
+body.theme-dark .bulk-upload-zone-icon {
+  background: #3b82f6;
+  color: #ffffff !important;
+}
+
+body.theme-dark .bulk-upload-zone {
+  border-color: #334155;
+  background: #0f172a;
+}
+
+body.theme-dark .bulk-upload-zone:hover,
+body.theme-dark .bulk-upload-zone:focus-within,
+body.theme-dark .bulk-upload-zone.has-file {
+  border-color: #3b82f6;
+  background: #172554;
+}
+
+body.theme-dark .bulk-upload-success-note {
+  border-color: #14532d;
+  background: #052e16;
+  color: #bbf7d0;
+}
+
+@media (max-width: 1060px) {
+  .bulk-upload-type-grid,
+  .bulk-upload-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .bulk-upload-panel-header,
+  .bulk-upload-file-card,
+  .bulk-upload-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .bulk-upload-type-grid,
+  .bulk-upload-summary-grid,
+  .bulk-upload-zone {
+    grid-template-columns: 1fr;
+  }
+
+  .bulk-upload-actions button {
+    width: 100%;
+  }
+}

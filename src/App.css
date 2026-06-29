@@ -8729,81 +8729,71 @@ body.theme-dark .form-message.success {
   }
 }
 
-/* ─────────────────────────────────────────────── */
-/* Datos sensibles / cifras monetarias ocultas     */
-/* Usado por Inventory.tsx: sensitive-value         */
-/* ─────────────────────────────────────────────── */
 
-.sensitive-value {
-  display: inline-block;
-  color: #64748b !important;
-  font-family: Consolas, 'Courier New', monospace;
-  font-weight: 750;
-  letter-spacing: 0.08em;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-  user-select: none;
+/* Inventory financial visibility toggle */
+.metric-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
 }
 
-.metric-card .sensitive-value,
-.compact-metric .sensitive-value {
-  color: #475569 !important;
-  font-family: inherit;
-  font-size: 23px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+.inventory-period-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.period-summary-grid .sensitive-value,
-.existence-card-summary .sensitive-value,
-.existence-card-price-grid .sensitive-value,
-.catalog-card-metrics .sensitive-value,
-.row-details .sensitive-value,
-.compact-detail-grid .sensitive-value,
-.product-detail-grid .sensitive-value {
-  color: #64748b !important;
-  font-family: Consolas, 'Courier New', monospace;
-  font-weight: 750;
-  letter-spacing: 0.06em;
+.panel-heading-text {
+  min-width: 0;
 }
 
-.numeric-cell.sensitive-value {
-  text-align: right;
-  color: #64748b !important;
-  font-size: 13px;
-  font-weight: 750;
-  letter-spacing: 0.06em;
+.inventory-period-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.sensitive-value::selection {
-  background: transparent;
+.visibility-toggle-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #d7e3ee;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #5f738f;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
-body.theme-dark .sensitive-value {
-  color: #94a3b8 !important;
+.visibility-toggle-button:hover,
+.visibility-toggle-button:focus-visible {
+  border-color: #2f80ed;
+  color: #2f80ed;
+  background: #eff6ff;
+  transform: translateY(-1px);
+  outline: none;
 }
 
-body.theme-dark .metric-card .sensitive-value,
-body.theme-dark .compact-metric .sensitive-value,
-body.theme-dark .period-summary-grid .sensitive-value,
-body.theme-dark .existence-card-summary .sensitive-value,
-body.theme-dark .existence-card-price-grid .sensitive-value,
-body.theme-dark .catalog-card-metrics .sensitive-value,
-body.theme-dark .row-details .sensitive-value,
-body.theme-dark .compact-detail-grid .sensitive-value,
-body.theme-dark .product-detail-grid .sensitive-value,
-body.theme-dark .numeric-cell.sensitive-value {
-  color: #cbd5e1 !important;
+.visibility-toggle-button svg {
+  width: 18px;
+  height: 18px;
+  display: block;
 }
 
-@media (max-width: 680px) {
-  .metric-card .sensitive-value,
-  .compact-metric .sensitive-value {
-    font-size: 20px;
+@media (max-width: 768px) {
+  .metric-title-row {
+    align-items: center;
   }
 
-  .numeric-cell.sensitive-value {
-    font-size: 12.5px;
+  .inventory-period-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 }
-

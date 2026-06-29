@@ -203,6 +203,10 @@ function Landing() {
   const hasAnyResults = searchResults.length > 0 || productResults.length > 0;
   const shouldAllowLandingScroll = isFiltering || expandedCard !== null;
 
+  const userDisplayName = session?.user.name ?? t('landing.defaultUser');
+  const numberLocale = language === 'es' ? 'es-CL' : 'en-US';
+  const formattedWelcome = t('landing.welcomeBack').replace('{name}', userDisplayName);
+
   // Real-time calculations for metrics
   const totalStockUnits = useMemo(() => {
     return products.reduce((acc, p) => acc + p.stock, 0);
@@ -262,7 +266,7 @@ function Landing() {
             className="landing-search-input"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={t('landing.searchPlaceholder') || 'Buscar modulo, funcion o producto...'}
+            placeholder={t('landing.searchPlaceholder')}
             autoComplete="off"
           />
           {searchTerm && (
@@ -270,7 +274,7 @@ function Landing() {
               type="button"
               className="landing-search-clear"
               onClick={() => setSearchTerm('')}
-              aria-label="Limpiar busqueda"
+              aria-label={t('landing.clearSearch')}
             >
               ×
             </button>
@@ -306,7 +310,7 @@ function Landing() {
               {searchResults.length > 0 && (
                 <div className="landing-results-group">
                   <h3 className="landing-results-section-title">
-                    {t('landing.searchModulesTitle') || 'Módulos y Funciones'}
+                    {t('landing.searchModulesTitle')}
                   </h3>
                   <div className="landing-search-results-grid">
                     {searchResults.map((item) => (
@@ -337,7 +341,7 @@ function Landing() {
               {productResults.length > 0 && (
                 <div className="landing-results-group">
                   <h3 className="landing-results-section-title">
-                    {t('landing.searchProductsTitle') || 'Productos e Inventario'}
+                    {t('landing.searchProductsTitle')}
                   </h3>
                   <div className="landing-products-grid">
                     {productResults.map((product) => (
@@ -359,25 +363,25 @@ function Landing() {
                             </span>
                           )}
                           <span className="landing-product-meta-item">
-                            📦 Stock: <strong>{product.stock.toLocaleString('es-CL')}</strong> uds
+                            📦 {t('landing.stockLabel')}: <strong>{product.stock.toLocaleString(numberLocale)}</strong> {t('home.units')}
                           </span>
                         </div>
 
                         <div className="landing-product-location-info">
                           <span className="landing-product-location-label">
-                            {t('landing.locatedIn') || 'Se ubica en:'}
+                            {t('landing.locatedIn')}
                           </span>
                           <div className="landing-product-actions">
                             <button
                               type="button"
                               className="landing-product-action-btn landing-product-action-btn--inventory"
                               onClick={() => navigate(`/inventory?search=${product.codigo}`)}
-                              title={t('landing.viewInInventoryHint') || 'Ver stock, costo y movimientos en el módulo de Inventario'}
+                              title={t('landing.viewInInventoryHint')}
                             >
                               <span className="landing-btn-icon">📍</span>
                               <div className="landing-btn-text">
-                                <strong>{t('nav.inventory') || 'Inventario'}</strong>
-                                <span>{t('nav.group.operation') || 'Operación'}</span>
+                                <strong>{t('nav.inventory')}</strong>
+                                <span>{t('nav.group.operation')}</span>
                               </div>
                             </button>
 
@@ -385,12 +389,12 @@ function Landing() {
                               type="button"
                               className="landing-product-action-btn landing-product-action-btn--products"
                               onClick={() => navigate(`/products?search=${product.codigo}`)}
-                              title={t('landing.viewInProductsHint') || 'Ver catálogo, precios y detalles en el módulo de Productos'}
+                              title={t('landing.viewInProductsHint')}
                             >
                               <span className="landing-btn-icon">📦</span>
                               <div className="landing-btn-text">
-                                <strong>{t('nav.products') || 'Productos'}</strong>
-                                <span>{t('nav.group.management') || 'Gestión'}</span>
+                                <strong>{t('nav.products')}</strong>
+                                <span>{t('nav.group.management')}</span>
                               </div>
                             </button>
                           </div>
@@ -404,8 +408,8 @@ function Landing() {
           ) : (
             <div className="landing-empty-search">
               <span className="landing-empty-icon">🔍</span>
-              <strong>{t('landing.noResults') || 'Sin resultados'}</strong>
-              <p>{t('landing.noResultsHint') || 'Intenta con otro termino o cambia el filtro de seccion.'}</p>
+              <strong>{t('landing.noResults')}</strong>
+              <p>{t('landing.noResultsHint')}</p>
             </div>
           )}
         </div>
@@ -415,35 +419,27 @@ function Landing() {
           {/* Welcome and Summary header */}
           <div className="landing-welcome-container">
             <div className="landing-welcome-info">
-              <h1>
-                {language === 'es'
-                  ? `Welcome back, ${session?.user.name ?? 'Alex'}.`
-                  : `Welcome back, ${session?.user.name ?? 'Alex'}.`}
-              </h1>
+              <h1>{formattedWelcome}</h1>
               <p>
-                {language === 'es' ? (
-                  <>
-                    Operational status is <span className="status-highlight">Stable</span>. You have <strong style={{ color: '#dc2626' }}>{activeAlertsCount}</strong> pending alerts to review.
-                  </>
-                ) : (
-                  <>
-                    Operational status is <span className="status-highlight">Stable</span>. You have <strong style={{ color: '#dc2626' }}>{activeAlertsCount}</strong> pending alerts to review.
-                  </>
-                )}
+                {t('landing.operationalStatusPrefix')}{' '}
+                <span className="status-highlight">{t('landing.stable')}</span>.{' '}
+                {t('landing.pendingAlertsPrefix')}{' '}
+                <strong style={{ color: '#dc2626' }}>{activeAlertsCount}</strong>{' '}
+                {t('landing.pendingAlertsSuffix')}
               </p>
             </div>
 
             <div className="landing-top-summaries">
               <div className="landing-summary-widget">
-                <span>{language === 'es' ? 'TOTAL ITEMS' : 'TOTAL ITEMS'}</span>
-                <strong>{totalStockUnits.toLocaleString()}</strong>
+                <span>{t('landing.totalItems')}</span>
+                <strong>{totalStockUnits.toLocaleString(numberLocale)}</strong>
               </div>
               <div className="landing-summary-widget alert-widget">
-                <span>{language === 'es' ? 'ACTIVE ALERTS' : 'ACTIVE ALERTS'}</span>
+                <span>{t('landing.activeAlerts')}</span>
                 <strong>{activeAlertsCount < 10 ? `0${activeAlertsCount}` : activeAlertsCount}</strong>
               </div>
               <div className="landing-summary-widget shipment-widget">
-                <span>{language === 'es' ? 'SHIPMENTS' : 'SHIPMENTS'}</span>
+                <span>{t('landing.shipments')}</span>
                 <strong>{shipmentsCount}</strong>
               </div>
             </div>
@@ -469,12 +465,8 @@ function Landing() {
                 </div>
               </div>
               <div className="landing-column-info">
-                <h2>{language === 'es' ? 'Operación' : 'Operación'}</h2>
-                <p>
-                  {language === 'es'
-                    ? 'Real-time oversight of manufacturing cycles, stock levels, and purchasing workflows.'
-                    : 'Real-time oversight of manufacturing cycles, stock levels, and purchasing workflows.'}
-                </p>
+                <h2>{t('nav.group.operation')}</h2>
+                <p>{t('landing.operationOverviewDescription')}</p>
               </div>
 
               <div className={`landing-sub-options-grid ${expandedCard === 'operation' ? 'is-visible' : ''}`} onClick={(e) => e.stopPropagation()}>
@@ -489,11 +481,11 @@ function Landing() {
 
               <div className="landing-column-stats">
                 <div className="landing-stat-box stat-blue">
-                  <span>EFFICIENCY</span>
+                  <span>{t('landing.efficiency')}</span>
                   <strong>94.2%</strong>
                 </div>
                 <div className="landing-stat-box stat-blue">
-                  <span>ACTIVE JOBS</span>
+                  <span>{t('landing.activeJobs')}</span>
                   <strong>{movements.length}</strong>
                 </div>
               </div>
@@ -517,12 +509,8 @@ function Landing() {
                 </div>
               </div>
               <div className="landing-column-info">
-                <h2>{language === 'es' ? 'Gestión' : 'Gestión'}</h2>
-                <p>
-                  {language === 'es'
-                    ? 'Comprehensive management of client relations, supplier contracts, and product catalogs.'
-                    : 'Comprehensive management of client relations, supplier contracts, and product catalogs.'}
-                </p>
+                <h2>{t('nav.group.management')}</h2>
+                <p>{t('landing.managementOverviewDescription')}</p>
               </div>
 
               <div className={`landing-sub-options-grid ${expandedCard === 'management' ? 'is-visible' : ''}`} onClick={(e) => e.stopPropagation()}>
@@ -537,11 +525,11 @@ function Landing() {
 
               <div className="landing-column-stats">
                 <div className="landing-stat-box stat-amber">
-                  <span>NEW LEADS</span>
+                  <span>{t('landing.customersStat')}</span>
                   <strong>24</strong>
                 </div>
                 <div className="landing-stat-box stat-amber">
-                  <span>SUPPLIERS</span>
+                  <span>{t('landing.suppliersStat')}</span>
                   <strong>{suppliers.length}</strong>
                 </div>
               </div>
@@ -562,12 +550,8 @@ function Landing() {
                 </div>
               </div>
               <div className="landing-column-info">
-                <h2>{language === 'es' ? 'Control' : 'Control'}</h2>
-                <p>
-                  {language === 'es'
-                    ? 'Critical monitoring system for audit trails, security alerts, and compliance reporting.'
-                    : 'Critical monitoring system for audit trails, security alerts, and compliance reporting.'}
-                </p>
+                <h2>{t('nav.group.control')}</h2>
+                <p>{t('landing.controlOverviewDescription')}</p>
               </div>
 
               <div className={`landing-sub-options-grid ${expandedCard === 'control' ? 'is-visible' : ''}`} onClick={(e) => e.stopPropagation()}>
@@ -582,12 +566,12 @@ function Landing() {
 
               <div className="landing-column-stats">
                 <div className="landing-stat-box stat-red">
-                  <span>UPTIME</span>
+                  <span>{t('landing.uptime')}</span>
                   <strong>99.9%</strong>
                 </div>
                 <div className="landing-stat-box stat-red">
-                  <span>INCIDENTS</span>
-                  <strong>{activeAlertsCount > 0 ? activeAlertsCount : 'None'}</strong>
+                  <span>{t('landing.incidents')}</span>
+                  <strong>{activeAlertsCount > 0 ? activeAlertsCount : t('landing.none')}</strong>
                 </div>
               </div>
             </div>

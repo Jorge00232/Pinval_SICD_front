@@ -155,7 +155,7 @@ function Inventory() {
   const [existenceCard, setExistenceCard] = useState<ProductExistenceCard | null>(null);
   const [existenceCardLoading, setExistenceCardLoading] = useState(false);
   const [existenceCardError, setExistenceCardError] = useState('');
-  const [hideFinancialValues, setHideFinancialValues] = useState(false);
+  const [hideFinancialValues, setHideFinancialValues] = useState(true);
 
   useEffect(() => {
     let isActive = true;

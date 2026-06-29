@@ -147,6 +147,7 @@ function Products() {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [selectedProductToEdit, setSelectedProductToEdit] = useState<Product | null>(null);
+  const [openProductDetailsCode, setOpenProductDetailsCode] = useState<string | null>(null);
 
   const [newCategory, setNewCategory] = useState('');
   const [customCategories, setCustomCategories] = useState<ProductFamily[]>([]);
@@ -168,11 +169,13 @@ function Products() {
   const [pendingProduct, setPendingProduct] = useState<PendingProduct | null>(null);
 
   function openCreateProductModal() {
+    setOpenProductDetailsCode(null);
     setSelectedProductToEdit(null);
     setIsProductModalOpen(true);
   }
 
   function openEditProductModal(product: Product) {
+    setOpenProductDetailsCode(null);
     setSelectedProductToEdit(product);
     setIsProductModalOpen(true);
   }
@@ -183,6 +186,7 @@ function Products() {
   }
 
   function locateProduct(product: Product) {
+    setOpenProductDetailsCode(null);
     setSearchTerm(product.codigo);
     setSelectedFamily('all');
     setSelectedLocation('all');
@@ -611,7 +615,22 @@ function Products() {
                         </div>
                       </div>
 
-                      <details className="compact-product-details">
+                      <details
+                        className="compact-product-details"
+                        open={openProductDetailsCode === product.codigo}
+                        onToggle={(event) => {
+                          const isOpen = event.currentTarget.open;
+
+                          if (isOpen) {
+                            setOpenProductDetailsCode(product.codigo);
+                            return;
+                          }
+
+                          setOpenProductDetailsCode((currentCode) =>
+                            currentCode === product.codigo ? null : currentCode,
+                          );
+                        }}
+                      >
                         <summary>{t('inventory.viewDetail')}</summary>
 
                         <div className="compact-detail-popover">
@@ -679,7 +698,11 @@ function Products() {
                             <button
                               type="button"
                               className="compact-detail-secondary-button"
-                              onClick={() => locateProduct(product)}
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                locateProduct(product);
+                              }}
                             >
                               Ubicar
                             </button>
@@ -688,7 +711,11 @@ function Products() {
                               <button
                                 type="button"
                                 className="compact-detail-edit-button"
-                                onClick={() => openEditProductModal(product)}
+                                onClick={(event) => {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  openEditProductModal(product);
+                                }}
                               >
                                 Editar
                               </button>

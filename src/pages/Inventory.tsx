@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import AppLayout from '../components/AppLayout';
-import { currencyFormatter, FAMILY_LABELS, type Product } from '../data/mockData';
+import { FAMILY_LABELS, type Product } from '../data/mockData';
 import { fetchProductExistenceCard, type ProductExistenceCard } from '../api/productsApi';
 import {
   fetchInventoryMovements,
@@ -11,6 +11,8 @@ import { useInventory } from '../state/useInventory';
 import { useLanguage } from '../language/useLanguage';
 
 const INVENTORY_PRODUCTS_BATCH_SIZE = 12;
+const SENSITIVE_CURRENCY_MASK = '$••••••••';
+const SENSITIVE_INFORMATION_LABEL = 'Información restringida';
 
 function requiresAdjustment(product: Product) {
   return product.dataIssue === 'STOCK_NEGATIVO';
@@ -98,12 +100,16 @@ function parseMovementMonth(dateLabel: string) {
   return `${year}-${String(month).padStart(2, '0')}`;
 }
 
-function formatOptionalCurrency(value: number | null) {
+function formatSensitiveCurrency() {
+  return SENSITIVE_CURRENCY_MASK;
+}
+
+function formatOptionalSensitiveCurrency(value: number | null) {
   if (value === null) {
     return '-';
   }
 
-  return currencyFormatter.format(value);
+  return SENSITIVE_CURRENCY_MASK;
 }
 
 function Inventory() {
@@ -162,11 +168,6 @@ function Inventory() {
   );
 
   const totalStock = inventoryProducts.reduce((sum, product) => sum + product.stock, 0);
-
-  const totalValCosto = inventoryProducts.reduce(
-    (sum, product) => sum + product.stock * product.prcosto,
-    0,
-  );
 
   const productsToReview = products.filter(
     (product) => requiresAdjustment(product) || product.stock <= product.minStock,
@@ -282,44 +283,9 @@ function Inventory() {
     };
   }, [hasMoreVisibleProducts, sortedProducts.length]);
 
-  const productByName = useMemo(
-    () =>
-      new Map(
-        products.flatMap((product) => [
-          [product.descrip, product],
-          [product.displayName || product.descrip, product],
-        ]),
-      ),
-    [products],
-  );
-
   const periodMovements = movements.filter(
     (movement) => parseMovementMonth(movement.date) === selectedMonth,
   );
-
-  const periodStats = periodMovements.reduce(
-    (totals, movement) => {
-      const product = productByName.get(movement.product);
-
-      if (!product) {
-        return totals;
-      }
-
-      if (movement.type === 'Entrada') {
-        totals.purchaseCost += movement.quantity * product.prcosto;
-      }
-
-      if (movement.type === 'Salida') {
-        totals.saleRevenue += movement.quantity * product.prventa;
-        totals.saleCost += movement.quantity * product.prcosto;
-      }
-
-      return totals;
-    },
-    { purchaseCost: 0, saleCost: 0, saleRevenue: 0 },
-  );
-
-  const estimatedMargin = periodStats.saleRevenue - periodStats.saleCost;
 
   async function refreshBackendMovements() {
     try {
@@ -380,8 +346,10 @@ function Inventory() {
         <article className="metric-card compact-metric green">
           <span className="metric-icon">CO</span>
           <span>{t('inventory.availableCost')}</span>
-          <strong>{hasProducts ? currencyFormatter.format(totalValCosto) : t('home.noData')}</strong>
-          <p>{t('inventory.availableCostDescription')}</p>
+          <strong className="sensitive-value">
+            {hasProducts ? formatSensitiveCurrency() : t('home.noData')}
+          </strong>
+          <p>{hasProducts ? SENSITIVE_INFORMATION_LABEL : t('inventory.availableCostDescription')}</p>
         </article>
 
         <article className="metric-card compact-metric red">
@@ -409,19 +377,21 @@ function Inventory() {
         <div className="period-summary-grid">
           <div>
             <span>{t('inventory.purchaseCostPeriod')}</span>
-            <strong>{currencyFormatter.format(periodStats.purchaseCost)}</strong>
+            <strong className="sensitive-value">{formatSensitiveCurrency()}</strong>
           </div>
           <div>
             <span>{t('inventory.salesPeriod')}</span>
-            <strong>{currencyFormatter.format(periodStats.saleRevenue)}</strong>
+            <strong className="sensitive-value">{formatSensitiveCurrency()}</strong>
           </div>
           <div>
             <span>{t('inventory.estimatedMargin')}</span>
-            <strong>{currencyFormatter.format(estimatedMargin)}</strong>
+            <strong className="sensitive-value">{formatSensitiveCurrency()}</strong>
           </div>
         </div>
 
-        <p className="panel-note">{t('inventory.periodNote')}</p>
+        <p className="panel-note">
+          {SENSITIVE_INFORMATION_LABEL}. {t('inventory.periodNote')}
+        </p>
       </section>
 
       <section className="panel">
@@ -472,7 +442,6 @@ function Inventory() {
             {visibleProducts.map((product) => {
               const status = getStatus(product, t);
               const family = FAMILY_LABELS[product.familia] ?? product.familia;
-              const costValue = Math.max(product.stock, 0) * product.prcosto;
               const productName = getProductDisplayName(product);
               const movementSummary = movementSummaryByCode.get(product.codigo) ?? {
                 entradas: 0,
@@ -524,9 +493,18 @@ function Inventory() {
                       <div>
                         <span>{t('inventory.minimumStock')}: {product.minStock}</span>
                         <span>{t('inventory.fecha')}: {formatDate(product.fecha)}</span>
-                        <span>{t('inventory.costPrice')}: {currencyFormatter.format(product.prcosto)}</span>
-                        <span>{t('products.salePrice')}: {currencyFormatter.format(product.prventa)}</span>
-                        <span>{t('inventory.costValue')}: {currencyFormatter.format(costValue)}</span>
+                        <span>
+                          {t('inventory.costPrice')}:{' '}
+                          <strong className="sensitive-value">{formatSensitiveCurrency()}</strong>
+                        </span>
+                        <span>
+                          {t('products.salePrice')}:{' '}
+                          <strong className="sensitive-value">{formatSensitiveCurrency()}</strong>
+                        </span>
+                        <span>
+                          {t('inventory.costValue')}:{' '}
+                          <strong className="sensitive-value">{formatSensitiveCurrency()}</strong>
+                        </span>
                         <span>Nombre original: {product.descrip}</span>
                       </div>
                     </details>
@@ -601,22 +579,22 @@ function Inventory() {
                   </div>
                   <div>
                     <span>Valor costo</span>
-                    <strong>{currencyFormatter.format(existenceCard.stockValueByCostPrice)}</strong>
+                    <strong className="sensitive-value">{formatSensitiveCurrency()}</strong>
                   </div>
                 </div>
 
                 <div className="existence-card-price-grid">
                   <div>
                     <span>Precio costo</span>
-                    <strong>{currencyFormatter.format(existenceCard.prcosto)}</strong>
+                    <strong className="sensitive-value">{formatSensitiveCurrency()}</strong>
                   </div>
                   <div>
                     <span>Precio venta</span>
-                    <strong>{currencyFormatter.format(existenceCard.prventa)}</strong>
+                    <strong className="sensitive-value">{formatSensitiveCurrency()}</strong>
                   </div>
                   <div>
                     <span>Valor venta stock</span>
-                    <strong>{currencyFormatter.format(existenceCard.stockValueBySalePrice)}</strong>
+                    <strong className="sensitive-value">{formatSensitiveCurrency()}</strong>
                   </div>
                 </div>
 
@@ -661,11 +639,11 @@ function Inventory() {
                                 ? '-'
                                 : movement.stockTotal.toLocaleString('es-CL')}
                             </td>
-                            <td className="numeric-cell">
-                              {formatOptionalCurrency(movement.precioUnitario)}
+                            <td className="numeric-cell sensitive-value">
+                              {formatOptionalSensitiveCurrency(movement.precioUnitario)}
                             </td>
-                            <td className="numeric-cell">
-                              {formatOptionalCurrency(movement.total)}
+                            <td className="numeric-cell sensitive-value">
+                              {formatOptionalSensitiveCurrency(movement.total)}
                             </td>
                           </tr>
                         ))

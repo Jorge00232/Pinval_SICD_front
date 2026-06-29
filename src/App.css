@@ -8728,3 +8728,82 @@ body.theme-dark .form-message.success {
     justify-content: space-between;
   }
 }
+
+/* ─────────────────────────────────────────────── */
+/* Datos sensibles / cifras monetarias ocultas     */
+/* Usado por Inventory.tsx: sensitive-value         */
+/* ─────────────────────────────────────────────── */
+
+.sensitive-value {
+  display: inline-block;
+  color: #64748b !important;
+  font-family: Consolas, 'Courier New', monospace;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+.metric-card .sensitive-value,
+.compact-metric .sensitive-value {
+  color: #475569 !important;
+  font-family: inherit;
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.period-summary-grid .sensitive-value,
+.existence-card-summary .sensitive-value,
+.existence-card-price-grid .sensitive-value,
+.catalog-card-metrics .sensitive-value,
+.row-details .sensitive-value,
+.compact-detail-grid .sensitive-value,
+.product-detail-grid .sensitive-value {
+  color: #64748b !important;
+  font-family: Consolas, 'Courier New', monospace;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+}
+
+.numeric-cell.sensitive-value {
+  text-align: right;
+  color: #64748b !important;
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+}
+
+.sensitive-value::selection {
+  background: transparent;
+}
+
+body.theme-dark .sensitive-value {
+  color: #94a3b8 !important;
+}
+
+body.theme-dark .metric-card .sensitive-value,
+body.theme-dark .compact-metric .sensitive-value,
+body.theme-dark .period-summary-grid .sensitive-value,
+body.theme-dark .existence-card-summary .sensitive-value,
+body.theme-dark .existence-card-price-grid .sensitive-value,
+body.theme-dark .catalog-card-metrics .sensitive-value,
+body.theme-dark .row-details .sensitive-value,
+body.theme-dark .compact-detail-grid .sensitive-value,
+body.theme-dark .product-detail-grid .sensitive-value,
+body.theme-dark .numeric-cell.sensitive-value {
+  color: #cbd5e1 !important;
+}
+
+@media (max-width: 680px) {
+  .metric-card .sensitive-value,
+  .compact-metric .sensitive-value {
+    font-size: 20px;
+  }
+
+  .numeric-cell.sensitive-value {
+    font-size: 12.5px;
+  }
+}
+

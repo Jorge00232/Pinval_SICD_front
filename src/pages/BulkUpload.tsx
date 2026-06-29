@@ -65,6 +65,7 @@ function BulkUpload() {
   const [summary, setSummary] = useState<BulkUploadSummary | null>(null);
   const [message, setMessage] = useState('');
   const [messageTone, setMessageTone] = useState<'success' | 'error' | ''>('');
+  const [showUploadConfirmation, setShowUploadConfirmation] = useState(false);
 
   const selectedOption = useMemo(
     () => importOptions.find((option) => option.type === selectedType) ?? importOptions[0],
@@ -79,17 +80,19 @@ function BulkUpload() {
     setSummary(null);
     setMessage('');
     setMessageTone('');
+    setShowUploadConfirmation(false);
   };
 
   const resetSelectedFile = () => {
     setSelectedFile(null);
+    setShowUploadConfirmation(false);
 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!selectedFile) {
@@ -98,7 +101,22 @@ function BulkUpload() {
       return;
     }
 
+    setMessage('');
+    setMessageTone('');
+    setSummary(null);
+    setShowUploadConfirmation(true);
+  };
+
+  const handleConfirmUpload = async () => {
+    if (!selectedFile) {
+      setShowUploadConfirmation(false);
+      setMessage(t('bulkUpload.selectFileRequired'));
+      setMessageTone('error');
+      return;
+    }
+
     setIsUploading(true);
+    setShowUploadConfirmation(false);
     setMessage('');
     setMessageTone('');
     setSummary(null);
@@ -154,6 +172,7 @@ function BulkUpload() {
                       setSummary(null);
                       setMessage('');
                       setMessageTone('');
+                      setShowUploadConfirmation(false);
                     }}
                   >
                     <span className="bulk-upload-type-icon">{option.icon}</span>
@@ -286,6 +305,103 @@ function BulkUpload() {
                   <p className="bulk-upload-success-note">{t('bulkUpload.noErrors')}</p>
                 )}
               </article>
+            ) : null}
+
+            {showUploadConfirmation && selectedFile ? (
+              <div className="confirm-modal-overlay" role="dialog" aria-modal="true">
+                <div className="confirm-modal-container">
+                  <div className="confirm-modal-icon-wrapper">
+                    <svg
+                      className="confirm-modal-icon"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <path
+                        d="M12 3.75 2.75 19.5h18.5L12 3.75Z"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M12 8.5v5.2M12 16.8h.01"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </div>
+
+                  <h2 className="confirm-modal-title">{t('bulkUpload.confirmTitle')}</h2>
+                  <p className="confirm-modal-subtitle">
+                    {t('bulkUpload.confirmSubtitle')}
+                  </p>
+
+                  <div className="confirm-modal-details">
+                    <p className="confirm-modal-details-heading">
+                      {t('bulkUpload.confirmDetailsHeading')}
+                    </p>
+
+                    <ul className="confirm-modal-detail-list">
+                      <li className="confirm-modal-detail-item">
+                        <span className="confirm-modal-detail-label">
+                          {t('bulkUpload.confirmType')}
+                        </span>
+                        <span className="confirm-modal-detail-value">
+                          {t(selectedOption.titleKey)}
+                        </span>
+                      </li>
+                      <li className="confirm-modal-detail-item">
+                        <span className="confirm-modal-detail-label">
+                          {t('bulkUpload.confirmFile')}
+                        </span>
+                        <span className="confirm-modal-detail-value">
+                          {selectedFile.name}
+                        </span>
+                      </li>
+                      <li className="confirm-modal-detail-item">
+                        <span className="confirm-modal-detail-label">
+                          {t('bulkUpload.confirmSize')}
+                        </span>
+                        <span className="confirm-modal-detail-value">
+                          {formatFileSize(selectedFile.size)}
+                        </span>
+                      </li>
+                      <li className="confirm-modal-detail-item">
+                        <span className="confirm-modal-detail-label">
+                          {t('bulkUpload.confirmColumns')}
+                        </span>
+                        <span className="confirm-modal-detail-value">
+                          {t(selectedOption.columnsKey)}
+                        </span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="confirm-modal-actions">
+                    <button
+                      type="button"
+                      className="confirm-modal-cancel-btn"
+                      onClick={() => setShowUploadConfirmation(false)}
+                      disabled={isUploading}
+                    >
+                      {t('bulkUpload.confirmCancel')}
+                    </button>
+                    <button
+                      type="button"
+                      className="confirm-modal-confirm-btn"
+                      onClick={() => void handleConfirmUpload()}
+                      disabled={isUploading}
+                    >
+                      {isUploading
+                        ? t('bulkUpload.uploading')
+                        : t('bulkUpload.confirmAccept')}
+                    </button>
+                  </div>
+                </div>
+              </div>
             ) : null}
           </>
         )}

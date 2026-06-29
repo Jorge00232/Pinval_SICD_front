@@ -411,7 +411,7 @@ function Products() {
                     transition: 'all 0.15s ease',
                   }}
                 >
-                  ➕ {t('products.newProduct') || 'Añadir Producto'}
+                  {t('products.newProduct') || 'Añadir Producto'}
                 </button>
               )}
             </div>
@@ -450,15 +450,15 @@ function Products() {
                 onClick={() => setShowAdvanced(!showAdvanced)}
               >
                 {showAdvanced
-                  ? `⚡ ${t('products.hideFilters')}`
-                  : `🔍 ${t('products.showFilters')}`}
+                  ? `${t('products.hideFilters')}`
+                  : `${t('products.showFilters')}`}
               </button>
             </div>
 
             {showAdvanced && (
               <div className="advanced-filters-panel fade-in">
                 <label>
-                  📍 {t('products.location')}
+                  {t('products.location')}
                   <select
                     value={selectedLocation}
                     onChange={(event) => setSelectedLocation(event.target.value)}
@@ -475,7 +475,7 @@ function Products() {
                 </label>
 
                 <label>
-                  📦 {t('products.supplier')}
+                  {t('products.supplier')}
                   <select
                     value={selectedSupplier}
                     onChange={(event) => setSelectedSupplier(event.target.value)}
@@ -492,7 +492,7 @@ function Products() {
                 </label>
 
                 <label>
-                  🏷️ {t('products.batch')}
+                  {t('products.batch')}
                   <input
                     value={searchBatch}
                     onChange={(event) => setSearchBatch(event.target.value)}
@@ -501,7 +501,7 @@ function Products() {
                 </label>
 
                 <label>
-                  📅 {t('products.expiryFilter')}
+                  {t('products.expiryFilter')}
                   <select
                     value={selectedExpiryStatus}
                     onChange={(event) => setSelectedExpiryStatus(event.target.value)}
@@ -591,7 +591,7 @@ function Products() {
 
                       <div className="catalog-card-meta-chips">
                         <span className="meta-chip">
-                          📍 {product.ubicacion || t('products.noLocation')}
+                          {product.ubicacion || t('products.noLocation')}
                         </span>
 
                         {product.lote ? (
@@ -969,7 +969,7 @@ function Products() {
               </label>
 
               <label>
-                📍 {t('products.location')}
+                {t('products.location')}
                 <input
                   name="ubicacion"
                   placeholder={t('products.locationPlaceholder')}
@@ -978,7 +978,7 @@ function Products() {
               </label>
 
               <label>
-                📦 {t('products.supplier')}
+                {t('products.supplier')}
                 <select
                   name="proveedor"
                   defaultValue={selectedProductToEdit?.proveedor ?? ''}
@@ -994,7 +994,7 @@ function Products() {
               </label>
 
               <label>
-                🏷️ {t('products.batch')}
+                {t('products.batch')}
                 <input
                   name="lote"
                   placeholder={t('products.batchPlaceholder')}
@@ -1003,7 +1003,7 @@ function Products() {
               </label>
 
               <label>
-                📅 {t('products.expiry')}
+                {t('products.expiry')}
                 <input
                   name="fechaCaducidad"
                   type="date"

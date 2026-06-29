@@ -287,7 +287,6 @@ function Settings() {
         <article className="panel" style={{ gridColumn: 'span 1' }}>
           <div className="panel-heading" style={{ borderBottom: '1px solid var(--border-color, #e2e8f0)', paddingBottom: '12px', marginBottom: '16px' }}>
             <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '20px' }}>⚙️</span>
               {language === 'es' ? 'Seguridad y Cuenta' : 'Security & Account Settings'}
             </h2>
           </div>

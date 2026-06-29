@@ -372,66 +372,11 @@ function Sales() {
       description={t('page.sales.description')}
     >
       <section className="sales-layout">
-        <article className="panel purchase-history-panel">
-          <div className="panel-heading">
-            <h2>{t('sales.registeredSales')}</h2>
-            <span className="purchase-counter">
-              {saleRows.length} {t('purchases.records')}
-            </span>
-          </div>
-
-          <div className="table-wrap purchase-history-wrap sales-history-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>{t('purchases.date')}</th>
-                  <th>{t('sales.product')}</th>
-                  <th>{t('sales.quantity')}</th>
-                  <th>{t('sales.document')}</th>
-                  <th>{t('page.customers.title')}</th>
-                  <th>{t('customers.type')}</th>
-                  <th>{t('sales.identifier')}</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {saleRows.length > 0 ? (
-                  saleRows.map((row) => (
-                    <tr key={row.id}>
-                      <td>{formatDate(row.date)}</td>
-                      <td>{row.productName}</td>
-                      <td className="numeric-cell">{row.quantity}</td>
-                      <td>{row.document}</td>
-                      <td>{row.customerName}</td>
-                      <td>{row.customerType}</td>
-                      <td>{row.customerIdentifier}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={7}>
-                      {isLoading
-                        ? 'Cargando ventas...'
-                        : canRegisterSale
-                          ? t('sales.noSales')
-                          : canRegister
-                            ? t('sales.addProductsFirst')
-                            : t('sales.noSales')}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </article>
-
         {canRegister ? (
-          <details className="sales-form-disclosure">
+          <details className="sales-form-disclosure" open>
             <summary>
               <span>{t('sales.registerSale')}</span>
-              <strong>
-                {saleRows.length} {t('sales.linesRegistered')}
-              </strong>
+              <strong>Formulario desplegado</strong>
             </summary>
 
             <article className="panel purchase-form-panel sales-form-panel">
@@ -657,6 +602,62 @@ function Sales() {
             </article>
           </details>
         ) : null}
+
+        <details className="records-disclosure sales-records-disclosure">
+          <summary>
+            <span>{t('sales.registeredSales')}</span>
+            <strong>
+              {saleRows.length} {t('purchases.records')}
+            </strong>
+          </summary>
+
+        <article className="panel purchase-history-panel records-panel">
+          <div className="table-wrap purchase-history-wrap sales-history-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>{t('purchases.date')}</th>
+                  <th>{t('sales.product')}</th>
+                  <th>{t('sales.quantity')}</th>
+                  <th>{t('sales.document')}</th>
+                  <th>{t('page.customers.title')}</th>
+                  <th>{t('customers.type')}</th>
+                  <th>{t('sales.identifier')}</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {saleRows.length > 0 ? (
+                  saleRows.map((row) => (
+                    <tr key={row.id}>
+                      <td>{formatDate(row.date)}</td>
+                      <td>{row.productName}</td>
+                      <td className="numeric-cell">{row.quantity}</td>
+                      <td>{row.document}</td>
+                      <td>{row.customerName}</td>
+                      <td>{row.customerType}</td>
+                      <td>{row.customerIdentifier}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={7}>
+                      {isLoading
+                        ? 'Cargando ventas...'
+                        : canRegisterSale
+                          ? t('sales.noSales')
+                          : canRegister
+                            ? t('sales.addProductsFirst')
+                            : t('sales.noSales')}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </article>
+        </details>
+
       </section>
 
       <SuccessModal

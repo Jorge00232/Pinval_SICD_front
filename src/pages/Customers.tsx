@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import AppLayout from '../components/AppLayout';
 import ConfirmModal from '../components/ConfirmModal';
 import { canManageData } from '../api/authApi';
@@ -8,8 +8,24 @@ import {
   type Customer,
 } from '../api/customersApi';
 import { useLanguage } from '../language/useLanguage';
+import { formatRutIfPossible } from '../utils/rut';
 
 type PendingCustomer = Parameters<typeof createCustomer>[0];
+
+function formatIdentifier(value: string | null | undefined) {
+  const rawValue = String(value ?? '').trim();
+
+  if (!rawValue) {
+    return '';
+  }
+
+  return formatRutIfPossible(rawValue) ?? rawValue;
+}
+
+function handleIdentifierInputChange(event: ChangeEvent<HTMLInputElement>) {
+  const rawValue = event.currentTarget.value;
+  event.currentTarget.value = formatRutIfPossible(rawValue) ?? rawValue;
+}
 
 function Customers() {
   const { t } = useLanguage();
@@ -138,7 +154,7 @@ function Customers() {
                     customerType: String(formData.get('customerType')) as
                       | 'B2B'
                       | 'B2C',
-                    identifier: String(formData.get('identifier')).trim(),
+                    identifier: formatIdentifier(String(formData.get('identifier'))),
                     contact: String(formData.get('contact')).trim(),
                   };
 
@@ -169,6 +185,7 @@ function Customers() {
                     name="identifier"
                     placeholder={t('customers.identifierPlaceholder')}
                     maxLength={60}
+                    onChange={handleIdentifierInputChange}
                   />
                 </label>
 
@@ -262,7 +279,7 @@ function Customers() {
                       <tr key={customer.id}>
                         <td className="description-cell">{customer.name}</td>
                         <td>{customer.customerType}</td>
-                        <td>{customer.identifier || '-'}</td>
+                        <td>{formatIdentifier(customer.identifier) || '-'}</td>
                         <td>{customer.contact || '-'}</td>
                         <td>{customer.lastPurchase || 'Sin compras'}</td>
                         <td className="numeric-cell">{customer.purchases ?? 0}</td>
@@ -292,7 +309,7 @@ function Customers() {
           details={[
             { label: 'Cliente', value: pendingCustomer.name },
             { label: 'Tipo', value: pendingCustomer.customerType },
-            { label: 'Identificador', value: pendingCustomer.identifier || '-' },
+            { label: 'Identificador', value: formatIdentifier(pendingCustomer.identifier) || '-' },
             { label: 'Contacto', value: pendingCustomer.contact || '-' },
           ]}
           onConfirm={handleConfirmCreateCustomer}

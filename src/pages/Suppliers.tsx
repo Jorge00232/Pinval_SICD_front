@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { type ChangeEvent, useEffect, useRef, useState } from 'react';
 import AppLayout from '../components/AppLayout';
 import ConfirmModal from '../components/ConfirmModal';
 import { canManageData } from '../api/authApi';
@@ -8,8 +8,24 @@ import {
   type Supplier,
 } from '../api/suppliersApi';
 import { useLanguage } from '../language/useLanguage';
+import { formatRutIfPossible } from '../utils/rut';
 
 type PendingSupplier = Parameters<typeof createSupplier>[0];
+
+function formatIdentifier(value: string | null | undefined) {
+  const rawValue = String(value ?? '').trim();
+
+  if (!rawValue) {
+    return '';
+  }
+
+  return formatRutIfPossible(rawValue) ?? rawValue;
+}
+
+function handleIdentifierInputChange(event: ChangeEvent<HTMLInputElement>) {
+  const rawValue = event.currentTarget.value;
+  event.currentTarget.value = formatRutIfPossible(rawValue) ?? rawValue;
+}
 
 function Suppliers() {
   const { t } = useLanguage();
@@ -107,7 +123,7 @@ function Suppliers() {
                   const formData = new FormData(event.currentTarget);
                   const supplier: PendingSupplier = {
                     name: String(formData.get('name')).trim(),
-                    identifier: String(formData.get('identifier')).trim(),
+                    identifier: formatIdentifier(String(formData.get('identifier'))),
                     contactName: String(formData.get('contactName')).trim(),
                     phone: String(formData.get('phone')).trim(),
                     email: String(formData.get('email')).trim(),
@@ -132,6 +148,7 @@ function Suppliers() {
                     name="identifier"
                     placeholder={t('suppliers.identifierPlaceholder')}
                     maxLength={60}
+                    onChange={handleIdentifierInputChange}
                   />
                 </label>
 
@@ -210,7 +227,7 @@ function Suppliers() {
                     suppliers.map((supplier) => (
                       <tr key={supplier.id}>
                         <td className="description-cell">{supplier.name}</td>
-                        <td>{supplier.identifier || '-'}</td>
+                        <td>{formatIdentifier(supplier.identifier) || '-'}</td>
                         <td>{supplier.contactName}</td>
                         <td>{supplier.phone}</td>
                         <td>{supplier.email}</td>
@@ -239,7 +256,7 @@ function Suppliers() {
           cancelLabel="Cancelar"
           details={[
             { label: 'Proveedor', value: pendingSupplier.name },
-            { label: 'Identificador', value: pendingSupplier.identifier || '-' },
+            { label: 'Identificador', value: formatIdentifier(pendingSupplier.identifier) || '-' },
             { label: 'Contacto', value: pendingSupplier.contactName },
             { label: 'Teléfono', value: pendingSupplier.phone || '-' },
             { label: 'Correo', value: pendingSupplier.email || '-' },

@@ -19,7 +19,8 @@ type ChatMessage = {
 
 const suggestions = [
   'Resumen de inventario',
-  'Productos bajo minimo',
+  '¿Qué es el cloro?',
+  'Productos bajo mínimo',
   'Productos sin stock',
   'Productos con menor stock',
   'Productos con mayor stock',
@@ -28,7 +29,7 @@ const suggestions = [
 
 const statusLabels: Record<ChatbotProduct['status'], string> = {
   DISPONIBLE: 'Disponible',
-  BAJO_MINIMO: 'Bajo minimo',
+  BAJO_MINIMO: 'Bajo mínimo',
   SIN_STOCK: 'Sin stock',
   REQUIERE_AJUSTE: 'Requiere ajuste',
 };
@@ -52,7 +53,7 @@ function ProductResult({
       <div className="chatbot-product-stock">
         <strong>{product.stock}</strong>
         <span>stock</span>
-        {!compact ? <small>Minimo: {product.minStock}</small> : null}
+        {!compact ? <small>Mínimo: {product.minStock}</small> : null}
       </div>
       {!compact ? (
         <span className={`chatbot-status ${product.status.toLowerCase()}`}>
@@ -68,7 +69,7 @@ function SummaryResult({ summary }: { summary: InventorySummary }) {
     ['Productos', summary.totalProducts],
     ['Unidades', summary.totalUnits],
     ['Disponibles', summary.availableProducts],
-    ['Bajo minimo', summary.lowStockProducts],
+    ['Bajo mínimo', summary.lowStockProducts],
     ['Sin stock', summary.outOfStockProducts],
     ['Por ajustar', summary.adjustmentProducts],
   ] as const;
@@ -101,7 +102,7 @@ function ProductListResult({ products }: { products: ChatbotProduct[] }) {
           className="chatbot-list-toggle"
           onClick={() => setIsExpanded((current) => !current)}
         >
-          {isExpanded ? 'Mostrar menos' : `Mostrar ${hiddenCount} mas`}
+          {isExpanded ? 'Mostrar menos' : `Mostrar ${hiddenCount} más`}
         </button>
       ) : null}
     </div>
@@ -120,8 +121,8 @@ function ChatbotWidget() {
   const welcomeText = useMemo(
     () =>
       language === 'es'
-        ? 'Hola. Puedo consultar stock, productos bajo minimo y resumen de inventario.'
-        : 'Hello. I can check stock, low stock products and inventory summary.',
+        ? 'Hola. Puedo consultar stock, productos bajo mínimo, resumen de inventario y explicar conceptos básicos de productos.'
+        : 'Hello. I can check stock, low stock products, inventory summaries and basic product concepts.',
     [language],
   );
 
@@ -265,7 +266,9 @@ function ChatbotWidget() {
           </form>
 
           <p className="chatbot-disclaimer">
-            Respuesta informativa. Verifica los datos antes de tomar decisiones.
+            {language === 'es'
+              ? 'Respuesta informativa. Verifica los datos antes de tomar decisiones.'
+              : 'Informational response. Verify the data before making decisions.'}
           </p>
         </section>
       ) : null}

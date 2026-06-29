@@ -100,7 +100,6 @@ function Settings() {
         <article className="panel">
           <div className="panel-heading" style={{ borderBottom: '1px solid var(--border-color, #e2e8f0)', paddingBottom: '12px', marginBottom: '16px' }}>
             <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '20px' }}>🌍</span>
               {language === 'es' ? 'Idioma y Tema' : 'Language & Theme'}
             </h2>
           </div>
@@ -170,7 +169,7 @@ function Settings() {
                     fontWeight: 600
                   }}
                 >
-                  ☀️ {language === 'es' ? 'Tema Claro' : 'Light Theme'}
+                  {language === 'es' ? 'Tema Claro' : 'Light Theme'}
                 </button>
                 <button
                   type="button"
@@ -187,7 +186,7 @@ function Settings() {
                     fontWeight: 600
                   }}
                 >
-                  🌙 {language === 'es' ? 'Tema Oscuro' : 'Dark Theme'}
+                  {language === 'es' ? 'Tema Oscuro' : 'Dark Theme'}
                 </button>
               </div>
             </div>
@@ -198,7 +197,6 @@ function Settings() {
         <article className="panel">
           <div className="panel-heading" style={{ borderBottom: '1px solid var(--border-color, #e2e8f0)', paddingBottom: '12px', marginBottom: '16px' }}>
             <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '20px' }}>✍️</span>
               {language === 'es' ? 'Tipografía y Accesibilidad' : 'Typography & Font Options'}
             </h2>
           </div>

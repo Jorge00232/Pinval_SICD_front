@@ -6965,10 +6965,9 @@ body.theme-dark .compact-detail-edit-button:focus-visible {
 }
 
 
-/* ─────────────────────────────────────────────── */
 /* Carga progresiva del catálogo de productos      */
 /* Usado por Products.tsx: Ver 100 más / Ver todo  */
-/* ─────────────────────────────────────────────── */
+
 
 .catalog-load-more {
   display: flex;
@@ -7027,9 +7026,7 @@ body.theme-dark .catalog-load-more span {
   }
 }
 
-/* ─────────────────────────────────────────────── */
 /* Tarjeta de existencia - Inventario              */
-/* ─────────────────────────────────────────────── */
 
 .inventory-row-actions {
   display: flex;
@@ -7249,9 +7246,7 @@ body.theme-dark .existence-card-warning {
 }
 
 
-/* ─────────────────────────────────────────────── */
 /* Resumen entradas/salidas en fila de inventario  */
-/* ─────────────────────────────────────────────── */
 
 .inventory-product-inline-summary {
   display: flex;
@@ -7298,9 +7293,7 @@ body.theme-dark .inventory-movement-chip.exit {
 }
 
 
-/* ─────────────────────────────────────────────── */
 /* Inventario: acciones centrales por producto     */
-/* ─────────────────────────────────────────────── */
 
 .inventory-list-card {
   grid-template-columns: minmax(260px, 1.2fr) minmax(320px, 1fr) 110px auto 100px;
@@ -7397,9 +7390,7 @@ body.theme-dark .inventory-movement-chip.exit {
   }
 }
 
-/* ─────────────────────────────────────────────── */
 /* Badges del menú lateral                         */
-/* ─────────────────────────────────────────────── */
 
 .side-nav a {
   position: relative;
@@ -7453,9 +7444,7 @@ body.theme-dark .side-nav-badge.danger {
   font-size: 10px;
 }
 
-/* ─────────────────────────────────────────────── */
 /* Buscador de productos en ventas                 */
-/* ─────────────────────────────────────────────── */
 
 .product-search-field {
   display: grid;
@@ -7997,9 +7986,7 @@ h3 {
   font-size: calc(12px * var(--global-font-scale)) !important;
 }
 
-/* ─────────────────────────────────────────────── */
-/* Landing adaptable: sin scroll inicial           */
-/* ─────────────────────────────────────────────── */
+/* Landing*/
 
 /*
   Esta sección deja Inicio ajustado al alto disponible.
@@ -8252,10 +8239,7 @@ h3 {
   }
 }
 
-
-/* ─────────────────────────────────────────────── */
-/* Productos: carga automática por scroll          */
-/* ─────────────────────────────────────────────── */
+/* Productos: carga automática por scroll  */
 
 .catalog-infinite-scroll-trigger {
   display: flex;
@@ -8315,10 +8299,8 @@ body.theme-dark .catalog-infinite-scroll-trigger[aria-hidden='false'] span::befo
 }
 
 
-/* ───────────────────────────────────────────────
-   FIX FINAL: sidebar completo + administración usuarios
-   Mantiene visibles Movimientos, Alertas, Reportes, Usuarios y Configuración.
-   ─────────────────────────────────────────────── */
+/*sidebar completo + administración usuarios
+  Mantiene visibles Movimientos, Alertas, Reportes, Usuarios y Configuración.*/
 
 .sidebar {
   overflow-y: auto !important;
@@ -8396,9 +8378,7 @@ body.theme-dark .sidebar::-webkit-scrollbar-thumb {
   }
 }
 
-/* ───────────────────────────────────────────────
-   Administración de usuarios: layout profesional
-   ─────────────────────────────────────────────── */
+/* administración de usuarios: layout profesional*/
 
 .users-admin-layout {
   display: grid;
@@ -8798,10 +8778,7 @@ body.theme-dark .form-message.success {
   }
 }
 
-
-/* ─────────────────────────────────────────────── */
-/* Carga masiva de datos - diseño limpio           */
-/* ─────────────────────────────────────────────── */
+/* Carga masiva de datos */
 
 .bulk-upload-layout {
   display: grid;
@@ -9210,11 +9187,9 @@ body.theme-dark .bulk-upload-success-note {
   }
 }
 
-
-/* ─────────────────────────────────────────────── */
 /* Paneles colapsables de registros / historiales  */
 /* Corrige el triángulo nativo y separa contador   */
-/* ─────────────────────────────────────────────── */
+
 .records-disclosure {
   display: block;
   width: 100%;

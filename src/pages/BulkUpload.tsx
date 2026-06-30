@@ -124,7 +124,7 @@ function BulkUpload() {
     try {
       const result = await uploadBulkExcel(selectedType, selectedFile);
       setSummary(result);
-      setMessage(t('bulkUpload.uploadSuccess'));
+      setMessage(`${t('bulkUpload.uploadSuccess')} También quedó registrado en Movimientos.`);
       setMessageTone('success');
       resetSelectedFile();
     } catch (error) {

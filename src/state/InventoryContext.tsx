@@ -20,7 +20,7 @@ import {
   type SupplierInput,
 } from './inventoryStore';
 import { getAccessToken, subscribeToSessionChanges } from '../api/authApi';
-import { fetchProducts, createProduct } from '../api/productsApi';
+import { fetchProducts } from '../api/productsApi';
 import {
   fetchInventoryMovements,
   type ApiInventoryMovement,
@@ -29,6 +29,71 @@ import { fetchCustomers, createCustomer } from '../api/customersApi';
 import { fetchSuppliers, createSupplier } from '../api/suppliersApi';
 import { createPurchase } from '../api/purchasesApi';
 import { createSale } from '../api/salesApi';
+
+const API_BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:3000').replace(
+  /\/+$/,
+  '',
+);
+
+function getAuthenticatedJsonHeaders() {
+  const token = getAccessToken();
+
+  if (!token) {
+    throw new Error('Debes iniciar sesión para realizar esta acción.');
+  }
+
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  };
+}
+
+async function readBackendError(response: Response) {
+  try {
+    const payload = (await response.json()) as {
+      message?: string | string[];
+      error?: string;
+    };
+
+    if (Array.isArray(payload.message)) {
+      return payload.message.join(' ');
+    }
+
+    return payload.message || payload.error || null;
+  } catch {
+    return null;
+  }
+}
+
+async function createOrUpdateProduct(product: Product) {
+  const response = await fetch(`${API_BASE_URL}/products`, {
+    method: 'POST',
+    headers: getAuthenticatedJsonHeaders(),
+    body: JSON.stringify(product),
+  });
+
+  if (response.status === 401 || response.status === 403) {
+    throw new Error(
+      'Tu sesión expiró o no tienes permisos para actualizar productos. Cierra sesión e ingresa nuevamente como ADMIN o STOCK.',
+    );
+  }
+
+  if (!response.ok) {
+    const backendMessage = await readBackendError(response);
+
+    throw new Error(
+      backendMessage ||
+        'No se pudo guardar el producto en el backend. Revisa los datos e intenta nuevamente.',
+    );
+  }
+
+  if (response.status === 204) {
+    return product;
+  }
+
+  return (await response.json()) as Product;
+}
+
 
 function toDisplayProductName(rawName?: string | null) {
   if (!rawName) {
@@ -474,13 +539,14 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        const savedProduct = await createProduct(normalizedProduct);
+        const savedProduct = await createOrUpdateProduct(normalizedProduct);
         const normalizedSavedProduct = normalizeProduct(
           savedProduct ?? normalizedProduct,
         );
 
         if (!normalizedSavedProduct) {
           await reloadProductsFromBackend();
+          await reloadMovementsFromBackend();
           return;
         }
 
@@ -488,6 +554,8 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
           ...current,
           products: upsertProduct(current.products, normalizedSavedProduct),
         }));
+
+        await reloadMovementsFromBackend();
       },
 
       async addSupplier(supplier: SupplierInput) {

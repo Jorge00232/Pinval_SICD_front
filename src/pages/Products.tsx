@@ -215,12 +215,18 @@ function Products() {
           variant: 'success',
         });
       })
-      .catch(() => {
+      .catch((error: unknown) => {
+        const errorMessage =
+          error instanceof Error && error.message.trim()
+            ? error.message
+            : 'Revisa la conexión con el backend e intenta nuevamente.';
+
+        setPendingProduct(null);
         setProductSaveFeedback({
           title: wasEditingProduct
             ? 'No se pudo actualizar el producto'
             : 'No se pudo registrar el producto',
-          message: 'Revisa la conexión con el backend e intenta nuevamente.',
+          message: errorMessage,
           variant: 'error',
         });
       });

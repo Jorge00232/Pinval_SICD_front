@@ -13,6 +13,18 @@ function getEffectiveMovementType(type: unknown, detail?: unknown) {
 
   const candidates = [normalizedType, normalizedDetail];
 
+  if (candidates.some((value) => value.includes('CARGA_MASIVA_PRODUCTOS'))) {
+    return 'CARGA_MASIVA_PRODUCTOS';
+  }
+
+  if (candidates.some((value) => value.includes('CARGA_MASIVA_CLIENTES'))) {
+    return 'CARGA_MASIVA_CLIENTES';
+  }
+
+  if (candidates.some((value) => value.includes('CARGA_MASIVA_PROVEEDORES'))) {
+    return 'CARGA_MASIVA_PROVEEDORES';
+  }
+
   if (candidates.some((value) => value.includes('CLIENTE_ACTUALIZADO'))) {
     return 'CLIENTE_ACTUALIZADO';
   }
@@ -70,7 +82,8 @@ function getMovementTone(type: unknown, detail?: unknown) {
     effectiveType.includes('CLIENTE') ||
     effectiveType.includes('PROVEEDOR') ||
     effectiveType.includes('USUARIO') ||
-    effectiveType.includes('PRODUCTO')
+    effectiveType.includes('PRODUCTO') ||
+    effectiveType.includes('CARGA_MASIVA')
   ) {
     return 'warning';
   }
@@ -84,7 +97,8 @@ function getMovementCategory(type: unknown, detail?: unknown) {
   if (
     effectiveType.includes('CLIENTE') ||
     effectiveType.includes('PROVEEDOR') ||
-    effectiveType.includes('PRODUCTO')
+    effectiveType.includes('PRODUCTO') ||
+    effectiveType.includes('CARGA_MASIVA')
   ) {
     return 'Gestión';
   }
@@ -181,6 +195,18 @@ function Movements() {
       return t('movements.adjustment');
     }
 
+    if (effectiveType === 'CARGA_MASIVA_PRODUCTOS') {
+      return 'Carga masiva de productos';
+    }
+
+    if (effectiveType === 'CARGA_MASIVA_CLIENTES') {
+      return 'Carga masiva de clientes';
+    }
+
+    if (effectiveType === 'CARGA_MASIVA_PROVEEDORES') {
+      return 'Carga masiva de proveedores';
+    }
+
     if (effectiveType === 'CLIENTE_CREADO') {
       return 'Cliente creado';
     }
@@ -229,7 +255,14 @@ function Movements() {
   }, [movements]);
 
   const uniqueTypes = useMemo(() => {
-    const typePriority: string[] = ['ENTRADA', 'SALIDA', 'AJUSTE'];
+    const typePriority: string[] = [
+      'ENTRADA',
+      'SALIDA',
+      'AJUSTE',
+      'CARGA_MASIVA_PRODUCTOS',
+      'CARGA_MASIVA_CLIENTES',
+      'CARGA_MASIVA_PROVEEDORES',
+    ];
     const types = movements
       .map((movement) => getEffectiveMovementType(movement.type, movement.detail))
       .filter((type) => type.length > 0);

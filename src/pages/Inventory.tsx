@@ -748,7 +748,11 @@ function Inventory() {
                         ))
                       ) : (
                         <tr>
-            
+                          <td colSpan={7}>
+                            Todavía no hay movimientos registrados para este producto.
+                            La tarjeta ya está lista para mostrar entradas y salidas cuando
+                            compras y ventas creen movimientos reales en el backend.
+                          </td>
                         </tr>
                       )}
                     </tbody>

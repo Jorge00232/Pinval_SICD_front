@@ -83,15 +83,24 @@ function getCurrentMonth() {
 
 function parseMovementMonth(dateLabel: string) {
   const datePart = dateLabel.split(',')[0]?.trim();
-  const parts = datePart?.split(/[/-]/).map((part) => Number(part));
+  const rawParts = datePart?.split(/[/-]/);
 
-  if (!parts || parts.length < 3 || parts.some((part) => !Number.isFinite(part))) {
+  if (!rawParts || rawParts.length < 3) {
     return '';
   }
 
-  const [, month, year] = parts;
+  const [dayText, monthText, yearText] = rawParts;
+  const day = Number(dayText);
+  const month = Number(monthText);
+  const year = yearText.length === 2 ? 2000 + Number(yearText) : Number(yearText);
 
-  if (!month || !year) {
+  if (
+    !Number.isFinite(day) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(year) ||
+    month < 1 ||
+    month > 12
+  ) {
     return '';
   }
 
@@ -739,11 +748,7 @@ function Inventory() {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={7}>
-                            Todavía no hay movimientos registrados para este producto.
-                            La tarjeta ya está lista para mostrar entradas y salidas cuando
-                            compras y ventas creen movimientos reales en el backend.
-                          </td>
+            
                         </tr>
                       )}
                     </tbody>

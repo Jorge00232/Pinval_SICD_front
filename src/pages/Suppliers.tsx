@@ -1,6 +1,7 @@
 import { type ChangeEvent, useEffect, useRef, useState } from 'react';
 import AppLayout from '../components/AppLayout';
 import ConfirmModal from '../components/ConfirmModal';
+import SuccessModal from '../components/SuccessModal';
 import { canManageData } from '../api/authApi';
 import {
   createSupplier,
@@ -35,6 +36,7 @@ function Suppliers() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [pendingSupplier, setPendingSupplier] = useState<PendingSupplier | null>(null);
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(
     null,
@@ -78,6 +80,7 @@ function Suppliers() {
           type: 'success',
           text: 'Proveedor registrado correctamente en el backend.',
         });
+        setShowSuccess(true);
         setPendingSupplier(null);
         supplierFormRef.current?.reset();
       })
@@ -246,6 +249,13 @@ function Suppliers() {
           </article>
         </details>
       </section>
+
+      <SuccessModal
+        isOpen={showSuccess}
+        onClose={() => setShowSuccess(false)}
+        title="Proveedor registrado correctamente"
+        message="El proveedor fue creado y ya se encuentra disponible en la lista de proveedores."
+      />
 
       {pendingSupplier ? (
         <ConfirmModal

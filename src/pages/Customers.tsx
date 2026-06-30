@@ -1,6 +1,7 @@
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import AppLayout from '../components/AppLayout';
 import ConfirmModal from '../components/ConfirmModal';
+import SuccessModal from '../components/SuccessModal';
 import { canManageData } from '../api/authApi';
 import {
   createCustomer,
@@ -37,6 +38,7 @@ function Customers() {
   const [selectedType, setSelectedType] = useState<'ALL' | 'B2B' | 'B2C'>('ALL');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [pendingCustomer, setPendingCustomer] = useState<PendingCustomer | null>(null);
   const [message, setMessage] = useState<{
     type: 'error' | 'success';
@@ -106,6 +108,7 @@ function Customers() {
           type: 'success',
           text: 'Cliente registrado correctamente en el backend.',
         });
+        setShowSuccess(true);
         setPendingCustomer(null);
         customerFormRef.current?.reset();
       })
@@ -298,6 +301,13 @@ function Customers() {
           </article>
         </details>
       </section>
+
+      <SuccessModal
+        isOpen={showSuccess}
+        onClose={() => setShowSuccess(false)}
+        title="Cliente registrado correctamente"
+        message="El cliente fue creado y ya se encuentra disponible en el registro de clientes."
+      />
 
       {pendingCustomer ? (
         <ConfirmModal

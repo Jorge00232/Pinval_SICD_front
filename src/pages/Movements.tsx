@@ -3,54 +3,130 @@ import AppLayout from '../components/AppLayout';
 import { useInventory } from '../state/useInventory';
 import { useLanguage } from '../language/useLanguage';
 
+function normalizeMovementType(type: string) {
+  return String(type ?? '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+}
+
+function getMovementTone(type: string) {
+  const normalizedType = normalizeMovementType(type);
+
+  if (normalizedType.includes('SALIDA') || normalizedType.includes('VENTA')) {
+    return 'danger';
+  }
+
+  if (
+    normalizedType.includes('CLIENTE') ||
+    normalizedType.includes('PROVEEDOR') ||
+    normalizedType.includes('USUARIO')
+  ) {
+    return 'warning';
+  }
+
+  return 'ok';
+}
+
+function getMovementCategory(type: string) {
+  const normalizedType = normalizeMovementType(type);
+
+  if (
+    normalizedType.includes('CLIENTE') ||
+    normalizedType.includes('PROVEEDOR')
+  ) {
+    return 'Gestión';
+  }
+
+  if (normalizedType.includes('USUARIO')) {
+    return 'Seguridad';
+  }
+
+  return 'Inventario';
+}
+
 function Movements() {
   const { movements } = useInventory();
   const { t } = useLanguage();
 
-  // Filter States
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedUser, setSelectedUser] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   const getMovementTypeLabel = (type: string) => {
-    if (type === 'Entrada') {
+    const normalizedType = normalizeMovementType(type);
+
+    if (normalizedType === 'ENTRADA') {
       return t('movements.entry');
     }
 
-    if (type === 'Salida') {
+    if (normalizedType === 'SALIDA') {
       return t('movements.exit');
     }
 
-    return t('movements.adjustment');
+    if (normalizedType === 'AJUSTE') {
+      return t('movements.adjustment');
+    }
+
+    if (normalizedType === 'CLIENTE_CREADO') {
+      return 'Cliente creado';
+    }
+
+    if (normalizedType === 'PROVEEDOR_CREADO') {
+      return 'Proveedor creado';
+    }
+
+    if (normalizedType === 'USUARIO_CREADO') {
+      return 'Usuario creado';
+    }
+
+    if (normalizedType === 'USUARIO_ACTUALIZADO') {
+      return 'Usuario actualizado';
+    }
+
+    return String(type || 'Movimiento');
   };
 
-  // Dynamically collect unique operators who registered movements
   const uniqueUsers = useMemo(() => {
     const users = movements
-      .map((m) => m.user)
-      .filter((u): u is string => typeof u === 'string' && u.trim().length > 0);
+      .map((movement) => movement.user)
+      .filter((user): user is string => typeof user === 'string' && user.trim().length > 0);
+
     return [...new Set(users)].sort();
   }, [movements]);
 
-  // Reactive Multi-attribute filter
+  const uniqueTypes = useMemo(() => {
+    const typePriority: string[] = ['Entrada', 'Salida', 'Ajuste'];
+    const types = movements
+      .map((movement) => String(movement.type ?? '').trim())
+      .filter((type) => type.length > 0);
+
+    return [...new Set([...typePriority, ...types])];
+  }, [movements]);
+
   const filteredMovements = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
-    return movements.filter((m) => {
+
+    return movements.filter((movement) => {
+      const category = getMovementCategory(movement.type);
+      const product = String(movement.product ?? '');
+      const detail = String(movement.detail ?? '');
+      const id = String(movement.id ?? '');
+      const user = String(movement.user ?? '');
+
       const matchesSearch =
         !query ||
-        m.product.toLowerCase().includes(query) ||
-        m.detail.toLowerCase().includes(query) ||
-        m.id.toLowerCase().includes(query);
+        product.toLowerCase().includes(query) ||
+        detail.toLowerCase().includes(query) ||
+        id.toLowerCase().includes(query) ||
+        user.toLowerCase().includes(query) ||
+        getMovementTypeLabel(movement.type).toLowerCase().includes(query);
 
-      const matchesType =
-        selectedType === 'all' || m.type === selectedType;
+      const matchesType = selectedType === 'all' || movement.type === selectedType;
+      const matchesUser = selectedUser === 'all' || movement.user === selectedUser;
+      const matchesCategory = selectedCategory === 'all' || category === selectedCategory;
 
-      const matchesUser =
-        selectedUser === 'all' || m.user === selectedUser;
-
-      return matchesSearch && matchesType && matchesUser;
+      return matchesSearch && matchesType && matchesUser && matchesCategory;
     });
-  }, [movements, searchTerm, selectedType, selectedUser]);
+  }, [movements, searchTerm, selectedType, selectedUser, selectedCategory]);
 
   return (
     <AppLayout
@@ -60,11 +136,19 @@ function Movements() {
       <section className="panel">
         <div className="panel-heading">
           <h2>{t('movements.fullHistory')}</h2>
-          <span>{filteredMovements.length} {t('home.movements')}</span>
+          <span>
+            {filteredMovements.length} {t('home.movements')}
+          </span>
         </div>
 
-        {/* Dynamic Filters Toolbar */}
-        <div className="catalog-toolbar" style={{ borderBottom: '1px dashed #e2e8f0', paddingBottom: '14px', marginBottom: '16px' }}>
+        <div
+          className="catalog-toolbar"
+          style={{
+            borderBottom: '1px dashed #e2e8f0',
+            paddingBottom: '14px',
+            marginBottom: '16px',
+          }}
+        >
           <label>
             {t('products.search')}
             <input
@@ -73,6 +157,20 @@ function Movements() {
               placeholder={t('products.searchPlaceholder') || 'Buscar...'}
             />
           </label>
+
+          <label>
+            Categoría
+            <select
+              value={selectedCategory}
+              onChange={(event) => setSelectedCategory(event.target.value)}
+            >
+              <option value="all">{t('reports.all')}</option>
+              <option value="Inventario">Inventario</option>
+              <option value="Gestión">Gestión</option>
+              <option value="Seguridad">Seguridad</option>
+            </select>
+          </label>
+
           <label>
             {t('movements.type')}
             <select
@@ -80,11 +178,14 @@ function Movements() {
               onChange={(event) => setSelectedType(event.target.value)}
             >
               <option value="all">{t('reports.all')}</option>
-              <option value="Entrada">{t('movements.entry')}</option>
-              <option value="Salida">{t('movements.exit')}</option>
-              <option value="Ajuste">{t('movements.adjustment')}</option>
+              {uniqueTypes.map((type) => (
+                <option key={type} value={type}>
+                  {getMovementTypeLabel(type)}
+                </option>
+              ))}
             </select>
           </label>
+
           <label>
             {t('movements.user')}
             <select
@@ -105,6 +206,7 @@ function Movements() {
           <table>
             <thead>
               <tr>
+                <th>Categoría</th>
                 <th>{t('movements.type')}</th>
                 <th>{t('movements.product')}</th>
                 <th>{t('movements.quantity')}</th>
@@ -117,25 +219,22 @@ function Movements() {
               {filteredMovements.length > 0 ? (
                 filteredMovements.map((movement) => (
                   <tr key={movement.id}>
+                    <td>{getMovementCategory(movement.type)}</td>
                     <td>
-                      <span
-                        className={`status ${
-                          movement.type === 'Salida' ? 'danger' : 'ok'
-                        }`}
-                      >
+                      <span className={`status ${getMovementTone(movement.type)}`}>
                         {getMovementTypeLabel(movement.type)}
                       </span>
                     </td>
-                    <td>{movement.product}</td>
-                    <td>{movement.quantity}</td>
-                    <td>{movement.user}</td>
-                    <td>{movement.date}</td>
-                    <td>{movement.detail}</td>
+                    <td>{movement.product || '-'}</td>
+                    <td>{movement.quantity ?? '-'}</td>
+                    <td>{movement.user || '-'}</td>
+                    <td>{movement.date || '-'}</td>
+                    <td>{movement.detail || '-'}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6}>{t('movements.noMovements')}</td>
+                  <td colSpan={7}>{t('movements.noMovements')}</td>
                 </tr>
               )}
             </tbody>

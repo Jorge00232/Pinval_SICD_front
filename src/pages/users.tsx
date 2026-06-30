@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import AppLayout from '../components/AppLayout';
 import ConfirmModal from '../components/ConfirmModal';
+import SuccessModal from '../components/SuccessModal';
 import {
   createUser,
   fetchUsers,
@@ -85,6 +86,7 @@ function Users() {
   const [isUsersListOpen, setIsUsersListOpen] = useState(false);
   const [isUserFormOpen, setIsUserFormOpen] = useState(true);
   const [pendingCreateUser, setPendingCreateUser] = useState<CreateUserInput | null>(null);
+  const [successModal, setSuccessModal] = useState<{ title: string; message: string } | null>(null);
 
   const editingUser = useMemo(() => {
     if (!editingUserId) {
@@ -193,6 +195,10 @@ function Users() {
         ),
       );
       setMessage('Usuario actualizado correctamente.');
+      setSuccessModal({
+        title: 'Usuario actualizado correctamente',
+        message: 'Los cambios del usuario autorizado fueron guardados correctamente.',
+      });
       resetForm();
       setIsUserFormOpen(true);
     } catch (error) {
@@ -218,6 +224,10 @@ function Users() {
       const createdUser = await createUser(pendingCreateUser);
       setUsers((current) => [createdUser, ...current]);
       setMessage('Usuario creado correctamente.');
+      setSuccessModal({
+        title: 'Usuario creado correctamente',
+        message: 'El usuario autorizado fue registrado y ya puede ingresar al sistema según su rol.',
+      });
       setPendingCreateUser(null);
       resetForm();
       setIsUserFormOpen(true);
@@ -632,6 +642,13 @@ function Users() {
           </div>
         </details>
       </div>
+
+      <SuccessModal
+        isOpen={successModal !== null}
+        onClose={() => setSuccessModal(null)}
+        title={successModal?.title ?? ''}
+        message={successModal?.message ?? ''}
+      />
 
       {pendingCreateUser ? (
         <ConfirmModal

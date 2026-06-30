@@ -15,6 +15,12 @@ import { useLanguage } from '../language/useLanguage';
 const BASE_FAMILIES = Object.keys(FAMILY_LABELS) as ProductFamily[];
 const PRODUCTS_BATCH_SIZE = 12;
 
+type ProductSaveFeedback = {
+  title: string;
+  message: string;
+  variant: 'success' | 'error';
+};
+
 function normalizeSearchText(value?: string | null) {
   return (value ?? '')
     .normalize('NFD')
@@ -167,6 +173,7 @@ function Products() {
 
   type PendingProduct = Parameters<typeof addProduct>[0];
   const [pendingProduct, setPendingProduct] = useState<PendingProduct | null>(null);
+  const [productSaveFeedback, setProductSaveFeedback] = useState<ProductSaveFeedback | null>(null);
 
   function openCreateProductModal() {
     setOpenProductDetailsCode(null);
@@ -183,6 +190,40 @@ function Products() {
   function closeProductModal() {
     setSelectedProductToEdit(null);
     setIsProductModalOpen(false);
+  }
+
+  function confirmProductSave() {
+    if (!pendingProduct) {
+      return;
+    }
+
+    const wasEditingProduct = isEditingProduct;
+    const productName = pendingProduct.displayName || pendingProduct.descrip || pendingProduct.codigo;
+
+    Promise.resolve()
+      .then(() => addProduct(pendingProduct))
+      .then(() => {
+        setPendingProduct(null);
+        closeProductModal();
+        setProductSaveFeedback({
+          title: wasEditingProduct
+            ? 'Producto actualizado correctamente'
+            : 'Producto registrado correctamente',
+          message: wasEditingProduct
+            ? `${productName} fue actualizado en el catálogo de productos.`
+            : `${productName} fue agregado al catálogo de productos.`,
+          variant: 'success',
+        });
+      })
+      .catch(() => {
+        setProductSaveFeedback({
+          title: wasEditingProduct
+            ? 'No se pudo actualizar el producto'
+            : 'No se pudo registrar el producto',
+          message: 'Revisa la conexión con el backend e intenta nuevamente.',
+          variant: 'error',
+        });
+      });
   }
 
   function locateProduct(product: Product) {
@@ -1069,13 +1110,41 @@ function Products() {
             ...(pendingProduct.ubicacion ? [{ label: 'Ubicación', value: pendingProduct.ubicacion }] : []),
             ...(pendingProduct.lote ? [{ label: 'Lote', value: pendingProduct.lote }] : []),
           ]}
-          onConfirm={() => {
-            addProduct(pendingProduct);
-            setPendingProduct(null);
-            closeProductModal();
-          }}
+          onConfirm={confirmProductSave}
           onCancel={() => setPendingProduct(null)}
         />
+      ) : null}
+
+      {productSaveFeedback ? (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onClick={() => setProductSaveFeedback(null)}
+        >
+          <section
+            className="modal-panel success-modal-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="product-save-feedback-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="panel-heading">
+              <h2 id="product-save-feedback-title">
+                {productSaveFeedback.title}
+              </h2>
+            </div>
+
+            <p>{productSaveFeedback.message}</p>
+
+            <button
+              type="button"
+              className={productSaveFeedback.variant === 'success' ? 'primary-button' : 'danger-button'}
+              onClick={() => setProductSaveFeedback(null)}
+            >
+              Entendido
+            </button>
+          </section>
+        </div>
       ) : null}
     </AppLayout>
   );

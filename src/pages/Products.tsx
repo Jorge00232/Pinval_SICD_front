@@ -172,7 +172,10 @@ function Products() {
   const isEditingProduct = selectedProductToEdit !== null;
 
   type PendingProduct = Parameters<typeof addProduct>[0];
+  type PendingProductSaveOptions = Parameters<typeof addProduct>[1];
   const [pendingProduct, setPendingProduct] = useState<PendingProduct | null>(null);
+  const [pendingProductSaveOptions, setPendingProductSaveOptions] =
+    useState<PendingProductSaveOptions | null>(null);
   const [productSaveFeedback, setProductSaveFeedback] = useState<ProductSaveFeedback | null>(null);
 
   function openCreateProductModal() {
@@ -197,13 +200,18 @@ function Products() {
       return;
     }
 
-    const wasEditingProduct = isEditingProduct;
+    const wasEditingProduct = pendingProductSaveOptions?.mode === 'update' || isEditingProduct;
     const productName = pendingProduct.displayName || pendingProduct.descrip || pendingProduct.codigo;
+    const saveOptions = pendingProductSaveOptions ?? {
+      mode: wasEditingProduct ? 'update' : 'create',
+      originalCodigo: selectedProductToEdit?.codigo ?? pendingProduct.codigo,
+    };
 
     Promise.resolve()
-      .then(() => addProduct(pendingProduct))
+      .then(() => addProduct(pendingProduct, saveOptions))
       .then(() => {
         setPendingProduct(null);
+        setPendingProductSaveOptions(null);
         closeProductModal();
         setProductSaveFeedback({
           title: wasEditingProduct
@@ -222,6 +230,7 @@ function Products() {
             : 'Revisa la conexión con el backend e intenta nuevamente.';
 
         setPendingProduct(null);
+        setPendingProductSaveOptions(null);
         setProductSaveFeedback({
           title: wasEditingProduct
             ? 'No se pudo actualizar el producto'
@@ -927,6 +936,10 @@ function Products() {
                     String(formData.get('fechaCaducidad')).trim() || undefined,
                 };
 
+                setPendingProductSaveOptions({
+                  mode: isEditingProduct ? 'update' : 'create',
+                  originalCodigo: selectedProductToEdit?.codigo ?? productData.codigo,
+                });
                 setPendingProduct(productData);
               }}
             >
@@ -1117,7 +1130,10 @@ function Products() {
             ...(pendingProduct.lote ? [{ label: 'Lote', value: pendingProduct.lote }] : []),
           ]}
           onConfirm={confirmProductSave}
-          onCancel={() => setPendingProduct(null)}
+          onCancel={() => {
+            setPendingProduct(null);
+            setPendingProductSaveOptions(null);
+          }}
         />
       ) : null}
 

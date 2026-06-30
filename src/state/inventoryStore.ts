@@ -15,6 +15,11 @@ export type InventoryState = {
 
 export type ProductInput = Product;
 
+export type ProductSaveOptions = {
+  mode?: 'create' | 'update';
+  originalCodigo?: string;
+};
+
 export type PurchaseInput = {
   date: string;
   supplierName: string;
@@ -50,7 +55,7 @@ export type CustomerInput = Pick<
 
 export type InventoryContextValue = InventoryState & {
   reloadInventoryData: () => Promise<void>;
-  addProduct: (product: ProductInput) => Promise<void>;
+  addProduct: (product: ProductInput, options?: ProductSaveOptions) => Promise<void>;
   addSupplier: (supplier: SupplierInput) => Promise<void>;
   addCustomer: (customer: CustomerInput) => Promise<void>;
   recordPurchase: (purchase: PurchaseInput) => Promise<void>;

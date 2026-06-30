@@ -17,6 +17,7 @@ import {
   type CustomerInput,
   type InventoryContextValue,
   type InventoryState,
+  type ProductSaveOptions,
   type SupplierInput,
 } from './inventoryStore';
 import { getAccessToken, subscribeToSessionChanges } from '../api/authApi';
@@ -65,9 +66,34 @@ async function readBackendError(response: Response) {
   }
 }
 
-async function createOrUpdateProduct(product: Product) {
-  const response = await fetch(`${API_BASE_URL}/products`, {
-    method: 'POST',
+function resolveProductSaveMode(
+  product: Product,
+  existingProducts: Product[],
+  options?: ProductSaveOptions,
+) {
+  if (options?.mode) {
+    return options.mode;
+  }
+
+  const productAlreadyExists = existingProducts.some(
+    (item) => item.codigo.toLowerCase() === product.codigo.toLowerCase(),
+  );
+
+  return productAlreadyExists ? 'update' : 'create';
+}
+
+async function createOrUpdateProduct(
+  product: Product,
+  options: ProductSaveOptions & { mode: 'create' | 'update' },
+) {
+  const originalCodigo = options.originalCodigo?.trim() || product.codigo;
+  const endpoint =
+    options.mode === 'update'
+      ? `${API_BASE_URL}/products/${encodeURIComponent(originalCodigo)}`
+      : `${API_BASE_URL}/products`;
+
+  const response = await fetch(endpoint, {
+    method: options.mode === 'update' ? 'PATCH' : 'POST',
     headers: getAuthenticatedJsonHeaders(),
     body: JSON.stringify(product),
   });
@@ -530,7 +556,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
 
       reloadInventoryData,
 
-      async addProduct(product) {
+      async addProduct(product, options) {
         ensureAuthenticated();
 
         const normalizedProduct = normalizeProduct(product);
@@ -539,7 +565,17 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        const savedProduct = await createOrUpdateProduct(normalizedProduct);
+        const mode = resolveProductSaveMode(
+          normalizedProduct,
+          state.products,
+          options,
+        );
+
+        const savedProduct = await createOrUpdateProduct(normalizedProduct, {
+          mode,
+          originalCodigo: options?.originalCodigo ?? normalizedProduct.codigo,
+        });
+
         const normalizedSavedProduct = normalizeProduct(
           savedProduct ?? normalizedProduct,
         );
